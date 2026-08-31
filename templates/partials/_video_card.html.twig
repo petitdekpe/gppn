@@ -1,0 +1,16 @@
+{% set formatIcons = {video: '▶', audio: '♪', pdf: '📄', image: '🖼'} %}
+<article class="video-card">
+    <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="video-card__thumb" style="--thematic-color: {{ video.thematic.colorHex }}">
+        <span class="video-card__format-tag">{{ video.format.label }}</span>
+        <span class="video-card__lang-tag">{{ video.language.name }}</span>
+        {% if video.format.value in ['video', 'audio'] %}
+            <span class="video-card__duration">{{ video.durationLabel }}</span>
+        {% endif %}
+        <span class="video-card__play" aria-hidden="true">{{ formatIcons[video.format.value] }}</span>
+    </a>
+    <div class="video-card__body">
+        <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>
+        <h3 class="video-card__title"><a href="{{ path('app_video_show', {slug: video.slug}) }}">{{ video.title }}</a></h3>
+        <p class="video-card__meta">{{ video.publishedAt|date('d F Y') }} · {{ video.viewsCount|number_format(0, ',', ' ') }} vues</p>
+    </div>
+</article>

@@ -1,0 +1,36 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Tableau de bord — Administration GPPN{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block body %}
+    <div class="admin-stat-grid">
+        <a class="admin-stat-card" href="{{ path('admin_video_index') }}">
+            <strong>{{ videoCount }}</strong>
+            <span>Vidéos</span>
+        </a>
+        <a class="admin-stat-card" href="{{ path('admin_thematic_index') }}">
+            <strong>{{ thematicCount }}</strong>
+            <span>Thématiques</span>
+        </a>
+        <a class="admin-stat-card" href="{{ path('admin_language_index') }}">
+            <strong>{{ languageCount }}</strong>
+            <span>Langues</span>
+        </a>
+        <a class="admin-stat-card" href="{{ path('admin_speaker_index') }}">
+            <strong>{{ speakerCount }}</strong>
+            <span>Intervenants</span>
+        </a>
+        <a class="admin-stat-card admin-stat-card--accent" href="{{ path('admin_suggestion_index') }}">
+            <strong>{{ untreatedSuggestionCount }}</strong>
+            <span>Suggestions non traitées</span>
+        </a>
+    </div>
+
+    <div class="admin-quick-actions">
+        <a class="btn btn--primary" href="{{ path('admin_video_new') }}">+ Nouvelle vidéo</a>
+        <a class="btn btn--outline" href="{{ path('admin_thematic_new') }}">+ Nouvelle thématique</a>
+        <a class="btn btn--outline" href="{{ path('admin_language_new') }}">+ Nouvelle langue</a>
+        <a class="btn btn--outline" href="{{ path('admin_speaker_new') }}">+ Nouvel intervenant</a>
+    </div>
+{% endblock %}

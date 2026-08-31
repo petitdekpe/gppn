@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Thématiques — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Toutes les thématiques couvertes par le programme : état civil, santé, agriculture, numérique, éducation et plus encore.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        <h1>Explorez par thématique</h1>
+        <p>{{ thematics|length }} thématiques couvertes par le programme.</p>
+    </section>
+
+    <section class="section wrap">
+        <div class="tile-grid tile-grid--thematics">
+            {% for row in thematics %}
+                {{ include('partials/_thematic_tile.html.twig', {row: row}) }}
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

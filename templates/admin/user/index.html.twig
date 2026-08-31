@@ -1,0 +1,39 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Utilisateurs — Administration GPPN{% endblock %}
+{% block page_title %}Utilisateurs{% endblock %}
+
+{% block body %}
+    <div class="admin-toolbar">
+        <a class="btn btn--primary" href="{{ path('admin_user_new') }}">+ Nouvel utilisateur</a>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>E-mail</th>
+                    <th>Rôle</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.roleLabel ?: '—' }}</td>
+                        <td class="admin-table__actions">
+                            <a class="btn btn--outline btn--sm" href="{{ path('admin_user_edit', {id: user.id}) }}">Modifier</a>
+                            {% if user != app.user %}
+                                <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" onsubmit="return confirm('Supprimer cet utilisateur ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-user-' ~ user.id) }}">
+                                    <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Proposer un sujet — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Proposez un service public à expliquer en vidéo, dans la langue nationale de votre choix.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_home')}) }}
+        <h1>Soumettre un sujet</h1>
+        <p>Dites-nous quel service public vous aimeriez voir expliqué, et dans quelle langue. Vos suggestions orientent les prochaines productions.</p>
+    </section>
+
+    <section class="section wrap">
+        <div class="form-card">
+            {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+                {{ form_errors(form) }}
+                {{ form_row(form.subject) }}
+                {{ form_row(form.message) }}
+                <div class="form-grid-2">
+                    {{ form_row(form.fullName) }}
+                    {{ form_row(form.email) }}
+                </div>
+                <button type="submit" class="btn btn--primary">Envoyer ma suggestion</button>
+            {{ form_end(form) }}
+        </div>
+    </section>
+{% endblock %}

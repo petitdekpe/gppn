@@ -1,0 +1,39 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Langues — Administration GPPN{% endblock %}
+{% block page_title %}Langues{% endblock %}
+
+{% block body %}
+    <div class="admin-toolbar">
+        <a class="btn btn--primary" href="{{ path('admin_language_new') }}">+ Nouvelle langue</a>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Slug</th>
+                    <th>Vidéos</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for language in languages %}
+                    <tr>
+                        <td>{{ language.name }}</td>
+                        <td>{{ language.slug }}</td>
+                        <td>{{ videoCounts[language.id] }}</td>
+                        <td class="admin-table__actions">
+                            <a class="btn btn--outline btn--sm" href="{{ path('admin_language_edit', {id: language.id}) }}">Modifier</a>
+                            <form method="post" action="{{ path('admin_language_delete', {id: language.id}) }}" onsubmit="return confirm('Supprimer cette langue ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete-language-' ~ language.id) }}">
+                                <button type="submit" class="btn btn--danger btn--sm" {{ videoCounts[language.id] > 0 ? 'disabled' }}>Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

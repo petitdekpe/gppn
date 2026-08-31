@@ -1,0 +1,46 @@
+{% if featuredVideos is not empty %}
+    <section class="section wrap">
+        <div class="section__header">
+            <h2>À la une cette semaine</h2>
+        </div>
+        <div class="spotlight" data-controller="carousel">
+            {% for spotlight in featuredVideos %}
+                {% set slideIndex = loop.index0 %}
+                <div class="spotlight__slide{{ loop.first ? ' is-active' }}" data-carousel-target="slide">
+                    <a href="{{ path('app_video_show', {slug: spotlight.slug}) }}" class="spotlight__media" style="--thematic-color: {{ spotlight.thematic.colorHex }}">
+                        <span class="video-card__lang-tag">{{ spotlight.language.name }}</span>
+                        <span class="video-card__play" aria-hidden="true">▶</span>
+                    </a>
+                    {% if featuredVideos|length > 1 %}
+                        <div class="spotlight__dots">
+                            {% for other in featuredVideos %}
+                                <button type="button" class="spotlight__dot{{ loop.index0 == slideIndex ? ' is-active' }}" data-action="carousel#go" data-carousel-index-param="{{ loop.index0 }}" aria-label="Voir la vidéo {{ loop.index }}"></button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="spotlight__body">
+                        <span class="video-card__thematic" style="color: {{ spotlight.thematic.colorHex }}">{{ spotlight.thematic.name|upper }}</span>
+                        <h3>
+                            <a href="{{ path('app_video_show', {slug: spotlight.slug}) }}">{{ spotlight.title }}</a>
+                        </h3>
+                        <p>{{ spotlight.summary }}</p>
+                        <div class="spotlight__actions">
+                            {% if spotlight.downloadFileName %}
+                                <a class="btn btn--dark" href="{{ video_download_url(spotlight) }}">Télécharger</a>
+                            {% endif %}
+                            <span class="share-divider" aria-hidden="true"></span>
+                            <a class="share-copy" href="#" title="Copier le lien"><i class="fa-solid fa-link" aria-hidden="true"></i> Copier le lien</a>
+                            <span class="share-icons">
+                                <a href="#" title="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+                                <a href="#" title="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+                                <a href="#" title="X"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+                                <a href="#" title="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+                                <a href="#" title="LinkedIn"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}

@@ -1,0 +1,41 @@
+<form class="filters-sidebar" action="{{ action }}" method="get">
+    {% if query %}
+        <input type="hidden" name="q" value="{{ query }}">
+    {% endif %}
+
+    {% if languages is defined and languages %}
+        <fieldset class="filters-sidebar__group">
+            <legend>Langue</legend>
+            {% for row in languages %}
+                <label class="filters-sidebar__option">
+                    <input type="checkbox" name="langue[]" value="{{ row.language.slug }}"{{ selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs ? ' checked' }} onchange="this.form.submit()">
+                    {{ row.language.name }}
+                </label>
+            {% endfor %}
+        </fieldset>
+    {% endif %}
+
+    {% if thematics is defined and thematics %}
+        <fieldset class="filters-sidebar__group">
+            <legend>Thématique</legend>
+            {% for row in thematics %}
+                <label class="filters-sidebar__option">
+                    <input type="checkbox" name="thematique[]" value="{{ row.thematic.slug }}"{{ selectedThematicSlugs is defined and row.thematic.slug in selectedThematicSlugs ? ' checked' }} onchange="this.form.submit()">
+                    {{ row.thematic.name }}
+                </label>
+            {% endfor %}
+        </fieldset>
+    {% endif %}
+
+    {% if formats is defined and formats %}
+        <fieldset class="filters-sidebar__group">
+            <legend>Format</legend>
+            {% for format in formats %}
+                <label class="filters-sidebar__option">
+                    <input type="checkbox" name="format[]" value="{{ format.value }}"{{ selectedFormatValues is defined and format.value in selectedFormatValues ? ' checked' }} onchange="this.form.submit()">
+                    {{ format.label }}
+                </label>
+            {% endfor %}
+        </fieldset>
+    {% endif %}
+</form>

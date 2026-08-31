@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Toutes les vidéos — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Parcourez toutes les capsules vidéo du programme, filtrables par thématique, par langue nationale ou par mot-clé.{% endblock %}
+
+{% block body %}
+    <nav class="view-tabs wrap" aria-label="Vue des vidéos">
+        <span class="view-tabs__item is-active">Toutes les vidéos</span>
+        <span class="view-tabs__item view-tabs__item--disabled" aria-disabled="true">Tous les Ministres</span>
+        <span class="view-tabs__item view-tabs__item--disabled" aria-disabled="true">Ministres</span>
+        <span class="view-tabs__item view-tabs__item--disabled" aria-disabled="true">Ministres conseillés</span>
+    </nav>
+
+    <section class="section wrap video-layout">
+        <aside class="video-layout__sidebar">
+            {{ include('partials/_video_filters.html.twig', {
+                action: path('app_video_index'),
+                thematics: thematics,
+                languages: languages,
+                formats: formats,
+                selectedThematicSlugs: selectedThematicSlugs,
+                selectedLanguageSlugs: selectedLanguageSlugs,
+                selectedFormatValues: selectedFormatValues,
+                query: query,
+            }) }}
+        </aside>
+
+        <div class="video-layout__main">
+            <div class="page-header">
+                <h1>Toutes les vidéos</h1>
+                <p>{{ results.total }} vidéo{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }}.</p>
+            </div>
+
+            {{ include('partials/_video_grid.html.twig', {
+                results: results,
+                route: 'app_video_index',
+                route_params: routeParams,
+            }) }}
+        </div>
+    </section>
+
+    {{ include('partials/_spotlight.html.twig', {featuredVideos: featuredVideos}) }}
+{% endblock %}

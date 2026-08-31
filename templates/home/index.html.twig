@@ -1,0 +1,72 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Le Gouvernement plus près de nous — L’information publique, dans votre langue
+{% endblock %}
+
+{% block body %}
+	<section class="hero">
+		<img class="hero__bg" src="{{ asset('images/hero-gouvernement.jpg') }}" alt="" loading="eager" fetchpriority="high">
+		<div class="hero__scrim" aria-hidden="true"></div>
+		<div class="wrap hero__inner">
+			<div class="hero__text">
+				<h1>L’information publique,<br>dans votre langue.</h1>
+				<p>Des capsules vidéo courtes produites par le Gouvernement,<br>expliquées en Fon, Yoruba, Bariba, Dendi et sept autres langues nationales.<br>À regarder, à écouter, à télécharger et à rediffuser librement.</p>
+				<a class="btn btn--primary" href="{{ path('app_video_index') }}">Explorer les vidéos →</a>
+			</div>
+		</div>
+
+		{{ include('partials/_stats.html.twig', {stats: stats}) }}
+	</section>
+
+	<section class="section wrap">
+		<div class="section__header">
+			<h2>Dernières vidéos publiées</h2>
+		</div>
+
+		{% if latestVideos is empty %}
+			<p class="empty-state">Aucune vidéo publiée pour le moment.</p>
+		{% else %}
+			<div class="video-grid">
+				{% for video in latestVideos %}
+					{{ include('partials/_video_card.html.twig', {video: video}) }}
+				{% endfor %}
+			</div>
+			<div class="section__more">
+				<a class="btn btn--dark" href="{{ path('app_video_index') }}">Afficher plus</a>
+			</div>
+		{% endif %}
+	</section>
+
+	<section class="section wrap">
+		<div class="section__header">
+			<h2>Explorez par thématique</h2>
+		</div>
+		<div class="tile-grid tile-grid--thematics">
+			{% for row in thematics %}
+				{{ include('partials/_thematic_tile.html.twig', {row: row}) }}
+			{% endfor %}
+		</div>
+	</section>
+
+	<section class="section wrap">
+		<div class="section__header">
+			<h2>Choisissez votre langue</h2>
+			<p>Chaque vidéo est produite dans plusieurs langues nationales.</p>
+		</div>
+		<div class="tile-grid tile-grid--languages">
+			{% for row in languages %}
+				{{ include('partials/_language_tile.html.twig', {row: row}) }}
+			{% endfor %}
+		</div>
+	</section>
+
+	{{ include('partials/_spotlight.html.twig', {featuredVideos: featuredVideos}) }}
+
+	<section class="section wrap cta-grid cta-grid--single">
+		<div class="cta-card cta-card--dark">
+			<h3>Vous êtes un média ou une institution ?</h3>
+			<p>Téléchargez les capsules en pack, par langue ou par thématique, avec les fiches de diffusion et les mentions à respecter.</p>
+			<a class="btn btn--gold" href="{{ path('app_media_space') }}">Accéder à l’espace média</a>
+		</div>
+	</section>
+{% endblock %}

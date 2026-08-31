@@ -1,24 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
     <head>
         <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}Le Gouvernement plus près de nous{% endblock %}</title>
+        <meta name="description" content="{% block meta_description %}Des capsules vidéo courtes produites par le Gouvernement du Bénin, expliquées en Fon, Yoruba, Bariba, Dendi et d’autres langues nationales.{% endblock %}">
+        <meta property="og:title" content="{{ block('title') }}">
+        <meta property="og:description" content="{{ block('meta_description') }}">
+        <meta property="og:type" content="website">
+        <link rel="icon" href="{{ asset('images/picto-logo-gppn.png') }}">
         {% block stylesheets %}
         {% endblock %}
 
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}
-
-        {% set frankenphp_hot_reload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
-        {% if frankenphp_hot_reload %}
-        <meta name="frankenphp-hot-reload:url" content="{{ frankenphp_hot_reload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
-        {% endif %}
     </head>
     <body>
-        {% block body %}{% endblock %}
+        <header class="site-header" data-controller="nav">
+            <div class="site-header__bar">
+                <div class="wrap site-header__inner">
+                    <a class="brand" href="{{ path('app_home') }}">
+                        <img class="brand__logo" src="{{ asset('images/logo-gppn.png') }}" alt="Le Gouvernement plus près de nous">
+                        <img class="brand__picto" src="{{ asset('images/picto-logo-gppn.png') }}" alt="" aria-hidden="true">
+                    </a>
+
+                    <button type="button" class="nav-toggle" data-action="nav#toggle" aria-expanded="false" aria-controls="primary-nav">
+                        <span></span><span></span><span></span>
+                        <span class="sr-only">Ouvrir le menu</span>
+                    </button>
+
+                    <nav class="primary-nav" id="primary-nav" data-nav-target="menu">
+                        <a href="{{ path('app_home') }}" class="{{ app.request.attributes.get('_route') == 'app_home' ? 'is-active' }}">Accueil</a>
+                        <a href="{{ path('app_video_index') }}" class="{{ app.request.attributes.get('_route') starts with 'app_video' ? 'is-active' }}">Vidéos</a>
+                        <a href="{{ path('app_thematique_index') }}" class="{{ app.request.attributes.get('_route') starts with 'app_thematique' ? 'is-active' }}">Thématiques</a>
+                        <a href="{{ path('app_media_space') }}" class="{{ app.request.attributes.get('_route') == 'app_media_space' ? 'is-active' }}">Espace média</a>
+                        <a href="{{ path('app_about') }}" class="{{ app.request.attributes.get('_route') == 'app_about' ? 'is-active' }}">À propos</a>
+                    </nav>
+
+                    <form class="header-search" action="{{ path('app_video_index') }}" method="get" role="search">
+                        <label class="sr-only" for="header-search-input">Rechercher une vidéo</label>
+                        <input id="header-search-input" type="search" name="q" placeholder="Rechercher" value="{{ app.request.query.get('q') }}">
+                        <button type="submit" aria-label="Rechercher">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="site-header__stripe" aria-hidden="true"></div>
+        </header>
+
+        <main>
+            {% for label, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="flash flash--{{ label }}">
+                        <div class="wrap">{{ message }}</div>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {% block body %}{% endblock %}
+        </main>
+
+        <footer class="site-footer">
+            <div class="wrap site-footer__grid">
+                <div class="site-footer__about">
+                    <div class="brand brand--footer">
+                        <img class="brand__logo brand__logo--footer" src="{{ asset('images/logo-presidence.png') }}" alt="Présidence de la République du Bénin">
+                    </div>
+                    <h3>Abonnez-vous à notre Newsletter</h3>
+                    <form class="newsletter-form" action="{{ path('app_home') }}" method="get">
+                        <input type="email" name="email" placeholder="Votre adresse e-mail" required>
+                        <button type="submit" aria-label="S’abonner">→</button>
+                    </form>
+                </div>
+
+                <div class="site-footer__links">
+                    <h4>Rubriques</h4>
+                    <ul>
+                        <li><a href="{{ path('app_home') }}">Accueil</a></li>
+                        <li><a href="{{ path('app_video_index') }}">Vidéos</a></li>
+                        <li><a href="{{ path('app_thematique_index') }}">Thématiques</a></li>
+                        <li><a href="{{ path('app_about') }}">À propos</a></li>
+                    </ul>
+                </div>
+
+                <div class="site-footer__social">
+                    <h4>Suivez-nous</h4>
+                    <div class="social-icons">
+                        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                        <a href="#" aria-label="Flickr"><i class="fa-brands fa-flickr"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="site-footer__bottom">
+                <div class="wrap site-footer__bottom-inner">
+                    <p>© Gouvernement de la République du Bénin - {{ "now"|date("Y") }}</p>
+                    <nav>
+                        <a href="{{ path('app_about') }}">Politique de confidentialité</a>
+                        <a href="{{ path('app_about') }}">Mentions légales</a>
+                        <a href="{{ path('app_about') }}">Conditions générales d’utilisation</a>
+                        <a href="{{ path('app_about') }}">Gestion des cookies</a>
+                    </nav>
+                </div>
+            </div>
+        </footer>
     </body>
 </html>

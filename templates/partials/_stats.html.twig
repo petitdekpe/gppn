@@ -1,0 +1,20 @@
+<div class="stats-bar">
+    <div class="wrap stats-bar__grid">
+        <div class="stat">
+            <strong>{{ stats.videos }}</strong>
+            <span>Vidéos publiées</span>
+        </div>
+        <div class="stat">
+            <strong>+{{ '%02d'|format(stats.languages) }}</strong>
+            <span>Langues nationales</span>
+        </div>
+        <div class="stat">
+            <strong>{{ stats.thematics }}</strong>
+            <span>Thématiques couvertes</span>
+        </div>
+        <div class="stat">
+            <strong>{{ stats.views|number_format(0, ',', ' ') }}</strong>
+            <span>Vues cumulées</span>
+        </div>
+    </div>
+</div>

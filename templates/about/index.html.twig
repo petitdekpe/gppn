@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}À propos — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Découvrez le programme « Le Gouvernement plus près de nous » : ses objectifs, son public et sa démarche de vulgarisation de l’action publique.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_home')}) }}
+        <h1>À propos du programme</h1>
+        <p>« Le Gouvernement plus près de nous » vulgarise l’action publique auprès de tous les citoyens, dans les langues qu’ils parlent au quotidien.</p>
+    </section>
+
+    <section class="section wrap prose">
+        <h2>Notre objectif</h2>
+        <p>Ce programme gouvernemental produit des capsules vidéo courtes, claires et fidèles, qui expliquent les services publics, les démarches administratives et les politiques publiques du Bénin. Chaque capsule est déclinée en plusieurs langues nationales, dont le fon, le yoruba, le bariba, le dendi et bien d’autres, pour que l’information publique soit accessible à toutes et à tous, quelle que soit la langue parlée à la maison.</p>
+
+        <h2>Ce que permet la plateforme</h2>
+        <ul class="check-list">
+            <li>Présenter le programme et ses objectifs.</li>
+            <li>Faciliter la lecture et le téléchargement multi-format des capsules produites.</li>
+            <li>Faciliter la recherche et le tri par langue, par thématique ou par mot-clé.</li>
+            <li>Recueillir les avis et suggestions des citoyens internautes.</li>
+        </ul>
+
+        <h2>À qui s’adresse ce site</h2>
+        <div class="audience-grid">
+            <div class="audience-card">
+                <h3>Réseau média</h3>
+                <p>Dircom, Maison des médias, médias partenaires : retrouvez les capsules en haute qualité, prêtes à diffuser, dans l’<a href="{{ path('app_media_space') }}">espace média</a>.</p>
+            </div>
+            <div class="audience-card">
+                <h3>Citoyens internautes</h3>
+                <p>Regardez, téléchargez et partagez librement les vidéos qui vous concernent, dans votre langue.</p>
+            </div>
+            <div class="audience-card">
+                <h3>Partenaires institutionnels</h3>
+                <p>Ministères, préfectures, mairies : appuyez-vous sur ces contenus pour informer vos administrés.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section wrap cta-grid">
+        <div class="cta-card cta-card--dark">
+            <h3>Vous êtes un média ou une institution ?</h3>
+            <p>Accédez aux packs de téléchargement et aux fiches de diffusion.</p>
+            <a class="btn btn--gold" href="{{ path('app_media_space') }}">Accéder à l’espace média</a>
+        </div>
+        <div class="cta-card">
+            <h3>Une idée de sujet ?</h3>
+            <p>Proposez le service public que vous aimeriez voir expliqué en vidéo.</p>
+            <a class="btn btn--outline" href="{{ path('app_suggestion_new') }}">Proposer un sujet</a>
+        </div>
+    </section>
+{% endblock %}

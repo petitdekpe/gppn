@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ thematic.name }} — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Toutes les capsules vidéo du Gouvernement sur la thématique {{ thematic.name }}, dans vos langues nationales.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap page-header--tinted" style="--thematic-color: {{ thematic.colorHex }}">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_thematique_index')}) }}
+        <span class="eyebrow">Thématique</span>
+        <h1>{{ thematic.name }}</h1>
+        <p>{{ results.total }} vidéo{{ results.total > 1 ? 's' : '' }} sur cette thématique.</p>
+    </section>
+
+    <section class="section wrap video-layout">
+        <aside class="video-layout__sidebar">
+            {{ include('partials/_video_filters.html.twig', {
+                action: path('app_thematique_show', {slug: thematic.slug}),
+                languages: languages,
+                formats: formats,
+                selectedLanguageSlugs: selectedLanguageSlugs,
+                selectedFormatValues: selectedFormatValues,
+                query: query,
+            }) }}
+        </aside>
+
+        <div class="video-layout__main">
+            {{ include('partials/_video_grid.html.twig', {
+                results: results,
+                route: 'app_thematique_show',
+                route_params: routeParams|merge({slug: thematic.slug}),
+            }) }}
+        </div>
+    </section>
+{% endblock %}

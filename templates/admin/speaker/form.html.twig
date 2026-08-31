@@ -1,0 +1,19 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}{{ speaker.id ? 'Modifier' : 'Nouvel' }} intervenant — Administration GPPN{% endblock %}
+{% block page_title %}{{ speaker.id ? 'Modifier l’intervenant' : 'Nouvel intervenant' }}{% endblock %}
+
+{% block body %}
+    <div class="admin-form-card">
+        {{ form_start(form) }}
+            {{ form_errors(form) }}
+            {{ form_row(form.fullName) }}
+            {{ form_row(form.role) }}
+
+            <div class="admin-form-actions">
+                <button type="submit" class="btn btn--primary">Enregistrer</button>
+                <a class="btn btn--outline" href="{{ path('admin_speaker_index') }}">Annuler</a>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

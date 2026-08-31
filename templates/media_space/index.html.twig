@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Espace média — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Ressources pour le réseau média et les partenaires institutionnels : packs de capsules vidéo par thématique et par langue, prêts à diffuser.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap page-header--dark">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_home')}) }}
+        <h1>Espace média &amp; institutions</h1>
+        <p>Ressources destinées au réseau média (Dircom, Maison des médias, médias partenaires) et aux partenaires institutionnels (ministères, préfectures, mairies).</p>
+    </section>
+
+    <section class="section wrap prose">
+        <h2>Comment ça marche</h2>
+        <p>Téléchargez les capsules en pack, par langue ou par thématique. Chaque pack est accompagné d’une fiche de diffusion précisant le format, la durée, la langue et les mentions à respecter lors de la rediffusion.</p>
+    </section>
+
+    <section class="section wrap">
+        <div class="section__header">
+            <h2>Packs par thématique</h2>
+        </div>
+        <div class="pack-list">
+            {% for row in thematics %}
+                <div class="pack-row" style="--thematic-color: {{ row.thematic.colorHex }}">
+                    <div class="pack-row__label">
+                        <span class="pack-row__swatch" aria-hidden="true"></span>
+                        <div>
+                            <strong>{{ row.thematic.name }}</strong>
+                            <span class="muted">{{ row.videoCount }} vidéo{{ row.videoCount > 1 ? 's' : '' }}</span>
+                        </div>
+                    </div>
+                    <a class="btn btn--outline" href="{{ path('app_thematique_show', {slug: row.thematic.slug}) }}">Voir les vidéos</a>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="section wrap cta-grid cta-grid--single">
+        <div class="cta-card cta-card--dark">
+            <h3>Besoin d’une accréditation ou d’un pack sur mesure ?</h3>
+            <p>Contactez la Direction de la communication (Dircom) pour obtenir un accès dédié, des fichiers en haute définition ou des formats spécifiques à votre diffusion.</p>
+            <a class="btn btn--gold" href="{{ path('app_suggestion_new') }}">Nous contacter</a>
+        </div>
+    </section>
+{% endblock %}

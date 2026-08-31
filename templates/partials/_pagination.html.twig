@@ -1,0 +1,32 @@
+{% set totalPages = results.total > 0 ? (results.total / results.perPage)|round(0, 'ceil') : 1 %}
+{% if totalPages > 1 %}
+    <nav class="pagination" aria-label="Pagination des vidéos">
+        {% if results.page > 1 %}
+            <a href="{{ path(route, route_params|merge({page: results.page - 1})) }}" class="pagination__link pagination__link--arrow" aria-label="Page précédente">←</a>
+        {% else %}
+            <span class="pagination__link pagination__link--arrow is-disabled" aria-hidden="true">←</span>
+        {% endif %}
+
+        <ul class="pagination__pages">
+            {% for p in 1..totalPages %}
+                {% if p == 1 or p == totalPages or (p >= results.page - 1 and p <= results.page + 1) %}
+                    <li>
+                        {% if p == results.page %}
+                            <span class="pagination__page is-active" aria-current="page">{{ p }}</span>
+                        {% else %}
+                            <a href="{{ path(route, route_params|merge({page: p})) }}" class="pagination__page">{{ p }}</a>
+                        {% endif %}
+                    </li>
+                {% elseif p == results.page - 2 or p == results.page + 2 %}
+                    <li class="pagination__ellipsis" aria-hidden="true">…</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+
+        {% if results.hasMore %}
+            <a href="{{ path(route, route_params|merge({page: results.page + 1})) }}" class="pagination__link pagination__link--arrow" aria-label="Page suivante">→</a>
+        {% else %}
+            <span class="pagination__link pagination__link--arrow is-disabled" aria-hidden="true">→</span>
+        {% endif %}
+    </nav>
+{% endif %}

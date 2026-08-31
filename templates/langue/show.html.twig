@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Vidéos en {{ language.name }} — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Toutes les capsules vidéo du Gouvernement disponibles en {{ language.name }}.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_video_index')}) }}
+        <span class="eyebrow">Langue nationale</span>
+        <h1>{{ language.name }}</h1>
+        <p>{{ results.total }} vidéo{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }} en {{ language.name }}.</p>
+    </section>
+
+    <section class="section wrap video-layout">
+        <aside class="video-layout__sidebar">
+            {{ include('partials/_video_filters.html.twig', {
+                action: path('app_langue_show', {slug: language.slug}),
+                thematics: thematics,
+                formats: formats,
+                selectedThematicSlugs: selectedThematicSlugs,
+                selectedFormatValues: selectedFormatValues,
+                query: query,
+            }) }}
+        </aside>
+
+        <div class="video-layout__main">
+            {{ include('partials/_video_grid.html.twig', {
+                results: results,
+                route: 'app_langue_show',
+                route_params: routeParams|merge({slug: language.slug}),
+            }) }}
+        </div>
+    </section>
+{% endblock %}

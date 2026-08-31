@@ -1,0 +1,10 @@
+{% if results.videos is empty %}
+    <p class="empty-state">Aucune vidéo ne correspond à ces critères pour le moment.</p>
+{% else %}
+    <div class="video-grid">
+        {% for video in results.videos %}
+            {{ include('partials/_video_card.html.twig', {video: video}) }}
+        {% endfor %}
+    </div>
+    {{ include('partials/_pagination.html.twig', {results: results, route: route, route_params: route_params}) }}
+{% endif %}

@@ -1,0 +1,191 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ video.title }} — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}{{ video.summary|striptags|slice(0, 150) }}{% endblock %}
+
+{% block body %}
+    <section class="wrap video-detail">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_video_index')}) }}
+
+        <nav class="breadcrumb" aria-label="Fil d’Ariane">
+            <a href="{{ path('app_home') }}">Accueil</a> ›
+            <a href="{{ path('app_video_index') }}">Vidéos</a> ›
+            <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}">{{ video.thematic.name }}</a>
+        </nav>
+
+        {% set downloadUrl = video.downloadFileName ? video_download_url(video) : null %}
+        <div class="video-detail__content">
+            <div class="video-detail__top">
+                {% if video.format.value == 'audio' %}
+                    <div class="video-detail__player video-detail__player--audio" style="--thematic-color: {{ video.thematic.colorHex }}">
+                        <span class="video-card__lang-tag">{{ video.language.name }}</span>
+                        <span class="video-detail__format-icon" aria-hidden="true">♪</span>
+                        {% if downloadUrl %}
+                            <audio class="video-detail__audio" controls src="{{ downloadUrl }}"></audio>
+                        {% endif %}
+                    </div>
+                {% elseif video.format.value == 'image' %}
+                    <div class="video-detail__player video-detail__player--image" style="--thematic-color: {{ video.thematic.colorHex }}">
+                        <span class="video-card__lang-tag">{{ video.language.name }}</span>
+                        {% if downloadUrl %}
+                            <img src="{{ downloadUrl }}" alt="{{ video.title }}">
+                        {% else %}
+                            <span class="video-detail__format-icon" aria-hidden="true">🖼</span>
+                        {% endif %}
+                    </div>
+                {% elseif video.format.value == 'pdf' %}
+                    <div class="video-detail__player video-detail__player--pdf" style="--thematic-color: {{ video.thematic.colorHex }}">
+                        <span class="video-card__lang-tag">{{ video.language.name }}</span>
+                        {% if downloadUrl %}
+                            <iframe class="video-detail__pdf" src="{{ downloadUrl }}" title="{{ video.title }}"></iframe>
+                        {% else %}
+                            <span class="video-detail__format-icon" aria-hidden="true">📄</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="video-detail__player" style="--thematic-color: {{ video.thematic.colorHex }}">
+                        <span class="video-card__lang-tag">{{ video.language.name }}</span>
+                        <span class="video-card__play video-card__play--lg" aria-hidden="true">▶</span>
+                    </div>
+                {% endif %}
+
+                <aside class="download-panel">
+                    <h2>Télécharger</h2>
+                    <p class="muted">Libre de droits pour rediffusion.<br>Aucun compte requis.</p>
+
+                    {% if downloadUrl %}
+                        <ul class="download-list">
+                            {% if video.format.value == 'video' %}
+                                <li>
+                                    <a href="{{ downloadUrl }}" class="download-list__badge">MP4</a>
+                                    <span class="download-list__info">
+                                        <strong>Vidéo HD 1080p</strong>
+                                        <span class="muted">Pour la télévision et les écrans publics</span>
+                                    </span>
+                                    <span class="download-list__size">32 Mo</span>
+                                </li>
+                                <li>
+                                    <a href="{{ downloadUrl }}" class="download-list__badge">MP4</a>
+                                    <span class="download-list__info">
+                                        <strong>Vidéo allégée 480p</strong>
+                                        <span class="muted">Pour un partage en zone à faible débit</span>
+                                    </span>
+                                    <span class="download-list__size">9 Mo</span>
+                                </li>
+                                <li>
+                                    <a href="{{ downloadUrl }}" class="download-list__badge">9:16</a>
+                                    <span class="download-list__info">
+                                        <strong>Format vertical</strong>
+                                        <span class="muted">Storys, statuts WhatsApp, Facebook…</span>
+                                    </span>
+                                    <span class="download-list__size">26 Mo</span>
+                                </li>
+                            {% elseif video.format.value == 'audio' %}
+                                <li>
+                                    <a href="{{ downloadUrl }}" class="download-list__badge">MP3</a>
+                                    <span class="download-list__info">
+                                        <strong>Version audio</strong>
+                                        <span class="muted">Prête à être diffusée dans les groupes et les radios communautaires</span>
+                                    </span>
+                                    <span class="download-list__size">5 Mo</span>
+                                </li>
+                            {% elseif video.format.value == 'pdf' %}
+                                <li>
+                                    <a href="{{ downloadUrl }}" class="download-list__badge">PDF</a>
+                                    <span class="download-list__info">
+                                        <strong>Fiche de synthèse illustrée</strong>
+                                        <span class="muted">Imprimable, partageable via WhatsApp</span>
+                                    </span>
+                                </li>
+                            {% elseif video.format.value == 'image' %}
+                                <li>
+                                    <a href="{{ downloadUrl }}" class="download-list__badge">JPEG</a>
+                                    <span class="download-list__info">
+                                        <strong>Infographie</strong>
+                                        <span class="muted">Partageable via WhatsApp, Facebook</span>
+                                    </span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    {% endif %}
+
+                    <p class="download-panel__mention">Mention obligatoire à la diffusion : « Le Gouvernement Plus Près de Nous - République du Bénin. »</p>
+                </aside>
+            </div>
+
+            <div class="video-detail__main">
+                <div class="video-detail__tags">
+                    <span class="video-card__lang-tag video-card__lang-tag--static">{{ video.language.name }}</span>
+                    <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>
+                </div>
+
+                <h1>{{ video.title }}</h1>
+                <p class="video-card__meta">Publiée le {{ video.publishedAt|date('d F Y') }} · <strong>{{ video.viewsCount|number_format(0, ',', ' ') }} vues</strong></p>
+                <p class="video-detail__summary">{{ video.summary }}</p>
+
+                {% set learningPoints = video.learningPointsList %}
+                {% if learningPoints is not empty %}
+                    <div class="info-box">
+                        <h2>Ce que vous apprendrez dans cette vidéo</h2>
+                        <ul>
+                            {% for point in learningPoints %}
+                                <li>{{ point }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                {% if video.speakers is not empty %}
+                    <div class="video-detail__speakers">
+                        <h2>Intervenants</h2>
+                        <ul>
+                            {% for speaker in video.speakers %}
+                                <li>
+                                    <strong>{{ speaker.fullName }}</strong>
+                                    {% if speaker.role %}<span class="muted"> — {{ speaker.role }}</span>{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <div class="info-box feedback-box">
+                    <h2>Cette vidéo vous a-t-elle été utile ?</h2>
+                    <p class="muted">Votre réaction nous aide à améliorer la traduction et la clarté des prochaines vidéos.</p>
+
+                    <form action="{{ path('app_video_feedback', {slug: video.slug}) }}" method="post" class="feedback-form" data-controller="feedback">
+                        <input type="hidden" name="_token" value="{{ csrf_token('video_feedback_' ~ video.id) }}">
+                        <input type="hidden" name="rating" data-feedback-target="rating">
+
+                        <div class="feedback-form__choices">
+                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="clear">Oui, c’est clair</button>
+                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="unclear">Pas très clair</button>
+                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="not_clear">Non, pas clair</button>
+                        </div>
+
+                        <label class="sr-only" for="feedback-comment">Votre commentaire</label>
+                        <textarea id="feedback-comment" name="comment" rows="3" placeholder="Dites-nous en plus (facultatif) : un mot mal traduit, un point à préciser…"></textarea>
+
+                        <button type="submit" class="btn btn--dark">Envoyer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {% if relatedVideos is not empty %}
+        <section class="section wrap">
+            <div class="section__header">
+                <h2>Vidéos similaires</h2>
+            </div>
+            <div class="video-grid">
+                {% for related in relatedVideos %}
+                    {{ include('partials/_video_card.html.twig', {video: related}) }}
+                {% endfor %}
+            </div>
+            <div class="section__more">
+                <a class="btn btn--dark" href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}">Afficher plus</a>
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}

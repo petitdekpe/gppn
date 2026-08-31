@@ -1,0 +1,41 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Thématiques — Administration GPPN{% endblock %}
+{% block page_title %}Thématiques{% endblock %}
+
+{% block body %}
+    <div class="admin-toolbar">
+        <a class="btn btn--primary" href="{{ path('admin_thematic_new') }}">+ Nouvelle thématique</a>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Couleur</th>
+                    <th>Nom</th>
+                    <th>Slug</th>
+                    <th>Vidéos</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for thematic in thematics %}
+                    <tr>
+                        <td><span class="admin-swatch" style="background-color: {{ thematic.colorHex }}"></span></td>
+                        <td>{{ thematic.name }}</td>
+                        <td>{{ thematic.slug }}</td>
+                        <td>{{ videoCounts[thematic.id] }}</td>
+                        <td class="admin-table__actions">
+                            <a class="btn btn--outline btn--sm" href="{{ path('admin_thematic_edit', {id: thematic.id}) }}">Modifier</a>
+                            <form method="post" action="{{ path('admin_thematic_delete', {id: thematic.id}) }}" onsubmit="return confirm('Supprimer cette thématique ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete-thematic-' ~ thematic.id) }}">
+                                <button type="submit" class="btn btn--danger btn--sm" {{ videoCounts[thematic.id] > 0 ? 'disabled' }}>Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

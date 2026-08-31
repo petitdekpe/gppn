@@ -1,0 +1,39 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Intervenants — Administration GPPN{% endblock %}
+{% block page_title %}Intervenants{% endblock %}
+
+{% block body %}
+    <div class="admin-toolbar">
+        <a class="btn btn--primary" href="{{ path('admin_speaker_new') }}">+ Nouvel intervenant</a>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Nom complet</th>
+                    <th>Fonction</th>
+                    <th>Vidéos</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for speaker in speakers %}
+                    <tr>
+                        <td>{{ speaker.fullName }}</td>
+                        <td>{{ speaker.role ?: '—' }}</td>
+                        <td>{{ speaker.videos|length }}</td>
+                        <td class="admin-table__actions">
+                            <a class="btn btn--outline btn--sm" href="{{ path('admin_speaker_edit', {id: speaker.id}) }}">Modifier</a>
+                            <form method="post" action="{{ path('admin_speaker_delete', {id: speaker.id}) }}" onsubmit="return confirm('Supprimer cet intervenant ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete-speaker-' ~ speaker.id) }}">
+                                <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
