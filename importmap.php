@@ -25,4 +25,8 @@ return [
     '@hotwired/turbo' => [
         'version' => '8.0.23',
     ],
+    '@fortawesome/fontawesome-free/css/all.min.css' => [
+        'version' => '7.3.1',
+        'type' => 'css',
+    ],
 ];

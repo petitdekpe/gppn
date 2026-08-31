@@ -1,0 +1,4 @@
+Ceci est un fichier de remplacement.
+
+Dans la version de production de la plateforme, ce lien pointera vers le
+fichier vidéo (ou le pack de diffusion) réel de la capsule concernée.
