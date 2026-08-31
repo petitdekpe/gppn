@@ -5,7 +5,19 @@ security:
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    # Lecteur presse : accès en lecture au back-office (tableau de bord).
+    # Éditeur / Modérateur : accès lecture + leur périmètre métier.
+    # Super-admin : cumule Éditeur + Modérateur, seul à gérer les comptes utilisateurs.
+    role_hierarchy:
+        ROLE_LECTEUR_PRESSE: [ROLE_ADMIN]
+        ROLE_MODERATEUR: [ROLE_LECTEUR_PRESSE]
+        ROLE_EDITEUR: [ROLE_LECTEUR_PRESSE]
+        ROLE_SUPER_ADMIN: [ROLE_EDITEUR, ROLE_MODERATEUR]
 
     firewalls:
         dev:
@@ -14,18 +26,23 @@ security:
             security: false
         main:
             lazy: true
-            provider: users_in_memory
-
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
+            provider: app_user_provider
+            form_login:
+                login_path: admin_login
+                check_path: admin_login
+                enable_csrf: true
+                default_target_path: admin_dashboard
+            logout:
+                path: admin_logout
+                target: app_home
 
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/admin/login, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_ADMIN }
 
 when@test:
     security:
