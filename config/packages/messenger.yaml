@@ -23,4 +23,13 @@ framework:
             Symfony\Component\Notifier\Message\SmsMessage: async
 
             # Route your messages to the transports
-            # 'App\Message\YourMessage': async
+            App\Message\ProcessVideoMessage: async
+
+when@prod:
+    framework:
+        messenger:
+            transports:
+                # Driver Doctrine en dev (voir .env), Redis en prod pour ne pas
+                # dépendre de la base applicative pour la file de traitement média.
+                async:
+                    dsn: '%env(REDIS_MESSENGER_DSN)%'

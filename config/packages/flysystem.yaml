@@ -1,0 +1,12 @@
+flysystem:
+    storages:
+        video.storage:
+            adapter: 'local'
+            options:
+                directory: '%kernel.project_dir%/public/uploads/videos'
+        download.storage:
+            aws:
+                client: download.s3_client
+                bucket: '%env(MINIO_BUCKET)%'
+                prefix: 'videos'
+            public_url: '%env(MINIO_PUBLIC_ENDPOINT)%/%env(MINIO_BUCKET)%/videos'

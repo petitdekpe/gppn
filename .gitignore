@@ -18,3 +18,9 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> app/video-pipeline ###
+# Fichiers uploadés par les éditeurs (source, vignettes, segments HLS) : trop
+# volumineux et propres à chaque environnement pour être versionnés.
+/public/uploads/
+###< app/video-pipeline ###

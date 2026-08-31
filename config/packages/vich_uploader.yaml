@@ -1,0 +1,18 @@
+vich_uploader:
+    db_driver: orm
+    storage: flysystem
+
+    mappings:
+        video_source:
+            uri_prefix: /uploads/videos
+            upload_destination: video.storage
+            directory_namer:
+                service: Vich\UploaderBundle\Naming\PropertyDirectoryNamer
+                options: { property: slug }
+            namer:
+                service: Vich\UploaderBundle\Naming\SmartUniqueNamer
+
+        video_download:
+            upload_destination: download.storage
+            namer:
+                service: Vich\UploaderBundle\Naming\SmartUniqueNamer

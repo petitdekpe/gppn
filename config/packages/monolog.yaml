@@ -1,6 +1,7 @@
 monolog:
     channels:
         - deprecation # Deprecations are logged in the dedicated "deprecation" channel when it exists
+        - media_pipeline # Traitement asynchrone des capsules vidéo (hash, vignette, transcodage HLS)
 
 when@dev:
     monolog:
