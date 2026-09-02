@@ -69,9 +69,12 @@ class VideoController extends AbstractController
     }
 
     #[Route('/videos/{slug}', name: 'app_video_show')]
-    public function show(string $slug, VideoRepository $videoRepository): Response
+    public function show(string $slug, VideoRepository $videoRepository, EntityManagerInterface $entityManager): Response
     {
         $video = $videoRepository->findOneBySlug($slug) ?? throw $this->createNotFoundException('Contenu introuvable.');
+
+        $video->setViewsCount($video->getViewsCount() + 1);
+        $entityManager->flush();
 
         return $this->render('video/show.html.twig', [
             'video' => $video,
