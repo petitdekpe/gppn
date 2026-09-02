@@ -82,7 +82,7 @@ class LanguageController extends AbstractController
         }
 
         if ($videoRepository->count(['language' => $language]) > 0) {
-            $this->addFlash('error', 'Impossible de supprimer une langue encore utilisée par des vidéos.');
+            $this->addFlash('error', 'Impossible de supprimer une langue encore utilisée par des contenus.');
 
             return $this->redirectToRoute('admin_language_index');
         }

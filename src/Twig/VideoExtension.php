@@ -2,7 +2,6 @@
 
 namespace App\Twig;
 
-use App\Entity\Video;
 use App\Service\VideoDownloadUrlResolver;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -17,7 +16,7 @@ class VideoExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('video_download_url', $this->downloadUrlResolver->resolve(...)),
+            new TwigFunction('video_file_url', $this->downloadUrlResolver->resolve(...)),
         ];
     }
 }

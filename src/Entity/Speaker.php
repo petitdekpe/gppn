@@ -23,7 +23,7 @@ class Speaker
     private ?string $role = null;
 
     /** @var Collection<int, Video> */
-    #[ORM\ManyToMany(targetEntity: Video::class, mappedBy: 'speakers')]
+    #[ORM\OneToMany(targetEntity: Video::class, mappedBy: 'speaker')]
     private Collection $videos;
 
     public function __construct()

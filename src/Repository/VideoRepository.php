@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\CouncilSession;
 use App\Entity\Language;
 use App\Entity\Thematic;
 use App\Entity\Video;
@@ -79,6 +80,19 @@ class VideoRepository extends ServiceEntityRepository
     /**
      * @return Video[]
      */
+    public function findPublishedByCouncilSession(CouncilSession $councilSession): array
+    {
+        return $this->baseQueryBuilder()
+            ->andWhere('v.councilSession = :councilSession')
+            ->setParameter('councilSession', $councilSession)
+            ->orderBy('v.title', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Video[]
+     */
     public function findRelated(Video $video, int $limit = 3): array
     {
         return $this->baseQueryBuilder()
@@ -98,7 +112,7 @@ class VideoRepository extends ServiceEntityRepository
      * @param CapsuleFormat[] $formats
      * @return array{videos: Video[], total: int, hasMore: bool, page: int}
      */
-    public function search(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::PER_PAGE): array
+    public function search(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::PER_PAGE, ?string $speakerRole = null): array
     {
         $page = max(1, $page);
 
@@ -113,12 +127,24 @@ class VideoRepository extends ServiceEntityRepository
         }
 
         if ($formats !== []) {
-            $qb->andWhere('v.format IN (:formats)')->setParameter('formats', $formats);
+            $fileTypes = [];
+            foreach ($formats as $format) {
+                array_push($fileTypes, ...$format->getVideoFileTypes());
+            }
+
+            $qb->andWhere($qb->expr()->exists(
+                'SELECT 1 FROM App\Entity\VideoFile vf WHERE vf.video = v AND vf.type IN (:fileTypes) AND vf.fileName IS NOT NULL',
+            ))->setParameter('fileTypes', $fileTypes);
         }
 
         if ($query !== null && $query !== '') {
             $qb->andWhere('v.title LIKE :query OR v.summary LIKE :query')
                 ->setParameter('query', '%' . $query . '%');
+        }
+
+        if ($speakerRole !== null) {
+            $videoIds = $this->findVideoIdsBySpeakerRole($speakerRole);
+            $qb->andWhere('v.id IN (:speakerVideoIds)')->setParameter('speakerVideoIds', $videoIds ?: [0]);
         }
 
         $qb->orderBy('v.publishedAt', 'DESC');
@@ -138,6 +164,32 @@ class VideoRepository extends ServiceEntityRepository
             'page' => $page,
             'perPage' => $perPage,
         ];
+    }
+
+    /**
+     * Distingue les contenus portés par un Ministre "de plein exercice" de ceux
+     * portés par un Ministre Conseiller à la Présidence, à partir du champ texte
+     * libre `role` de l'intervenant (aucune donnée structurée dédiée pour l'instant).
+     *
+     * @return int[]
+     */
+    private function findVideoIdsBySpeakerRole(string $roleFilter): array
+    {
+        $qb = $this->createQueryBuilder('v')
+            ->select('DISTINCT v.id')
+            ->innerJoin('v.speaker', 's');
+
+        match ($roleFilter) {
+            'ministre' => $qb->andWhere('s.role LIKE :ministre')->andWhere('s.role NOT LIKE :conseiller')
+                ->setParameter('ministre', '%Ministre%')
+                ->setParameter('conseiller', '%Conseiller%'),
+            'conseiller' => $qb->andWhere('s.role LIKE :conseiller')
+                ->setParameter('conseiller', '%Conseiller%'),
+            default => $qb->andWhere('s.role LIKE :ministre')
+                ->setParameter('ministre', '%Ministre%'),
+        };
+
+        return array_column($qb->getQuery()->getScalarResult(), 'id');
     }
 
     public function countAll(): int

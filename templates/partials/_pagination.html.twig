@@ -1,6 +1,6 @@
 {% set totalPages = results.total > 0 ? (results.total / results.perPage)|round(0, 'ceil') : 1 %}
 {% if totalPages > 1 %}
-    <nav class="pagination" aria-label="Pagination des vidéos">
+    <nav class="pagination" aria-label="Pagination des contenus">
         {% if results.page > 1 %}
             <a href="{{ path(route, route_params|merge({page: results.page - 1})) }}" class="pagination__link pagination__link--arrow" aria-label="Page précédente">←</a>
         {% else %}

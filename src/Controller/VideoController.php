@@ -7,10 +7,13 @@ use App\Enum\CapsuleFormat;
 use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
+use App\Service\VideoFileZipBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 
 class VideoController extends AbstractController
@@ -37,7 +40,12 @@ class VideoController extends AbstractController
         $query = $request->query->getString('q') ?: null;
         $page = max(1, $request->query->getInt('page', 1));
 
-        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page);
+        $selectedRole = $request->query->getString('role') ?: 'tous';
+        if (!in_array($selectedRole, ['tous', 'ministre', 'conseiller'], true)) {
+            $selectedRole = 'tous';
+        }
+
+        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole);
 
         return $this->render('video/index.html.twig', [
             'results' => $results,
@@ -48,11 +56,13 @@ class VideoController extends AbstractController
             'selectedLanguageSlugs' => $languageSlugs,
             'selectedFormatValues' => array_map(static fn (CapsuleFormat $format) => $format->value, $selectedFormats),
             'query' => $query,
+            'selectedRole' => $selectedRole,
             'routeParams' => array_filter([
                 'thematique' => $thematicSlugs,
                 'langue' => $languageSlugs,
                 'format' => $formatValues,
                 'q' => $query,
+                'role' => $selectedRole !== 'tous' ? $selectedRole : null,
             ]),
             'featuredVideos' => $videoRepository->findFeatured(3),
         ]);
@@ -61,7 +71,7 @@ class VideoController extends AbstractController
     #[Route('/videos/{slug}', name: 'app_video_show')]
     public function show(string $slug, VideoRepository $videoRepository): Response
     {
-        $video = $videoRepository->findOneBySlug($slug) ?? throw $this->createNotFoundException('Vidéo introuvable.');
+        $video = $videoRepository->findOneBySlug($slug) ?? throw $this->createNotFoundException('Contenu introuvable.');
 
         return $this->render('video/show.html.twig', [
             'video' => $video,
@@ -69,10 +79,36 @@ class VideoController extends AbstractController
         ]);
     }
 
+    #[Route('/videos/{slug}/telecharger-tout', name: 'app_video_download_all')]
+    public function downloadAll(string $slug, VideoRepository $videoRepository, VideoFileZipBuilder $zipBuilder): Response
+    {
+        $video = $videoRepository->findOneBySlug($slug) ?? throw $this->createNotFoundException('Contenu introuvable.');
+
+        $availableFiles = array_values(array_filter(
+            iterator_to_array($video->getFiles()),
+            static fn ($file) => $file->getFileName() !== null,
+        ));
+
+        if ($availableFiles === []) {
+            throw $this->createNotFoundException('Aucun fichier disponible pour ce contenu.');
+        }
+
+        $zipPath = $zipBuilder->build($availableFiles);
+
+        $response = new BinaryFileResponse($zipPath);
+        $response->deleteFileAfterSend(true);
+        $response->setContentDisposition(
+            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
+            sprintf('%s.zip', $video->getSlug()),
+        );
+
+        return $response;
+    }
+
     #[Route('/videos/{slug}/avis', name: 'app_video_feedback', methods: ['POST'])]
     public function feedback(string $slug, Request $request, VideoRepository $videoRepository, EntityManagerInterface $entityManager): Response
     {
-        $video = $videoRepository->findOneBySlug($slug) ?? throw $this->createNotFoundException('Vidéo introuvable.');
+        $video = $videoRepository->findOneBySlug($slug) ?? throw $this->createNotFoundException('Contenu introuvable.');
 
         if (!$this->isCsrfTokenValid('video_feedback_' . $video->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Jeton CSRF invalide.');

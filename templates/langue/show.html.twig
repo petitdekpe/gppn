@@ -1,14 +1,14 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Vidéos en {{ language.name }} — Le Gouvernement plus près de nous{% endblock %}
-{% block meta_description %}Toutes les capsules vidéo du Gouvernement disponibles en {{ language.name }}.{% endblock %}
+{% block title %}Contenus en {{ language.name }} — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Tous les contenus du Gouvernement disponibles en {{ language.name }}.{% endblock %}
 
 {% block body %}
     <section class="page-header wrap">
         {{ include('partials/_back_link.html.twig', {fallback: path('app_video_index')}) }}
         <span class="eyebrow">Langue nationale</span>
         <h1>{{ language.name }}</h1>
-        <p>{{ results.total }} vidéo{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }} en {{ language.name }}.</p>
+        <p>{{ results.total }} contenu{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }} en {{ language.name }}.</p>
     </section>
 
     <section class="section wrap video-layout">

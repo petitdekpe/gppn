@@ -21,10 +21,11 @@
                 <nav class="admin-nav">
                     <a href="{{ path('admin_dashboard') }}" class="{{ app.request.attributes.get('_route') == 'admin_dashboard' ? 'is-active' }}">Tableau de bord</a>
                     {% if is_granted('ROLE_EDITEUR') %}
-                        <a href="{{ path('admin_video_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_video' ? 'is-active' }}">Vidéos</a>
+                        <a href="{{ path('admin_video_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_video' ? 'is-active' }}">Contenus</a>
                         <a href="{{ path('admin_thematic_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_thematic' ? 'is-active' }}">Thématiques</a>
                         <a href="{{ path('admin_language_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_language' ? 'is-active' }}">Langues</a>
                         <a href="{{ path('admin_speaker_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_speaker' ? 'is-active' }}">Intervenants</a>
+                        <a href="{{ path('admin_council_session_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_council_session' ? 'is-active' }}">Conseils des ministres</a>
                     {% endif %}
                     {% if is_granted('ROLE_MODERATEUR') %}
                         <a href="{{ path('admin_suggestion_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_suggestion' ? 'is-active' }}">Suggestions</a>

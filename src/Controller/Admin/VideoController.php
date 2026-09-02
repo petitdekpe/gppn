@@ -3,6 +3,8 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Video;
+use App\Entity\VideoFile;
+use App\Enum\VideoFileType;
 use App\Form\Admin\VideoType;
 use App\Repository\VideoRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,6 +30,7 @@ class VideoController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $video = new Video();
+        $this->ensureAllFileSlots($video);
         $form = $this->createForm(VideoType::class, $video);
         $form->handleRequest($request);
 
@@ -35,7 +38,7 @@ class VideoController extends AbstractController
             $entityManager->persist($video);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Vidéo créée.');
+            $this->addFlash('success', 'Contenu créé.');
 
             return $this->redirectToRoute('admin_video_index');
         }
@@ -49,13 +52,14 @@ class VideoController extends AbstractController
     #[Route('/{id}/modifier', name: 'admin_video_edit')]
     public function edit(Video $video, Request $request, EntityManagerInterface $entityManager): Response
     {
+        $this->ensureAllFileSlots($video);
         $form = $this->createForm(VideoType::class, $video);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
 
-            $this->addFlash('success', 'Vidéo mise à jour.');
+            $this->addFlash('success', 'Contenu mis à jour.');
 
             return $this->redirectToRoute('admin_video_index');
         }
@@ -73,9 +77,29 @@ class VideoController extends AbstractController
             $entityManager->remove($video);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Vidéo supprimée.');
+            $this->addFlash('success', 'Contenu supprimé.');
         }
 
         return $this->redirectToRoute('admin_video_index');
+    }
+
+    /**
+     * Garantit qu'un emplacement (vide ou déjà rempli) existe pour chacun
+     * des 6 types de fichiers, dans l'ordre d'affichage voulu — le
+     * formulaire (CollectionType figée, sans ajout/suppression) s'appuie sur
+     * cette liste complète.
+     */
+    private function ensureAllFileSlots(Video $video): void
+    {
+        $present = [];
+        foreach ($video->getFiles() as $file) {
+            $present[$file->getType()->value] = true;
+        }
+
+        foreach (VideoFileType::cases() as $type) {
+            if (!isset($present[$type->value])) {
+                $video->addFile((new VideoFile())->setType($type));
+            }
+        }
     }
 }

@@ -1,25 +1,25 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}Vidéos — Administration GPPN{% endblock %}
-{% block page_title %}Vidéos{% endblock %}
+{% block title %}Contenus — Administration GPPN{% endblock %}
+{% block page_title %}Contenus{% endblock %}
 
 {% block body %}
     <div class="admin-toolbar">
-        <a class="btn btn--primary" href="{{ path('admin_video_new') }}">+ Nouvelle vidéo</a>
+        <a class="btn btn--primary" href="{{ path('admin_video_new') }}">+ Nouveau contenu</a>
     </div>
 
     {% if videos is empty %}
-        <p class="empty-state">Aucune vidéo pour le moment.</p>
+        <p class="empty-state">Aucun contenu pour le moment.</p>
     {% else %}
         <div class="admin-table-wrap">
             <table class="admin-table">
                 <thead>
                     <tr>
                         <th>Titre</th>
-                        <th>Format</th>
                         <th>Statut</th>
                         <th>Thématique</th>
                         <th>Langue</th>
+                        <th>Conseil des ministres</th>
                         <th>Publiée le</th>
                         <th>Vues</th>
                         <th>À la une</th>
@@ -30,16 +30,16 @@
                     {% for video in videos %}
                         <tr>
                             <td><a href="{{ path('app_video_show', {slug: video.slug}) }}" target="_blank" rel="noopener">{{ video.title }}</a></td>
-                            <td>{{ video.format.label }}</td>
                             <td>{{ video.status.label }}</td>
                             <td>{{ video.thematic.name }}</td>
                             <td>{{ video.language.name }}</td>
+                            <td>{{ video.councilSession.date|date('d/m/Y') }}</td>
                             <td>{{ video.publishedAt|date('d/m/Y') }}</td>
                             <td>{{ video.viewsCount|number_format(0, ',', ' ') }}</td>
                             <td>{{ video.featured ? 'Oui' : 'Non' }}</td>
                             <td class="admin-table__actions">
                                 <a class="btn btn--outline btn--sm" href="{{ path('admin_video_edit', {id: video.id}) }}">Modifier</a>
-                                <form method="post" action="{{ path('admin_video_delete', {id: video.id}) }}" onsubmit="return confirm('Supprimer cette vidéo ?');">
+                                <form method="post" action="{{ path('admin_video_delete', {id: video.id}) }}" onsubmit="return confirm('Supprimer ce contenu ?');">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete-video-' ~ video.id) }}">
                                     <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
                                 </form>

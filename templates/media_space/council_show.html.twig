@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% set sessionTitle = councilSession.label ?: 'Conseil des ministres du ' ~ councilSession.date|date('d F Y') %}
+
+{% block title %}{{ sessionTitle }} — Espace média{% endblock %}
+{% block meta_description %}Sélectionnez et téléchargez en une archive ZIP les capsules issues de ce conseil des ministres.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap page-header--dark">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_media_space')}) }}
+        <span class="eyebrow">Conseil des ministres</span>
+        <h1>{{ sessionTitle }}</h1>
+        <p>{{ videos|length }} contenu{{ videos|length > 1 ? 's' : '' }}. Cochez ceux que vous souhaitez récupérer, puis téléchargez-les en une seule archive ZIP.</p>
+    </section>
+
+    <section class="section wrap">
+        {% if videos is empty %}
+            <p class="empty-state">Aucun contenu publié pour ce conseil des ministres.</p>
+        {% else %}
+            <form method="post" action="{{ path('app_media_space_council_download', {slug: councilSession.slug}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('council_session_download_' ~ councilSession.id) }}">
+
+                <div class="council-selection">
+                    {% for video in videos %}
+                        {% set availableFiles = video.files|filter(f => f.fileName is not null) %}
+                        <fieldset class="council-selection__video" style="--thematic-color: {{ video.thematic.colorHex }}">
+                            <legend>
+                                <strong>{{ video.title }}</strong>
+                                <span class="muted">{{ video.thematic.name }} · {{ video.language.name }}</span>
+                            </legend>
+
+                            {% if availableFiles is empty %}
+                                <p class="muted">Aucun fichier disponible pour ce contenu.</p>
+                            {% else %}
+                                <ul class="council-selection__files">
+                                    {% for file in availableFiles %}
+                                        <li>
+                                            <label class="filters-sidebar__option">
+                                                <input type="checkbox" name="files[]" value="{{ file.id }}" checked>
+                                                {{ file.type.label }}
+                                                <span class="muted">({{ (file.fileSize / 1048576)|round(1) }} Mo)</span>
+                                            </label>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </fieldset>
+                    {% endfor %}
+                </div>
+
+                <div class="admin-form-actions">
+                    <button type="submit" class="btn btn--primary">Télécharger la sélection (.zip)</button>
+                </div>
+            </form>
+        {% endif %}
+    </section>
+{% endblock %}

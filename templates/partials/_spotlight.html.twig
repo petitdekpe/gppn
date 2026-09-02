@@ -7,14 +7,24 @@
             {% for spotlight in featuredVideos %}
                 {% set slideIndex = loop.index0 %}
                 <div class="spotlight__slide{{ loop.first ? ' is-active' }}" data-carousel-target="slide">
+                    {% set previewFile = spotlight.primaryPlaybackFile %}
+                    {% set previewCategory = previewFile ? previewFile.type.category.value : null %}
                     <a href="{{ path('app_video_show', {slug: spotlight.slug}) }}" class="spotlight__media" style="--thematic-color: {{ spotlight.thematic.colorHex }}">
                         <span class="video-card__lang-tag">{{ spotlight.language.name }}</span>
-                        <span class="video-card__play" aria-hidden="true">▶</span>
+                        {% if previewCategory == 'video' %}
+                            <video class="video-card__preview" muted preload="metadata" playsinline>
+                                <source src="{{ video_file_url(previewFile) }}" type="{{ previewFile.mimeType ?? 'video/mp4' }}">
+                            </video>
+                        {% elseif previewCategory == 'image' %}
+                            <img class="video-card__preview" src="{{ video_file_url(previewFile) }}" alt="">
+                        {% else %}
+                            <span class="video-card__play" aria-hidden="true">▶</span>
+                        {% endif %}
                     </a>
                     {% if featuredVideos|length > 1 %}
                         <div class="spotlight__dots">
                             {% for other in featuredVideos %}
-                                <button type="button" class="spotlight__dot{{ loop.index0 == slideIndex ? ' is-active' }}" data-action="carousel#go" data-carousel-index-param="{{ loop.index0 }}" aria-label="Voir la vidéo {{ loop.index }}"></button>
+                                <button type="button" class="spotlight__dot{{ loop.index0 == slideIndex ? ' is-active' }}" data-action="carousel#go" data-carousel-index-param="{{ loop.index0 }}" aria-label="Voir le contenu {{ loop.index }}"></button>
                             {% endfor %}
                         </div>
                     {% endif %}
@@ -25,8 +35,8 @@
                         </h3>
                         <p>{{ spotlight.summary }}</p>
                         <div class="spotlight__actions">
-                            {% if spotlight.downloadFileName %}
-                                <a class="btn btn--dark" href="{{ video_download_url(spotlight) }}">Télécharger</a>
+                            {% if previewFile %}
+                                <a class="btn btn--dark" href="{{ video_file_url(previewFile) }}" download="{{ previewFile.originalName ?? previewFile.fileName }}">Télécharger</a>
                             {% endif %}
                             <span class="share-divider" aria-hidden="true"></span>
                             <a class="share-copy" href="#" title="Copier le lien"><i class="fa-solid fa-link" aria-hidden="true"></i> Copier le lien</a>

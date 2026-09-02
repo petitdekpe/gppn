@@ -4,7 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{% block title %}Le Gouvernement plus près de nous{% endblock %}</title>
-        <meta name="description" content="{% block meta_description %}Des capsules vidéo courtes produites par le Gouvernement du Bénin, expliquées en Fon, Yoruba, Bariba, Dendi et d’autres langues nationales.{% endblock %}">
+        <meta name="description" content="{% block meta_description %}Des capsules de contenus courtes produites par le Gouvernement du Bénin, expliquées en Fon, Yoruba, Bariba, Dendi et d’autres langues nationales.{% endblock %}">
         <meta property="og:title" content="{{ block('title') }}">
         <meta property="og:description" content="{{ block('meta_description') }}">
         <meta property="og:type" content="website">
@@ -32,14 +32,14 @@
 
                     <nav class="primary-nav" id="primary-nav" data-nav-target="menu">
                         <a href="{{ path('app_home') }}" class="{{ app.request.attributes.get('_route') == 'app_home' ? 'is-active' }}">Accueil</a>
-                        <a href="{{ path('app_video_index') }}" class="{{ app.request.attributes.get('_route') starts with 'app_video' ? 'is-active' }}">Vidéos</a>
+                        <a href="{{ path('app_video_index') }}" class="{{ app.request.attributes.get('_route') starts with 'app_video' ? 'is-active' }}">Contenus</a>
                         <a href="{{ path('app_thematique_index') }}" class="{{ app.request.attributes.get('_route') starts with 'app_thematique' ? 'is-active' }}">Thématiques</a>
                         <a href="{{ path('app_media_space') }}" class="{{ app.request.attributes.get('_route') == 'app_media_space' ? 'is-active' }}">Espace média</a>
                         <a href="{{ path('app_about') }}" class="{{ app.request.attributes.get('_route') == 'app_about' ? 'is-active' }}">À propos</a>
                     </nav>
 
                     <form class="header-search" action="{{ path('app_video_index') }}" method="get" role="search">
-                        <label class="sr-only" for="header-search-input">Rechercher une vidéo</label>
+                        <label class="sr-only" for="header-search-input">Rechercher un contenu</label>
                         <input id="header-search-input" type="search" name="q" placeholder="Rechercher" value="{{ app.request.query.get('q') }}">
                         <button type="submit" aria-label="Rechercher">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -79,7 +79,7 @@
                     <h4>Rubriques</h4>
                     <ul>
                         <li><a href="{{ path('app_home') }}">Accueil</a></li>
-                        <li><a href="{{ path('app_video_index') }}">Vidéos</a></li>
+                        <li><a href="{{ path('app_video_index') }}">Contenus</a></li>
                         <li><a href="{{ path('app_thematique_index') }}">Thématiques</a></li>
                         <li><a href="{{ path('app_about') }}">À propos</a></li>
                     </ul>

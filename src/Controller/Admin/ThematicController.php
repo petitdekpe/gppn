@@ -82,7 +82,7 @@ class ThematicController extends AbstractController
         }
 
         if ($videoRepository->count(['thematic' => $thematic]) > 0) {
-            $this->addFlash('error', 'Impossible de supprimer une thématique encore utilisée par des vidéos.');
+            $this->addFlash('error', 'Impossible de supprimer une thématique encore utilisée par des contenus.');
 
             return $this->redirectToRoute('admin_thematic_index');
         }

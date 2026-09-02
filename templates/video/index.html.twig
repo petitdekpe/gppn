@@ -1,14 +1,19 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Toutes les vidéos — Le Gouvernement plus près de nous{% endblock %}
-{% block meta_description %}Parcourez toutes les capsules vidéo du programme, filtrables par thématique, par langue nationale ou par mot-clé.{% endblock %}
+{% block title %}Tous les contenus — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Parcourez tous les contenus du programme, filtrables par thématique, par langue nationale ou par mot-clé.{% endblock %}
 
 {% block body %}
-    <nav class="view-tabs wrap" aria-label="Vue des vidéos">
-        <span class="view-tabs__item is-active">Toutes les vidéos</span>
-        <span class="view-tabs__item view-tabs__item--disabled" aria-disabled="true">Tous les Ministres</span>
-        <span class="view-tabs__item view-tabs__item--disabled" aria-disabled="true">Ministres</span>
-        <span class="view-tabs__item view-tabs__item--disabled" aria-disabled="true">Ministres conseillés</span>
+    {% set roleLabels = {tous: 'Tous les Ministres', ministre: 'Ministres', conseiller: 'Ministres conseillés'} %}
+
+    <nav class="view-tabs wrap" aria-label="Vue des contenus">
+        {% for role, label in roleLabels %}
+            {% if role == selectedRole %}
+                <span class="view-tabs__item is-active" aria-current="page">{{ label }}</span>
+            {% else %}
+                <a class="view-tabs__item" href="{{ path('app_video_index', routeParams|merge({role: role == 'tous' ? null : role})) }}">{{ label }}</a>
+            {% endif %}
+        {% endfor %}
     </nav>
 
     <section class="section wrap video-layout">
@@ -22,13 +27,14 @@
                 selectedLanguageSlugs: selectedLanguageSlugs,
                 selectedFormatValues: selectedFormatValues,
                 query: query,
+                selectedRole: selectedRole,
             }) }}
         </aside>
 
         <div class="video-layout__main">
             <div class="page-header">
-                <h1>Toutes les vidéos</h1>
-                <p>{{ results.total }} vidéo{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }}.</p>
+                <h1>{{ roleLabels[selectedRole] }}</h1>
+                <p>{{ results.total }} contenu{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }}.</p>
             </div>
 
             {{ include('partials/_video_grid.html.twig', {

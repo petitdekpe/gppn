@@ -3,6 +3,10 @@
         <input type="hidden" name="q" value="{{ query }}">
     {% endif %}
 
+    {% if selectedRole is defined and selectedRole and selectedRole != 'tous' %}
+        <input type="hidden" name="role" value="{{ selectedRole }}">
+    {% endif %}
+
     {% if languages is defined and languages %}
         <fieldset class="filters-sidebar__group">
             <legend>Langue</legend>

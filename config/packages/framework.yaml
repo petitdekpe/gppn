@@ -2,6 +2,17 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
+    # Requis pour `symfony server:start` (et tout reverse proxy sur la même
+    # machine) : sans ça, Symfony ignore les en-têtes X-Forwarded-* envoyés
+    # par le proxy TLS local et pense être en HTTP même quand le navigateur
+    # est en HTTPS. Conséquence concrète : la protection CSRF "same-origin"
+    # (config/packages/csrf.yaml) compare un Origin https:// à un schéma
+    # http:// attendu et rejette systématiquement le jeton (login, formulaires
+    # admin...). Les adresses loopback sont sûres à whitelister dans tous les
+    # environnements.
+    trusted_proxies: '127.0.0.1,::1'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-prefix']
+
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 

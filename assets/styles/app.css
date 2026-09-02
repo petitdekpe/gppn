@@ -607,6 +607,14 @@ button {
     letter-spacing: 0.03em;
 }
 
+.video-card__preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .video-card__play {
     position: absolute;
     inset: 0;
@@ -644,6 +652,49 @@ button {
     font-size: 0.82rem;
     color: var(--color-muted);
     margin: 0;
+}
+
+/* ---- Video card selection (espace média) ---------------------------------- */
+
+.video-card--selectable {
+    position: relative;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.video-card__select {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    width: 22px;
+    height: 22px;
+    accent-color: var(--color-green);
+}
+
+.video-card--selectable:has(.video-card__select:checked) {
+    border-color: var(--color-green);
+}
+
+.video-card--unavailable {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.video-card__unavailable-badge {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(16, 25, 44, 0.6);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0 12px;
 }
 
 /* ---- Tiles (thematics / languages) --------------------------------------- */
@@ -875,6 +926,34 @@ button {
     accent-color: var(--color-navy);
 }
 
+/* ---- Sélection de fichiers par conseil des ministres (espace média) ------ */
+
+.council-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.council-selection__video {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+}
+
+.council-selection__video legend {
+    padding: 0 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.council-selection__files {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 6px;
+}
+
 /* ---- Pagination ---------------------------------------------------------- */
 
 .pagination {
@@ -988,6 +1067,16 @@ button {
 .video-detail__player--audio {
     display: grid;
     place-items: center;
+}
+
+.video-detail__video {
+    width: 100%;
+    height: 100%;
+    /* Les capsules sont parfois verticales (9:16) : "contain" évite de les
+       recadrer ou de les déformer dans le cadre 16:9 de la fiche. */
+    object-fit: contain;
+    background: #000;
+    border-radius: var(--radius-lg);
 }
 
 .video-detail__audio {
@@ -1120,6 +1209,12 @@ button {
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--color-muted);
+}
+
+.download-panel__all {
+    display: block;
+    text-align: center;
+    margin-bottom: 16px;
 }
 
 .download-panel__mention {
@@ -1786,6 +1881,16 @@ button {
     margin: 4px 0 0;
     list-style: none;
     padding: 0;
+}
+
+.admin-form-card__file-slot {
+    padding: 14px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.admin-form-card__file-slot + .admin-form-card__file-slot {
+    margin-top: -4px;
 }
 
 .admin-suggestion-message {

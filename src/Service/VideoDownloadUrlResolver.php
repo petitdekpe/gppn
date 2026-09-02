@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-use App\Entity\Video;
+use App\Entity\VideoFile;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
@@ -14,9 +14,9 @@ class VideoDownloadUrlResolver
     ) {
     }
 
-    public function resolve(Video $video): ?string
+    public function resolve(VideoFile $file): ?string
     {
-        $fileName = $video->getDownloadFileName();
+        $fileName = $file->getFileName();
 
         if ($fileName === null) {
             return null;

@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Espace média — Le Gouvernement plus près de nous{% endblock %}
-{% block meta_description %}Ressources pour le réseau média et les partenaires institutionnels : packs de capsules vidéo par thématique et par langue, prêts à diffuser.{% endblock %}
+{% block meta_description %}Ressources pour le réseau média et les partenaires institutionnels : packs de contenus par thématique et par langue, prêts à diffuser.{% endblock %}
 
 {% block body %}
     <section class="page-header wrap page-header--dark">
@@ -17,6 +17,29 @@
 
     <section class="section wrap">
         <div class="section__header">
+            <h2>Packs par conseil des ministres</h2>
+            <p class="muted">Chaque lot de capsules est rattaché au conseil des ministres dont il est issu. Choisissez un conseil pour sélectionner et télécharger les contenus qui vous intéressent en une seule archive.</p>
+        </div>
+        <div class="pack-list">
+            {% for row in councilSessions %}
+                <div class="pack-row">
+                    <div class="pack-row__label">
+                        <span class="pack-row__swatch" aria-hidden="true"></span>
+                        <div>
+                            <strong>{{ row.councilSession.label ?: 'Conseil des ministres du ' ~ row.councilSession.date|date('d F Y') }}</strong>
+                            <span class="muted">{{ row.videoCount }} contenu{{ row.videoCount > 1 ? 's' : '' }}</span>
+                        </div>
+                    </div>
+                    <a class="btn btn--outline" href="{{ path('app_media_space_council_show', {slug: row.councilSession.slug}) }}">Sélectionner &amp; télécharger</a>
+                </div>
+            {% else %}
+                <p class="empty-state">Aucun conseil des ministres pour le moment.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="section wrap">
+        <div class="section__header">
             <h2>Packs par thématique</h2>
         </div>
         <div class="pack-list">
@@ -26,10 +49,10 @@
                         <span class="pack-row__swatch" aria-hidden="true"></span>
                         <div>
                             <strong>{{ row.thematic.name }}</strong>
-                            <span class="muted">{{ row.videoCount }} vidéo{{ row.videoCount > 1 ? 's' : '' }}</span>
+                            <span class="muted">{{ row.videoCount }} contenu{{ row.videoCount > 1 ? 's' : '' }}</span>
                         </div>
                     </div>
-                    <a class="btn btn--outline" href="{{ path('app_thematique_show', {slug: row.thematic.slug}) }}">Voir les vidéos</a>
+                    <a class="btn btn--outline" href="{{ path('app_thematique_show', {slug: row.thematic.slug}) }}">Voir les contenus</a>
                 </div>
             {% endfor %}
         </div>

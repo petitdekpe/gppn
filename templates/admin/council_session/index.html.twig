@@ -1,0 +1,39 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Conseils des ministres — Administration GPPN{% endblock %}
+{% block page_title %}Conseils des ministres{% endblock %}
+
+{% block body %}
+    <div class="admin-toolbar">
+        <a class="btn btn--primary" href="{{ path('admin_council_session_new') }}">+ Nouveau conseil des ministres</a>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Libellé</th>
+                    <th>Contenus</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for councilSession in councilSessions %}
+                    <tr>
+                        <td>{{ councilSession.date|date('d/m/Y') }}</td>
+                        <td>{{ councilSession.label ?: '—' }}</td>
+                        <td>{{ videoCounts[councilSession.id] }}</td>
+                        <td class="admin-table__actions">
+                            <a class="btn btn--outline btn--sm" href="{{ path('admin_council_session_edit', {id: councilSession.id}) }}">Modifier</a>
+                            <form method="post" action="{{ path('admin_council_session_delete', {id: councilSession.id}) }}" onsubmit="return confirm('Supprimer ce conseil des ministres ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete-council-session-' ~ councilSession.id) }}">
+                                <button type="submit" class="btn btn--danger btn--sm" {{ videoCounts[councilSession.id] > 0 ? 'disabled' }}>Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

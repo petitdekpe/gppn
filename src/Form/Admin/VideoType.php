@@ -2,62 +2,57 @@
 
 namespace App\Form\Admin;
 
+use App\Entity\CouncilSession;
 use App\Entity\Language;
 use App\Entity\Speaker;
 use App\Entity\Thematic;
 use App\Entity\Video;
-use App\Enum\CapsuleFormat;
 use App\Enum\VideoStatus;
+use App\Repository\CouncilSessionRepository;
+use App\Repository\VideoRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints as Assert;
-use Vich\UploaderBundle\Form\Type\VichFileType;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 class VideoType extends AbstractType
 {
+    public function __construct(private readonly VideoRepository $videoRepository)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('title', TextType::class, ['label' => 'Titre'])
-            ->add('slug', TextType::class, [
-                'label' => 'Slug (utilisé dans l’URL)',
-                'help' => 'Ex : obtenir-sa-carte-didentite-biometrique. Laissez inchangé si la vidéo est déjà publiée.',
-            ])
+            // Le slug est calculé automatiquement à partir du titre (voir
+            // FormEvents::SUBMIT ci-dessous) plutôt que saisi à la main : un
+            // slug mal formé (espaces, ponctuation) servant de nom de dossier
+            // sur le serveur faisait planter la mise en ligne. Une fois
+            // attribué, il reste stable même si le titre change ensuite,
+            // pour ne pas casser l'URL publique d'un contenu déjà
+            // partagé/indexé.
             ->add('summary', TextareaType::class, [
                 'label' => 'Résumé',
                 'attr' => ['rows' => 5],
-            ])
-            ->add('format', EnumType::class, [
-                'class' => CapsuleFormat::class,
-                'choice_label' => static fn (CapsuleFormat $format) => $format->getLabel(),
-                'label' => 'Format de la capsule',
             ])
             ->add('status', EnumType::class, [
                 'class' => VideoStatus::class,
                 'choice_label' => static fn (VideoStatus $status) => $status->getLabel(),
                 'label' => 'Statut',
-                'help' => 'Pour une capsule Vidéo avec fichier source, le pipeline de traitement met ce statut à jour automatiquement.',
+                'help' => 'Masqué retire le contenu du site public sans le supprimer.',
             ])
-            ->add('sourceFile', VichFileType::class, [
-                'label' => 'Fichier vidéo source',
-                'required' => false,
-                'allow_delete' => false,
-                'help' => 'Déclenche le traitement automatique (hash, vignette, HLS) pour les capsules au format Vidéo.',
-                'constraints' => [
-                    new Assert\File(
-                        maxSize: '2G',
-                        mimeTypes: ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'],
-                        mimeTypesMessage: 'Merci de déposer un fichier vidéo (MP4, MOV, WebM, MKV).',
-                    ),
-                ],
+            ->add('durationSeconds', IntegerType::class, [
+                'label' => 'Durée (secondes)',
             ])
             ->add('thematic', EntityType::class, [
                 'class' => Thematic::class,
@@ -69,27 +64,26 @@ class VideoType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'Langue',
             ])
-            ->add('durationSeconds', IntegerType::class, [
-                'label' => 'Durée (secondes)',
+            ->add('councilSession', EntityType::class, [
+                'class' => CouncilSession::class,
+                'label' => 'Conseil des ministres (source du lot)',
+                'choice_label' => static fn (CouncilSession $councilSession) => $councilSession->getLabel()
+                    ? sprintf('%s (%s)', $councilSession->getLabel(), $councilSession->getDate()->format('d/m/Y'))
+                    : sprintf('Conseil des ministres du %s', $councilSession->getDate()->format('d/m/Y')),
+                'query_builder' => static fn (CouncilSessionRepository $repository) => $repository
+                    ->createQueryBuilder('cs')
+                    ->orderBy('cs.date', 'DESC'),
             ])
-            ->add('viewsCount', IntegerType::class, [
-                'label' => 'Nombre de vues',
-            ])
-            ->add('publishedAt', DateTimeType::class, [
-                'label' => 'Date de publication',
-                'widget' => 'single_text',
-                'input' => 'datetime_immutable',
-            ])
-            ->add('downloadFile', VichFileType::class, [
-                'label' => 'Fichier de téléchargement',
-                'required' => false,
-                'allow_delete' => true,
-                'delete_label' => 'Supprimer le fichier actuel',
-                'download_uri' => false,
+            ->add('files', CollectionType::class, [
+                'label' => false,
+                'entry_type' => VideoFileEntryType::class,
+                'allow_add' => false,
+                'allow_delete' => false,
+                'by_reference' => false,
             ])
             ->add('learningPoints', TextareaType::class, [
-                'label' => 'Ce que vous apprendrez dans cette vidéo',
-                'help' => 'Une idée par ligne. Laissez vide pour masquer ce bloc sur la page de la vidéo.',
+                'label' => 'Ce que vous apprendrez dans ce contenu',
+                'help' => 'Une idée par ligne. Laissez vide pour masquer ce bloc sur la page du contenu.',
                 'required' => false,
                 'attr' => ['rows' => 4],
             ])
@@ -97,15 +91,45 @@ class VideoType extends AbstractType
                 'label' => 'Mettre en avant (« à la une »)',
                 'required' => false,
             ])
-            ->add('speakers', EntityType::class, [
+            ->add('speaker', EntityType::class, [
                 'class' => Speaker::class,
                 'choice_label' => 'fullName',
-                'label' => 'Intervenants',
-                'multiple' => true,
-                'expanded' => true,
+                'label' => 'Intervenant',
+                'placeholder' => '— Aucun —',
                 'required' => false,
             ])
+            ->addEventListener(FormEvents::SUBMIT, $this->assignSlug(...))
         ;
+    }
+
+    private function assignSlug(FormEvent $event): void
+    {
+        $video = $event->getData();
+        if (!$video instanceof Video) {
+            return;
+        }
+
+        // Contenu déjà publié avec un slug stable : on n'y touche plus.
+        if ($video->getId() !== null && $video->getSlug() !== '') {
+            return;
+        }
+
+        $slugger = new AsciiSlugger('fr');
+        $base = strtolower($slugger->slug($video->getTitle()));
+
+        $slug = $base;
+        for ($suffix = 2; $this->slugTakenByAnotherVideo($slug, $video); ++$suffix) {
+            $slug = $base . '-' . $suffix;
+        }
+
+        $video->setSlug($slug);
+    }
+
+    private function slugTakenByAnotherVideo(string $slug, Video $video): bool
+    {
+        $existing = $this->videoRepository->findOneBy(['slug' => $slug]);
+
+        return $existing !== null && $existing !== $video;
     }
 
     public function configureOptions(OptionsResolver $resolver): void

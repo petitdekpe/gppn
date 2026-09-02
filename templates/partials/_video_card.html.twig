@@ -1,12 +1,24 @@
 {% set formatIcons = {video: '▶', audio: '♪', pdf: '📄', image: '🖼'} %}
+{% set previewFile = video.primaryPlaybackFile %}
+{% set previewCategory = previewFile ? previewFile.type.category.value : null %}
 <article class="video-card">
     <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="video-card__thumb" style="--thematic-color: {{ video.thematic.colorHex }}">
-        <span class="video-card__format-tag">{{ video.format.label }}</span>
+        {% if previewFile %}
+            <span class="video-card__format-tag">{{ previewFile.type.category.label }}</span>
+        {% endif %}
         <span class="video-card__lang-tag">{{ video.language.name }}</span>
-        {% if video.format.value in ['video', 'audio'] %}
+        {% if previewCategory in ['video', 'audio'] %}
             <span class="video-card__duration">{{ video.durationLabel }}</span>
         {% endif %}
-        <span class="video-card__play" aria-hidden="true">{{ formatIcons[video.format.value] }}</span>
+        {% if previewCategory == 'video' %}
+            <video class="video-card__preview" muted preload="metadata" playsinline>
+                <source src="{{ video_file_url(previewFile) }}" type="{{ previewFile.mimeType ?? 'video/mp4' }}">
+            </video>
+        {% elseif previewCategory == 'image' %}
+            <img class="video-card__preview" src="{{ video_file_url(previewFile) }}" alt="">
+        {% else %}
+            <span class="video-card__play" aria-hidden="true">{{ formatIcons[previewCategory] ?? '▶' }}</span>
+        {% endif %}
     </a>
     <div class="video-card__body">
         <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>

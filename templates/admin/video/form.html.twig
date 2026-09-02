@@ -1,36 +1,42 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}{{ video.id ? 'Modifier' : 'Nouvelle' }} vidéo — Administration GPPN{% endblock %}
-{% block page_title %}{{ video.id ? 'Modifier la vidéo' : 'Nouvelle vidéo' }}{% endblock %}
+{% block title %}{{ video.id ? 'Modifier' : 'Nouveau' }} contenu — Administration GPPN{% endblock %}
+{% block page_title %}{{ video.id ? 'Modifier le contenu' : 'Nouveau contenu' }}{% endblock %}
 
 {% block body %}
     <div class="admin-form-card">
         {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
             {{ form_errors(form) }}
             {{ form_row(form.title) }}
-            {{ form_row(form.slug) }}
             {{ form_row(form.summary) }}
             <div class="form-grid-2">
-                {{ form_row(form.format) }}
                 {{ form_row(form.status) }}
+                {{ form_row(form.durationSeconds) }}
             </div>
-            {{ form_row(form.sourceFile) }}
             <div class="form-grid-2">
                 {{ form_row(form.thematic) }}
                 {{ form_row(form.language) }}
             </div>
-            <div class="form-grid-2">
-                {{ form_row(form.durationSeconds) }}
-                {{ form_row(form.viewsCount) }}
-            </div>
-            {{ form_row(form.publishedAt) }}
-            {{ form_row(form.downloadFile) }}
-            {% if video.downloadFileName %}
-                <p class="form-help">Fichier actuel : <a href="{{ video_download_url(video) }}" target="_blank" rel="noopener">{{ video.downloadFileOriginalName ?? video.downloadFileName }}</a></p>
-            {% endif %}
+            {{ form_row(form.councilSession) }}
+
+            <h2>Fichiers proposés au téléchargement</h2>
+            <p class="form-help">Un contenu peut proposer n'importe laquelle de ces variantes, sans obligation de toutes les fournir.</p>
+            {% for fileForm in form.files %}
+                {% set videoFile = fileForm.vars.data %}
+                <div class="admin-form-card__file-slot">
+                    <label>{{ videoFile.type.label }}</label>
+                    <p class="form-help">{{ videoFile.type.description }}</p>
+                    {{ form_widget(fileForm.file) }}
+                    {{ form_errors(fileForm.file) }}
+                    {% if videoFile.fileName %}
+                        <p class="form-help">Fichier actuel : <a href="{{ video_file_url(videoFile) }}" target="_blank" rel="noopener">{{ videoFile.originalName ?? videoFile.fileName }}</a> ({{ (videoFile.fileSize / 1048576)|round(1) }} Mo)</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
             {{ form_row(form.learningPoints) }}
             {{ form_row(form.featured) }}
-            {{ form_row(form.speakers) }}
+            {{ form_row(form.speaker) }}
 
             <div class="admin-form-actions">
                 <button type="submit" class="btn btn--primary">Enregistrer</button>

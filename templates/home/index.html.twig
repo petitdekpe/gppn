@@ -10,8 +10,8 @@
 		<div class="wrap hero__inner">
 			<div class="hero__text">
 				<h1>L’information publique,<br>dans votre langue.</h1>
-				<p>Des capsules vidéo courtes produites par le Gouvernement,<br>expliquées en Fon, Yoruba, Bariba, Dendi et sept autres langues nationales.<br>À regarder, à écouter, à télécharger et à rediffuser librement.</p>
-				<a class="btn btn--primary" href="{{ path('app_video_index') }}">Explorer les vidéos →</a>
+				<p>Des capsules de contenus courtes produites par le Gouvernement,<br>expliquées en Fon, Yoruba, Bariba, Dendi et sept autres langues nationales.<br>À regarder, à écouter, à télécharger et à rediffuser librement.</p>
+				<a class="btn btn--primary" href="{{ path('app_video_index') }}">Explorer les contenus →</a>
 			</div>
 		</div>
 
@@ -20,11 +20,11 @@
 
 	<section class="section wrap">
 		<div class="section__header">
-			<h2>Dernières vidéos publiées</h2>
+			<h2>Derniers contenus publiés</h2>
 		</div>
 
 		{% if latestVideos is empty %}
-			<p class="empty-state">Aucune vidéo publiée pour le moment.</p>
+			<p class="empty-state">Aucun contenu publié pour le moment.</p>
 		{% else %}
 			<div class="video-grid">
 				{% for video in latestVideos %}
@@ -51,7 +51,7 @@
 	<section class="section wrap">
 		<div class="section__header">
 			<h2>Choisissez votre langue</h2>
-			<p>Chaque vidéo est produite dans plusieurs langues nationales.</p>
+			<p>Chaque contenu est produit dans plusieurs langues nationales.</p>
 		</div>
 		<div class="tile-grid tile-grid--languages">
 			{% for row in languages %}

@@ -9,38 +9,37 @@
 
         <nav class="breadcrumb" aria-label="Fil d’Ariane">
             <a href="{{ path('app_home') }}">Accueil</a> ›
-            <a href="{{ path('app_video_index') }}">Vidéos</a> ›
+            <a href="{{ path('app_video_index') }}">Contenus</a> ›
             <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}">{{ video.thematic.name }}</a>
         </nav>
 
-        {% set downloadUrl = video.downloadFileName ? video_download_url(video) : null %}
+        {% set playbackFile = video.primaryPlaybackFile %}
+        {% set playbackUrl = playbackFile ? video_file_url(playbackFile) : null %}
+        {% set playbackCategory = playbackFile ? playbackFile.type.category.value : null %}
+        {% set availableFiles = video.files|filter(f => f.fileName is not null) %}
         <div class="video-detail__content">
             <div class="video-detail__top">
-                {% if video.format.value == 'audio' %}
+                {% if playbackCategory == 'audio' %}
                     <div class="video-detail__player video-detail__player--audio" style="--thematic-color: {{ video.thematic.colorHex }}">
                         <span class="video-card__lang-tag">{{ video.language.name }}</span>
                         <span class="video-detail__format-icon" aria-hidden="true">♪</span>
-                        {% if downloadUrl %}
-                            <audio class="video-detail__audio" controls src="{{ downloadUrl }}"></audio>
-                        {% endif %}
+                        <audio class="video-detail__audio" controls src="{{ playbackUrl }}"></audio>
                     </div>
-                {% elseif video.format.value == 'image' %}
+                {% elseif playbackCategory == 'image' %}
                     <div class="video-detail__player video-detail__player--image" style="--thematic-color: {{ video.thematic.colorHex }}">
                         <span class="video-card__lang-tag">{{ video.language.name }}</span>
-                        {% if downloadUrl %}
-                            <img src="{{ downloadUrl }}" alt="{{ video.title }}">
-                        {% else %}
-                            <span class="video-detail__format-icon" aria-hidden="true">🖼</span>
-                        {% endif %}
+                        <img src="{{ playbackUrl }}" alt="{{ video.title }}">
                     </div>
-                {% elseif video.format.value == 'pdf' %}
+                {% elseif playbackCategory == 'pdf' %}
                     <div class="video-detail__player video-detail__player--pdf" style="--thematic-color: {{ video.thematic.colorHex }}">
                         <span class="video-card__lang-tag">{{ video.language.name }}</span>
-                        {% if downloadUrl %}
-                            <iframe class="video-detail__pdf" src="{{ downloadUrl }}" title="{{ video.title }}"></iframe>
-                        {% else %}
-                            <span class="video-detail__format-icon" aria-hidden="true">📄</span>
-                        {% endif %}
+                        <iframe class="video-detail__pdf" src="{{ playbackUrl }}" title="{{ video.title }}"></iframe>
+                    </div>
+                {% elseif playbackCategory == 'video' %}
+                    <div class="video-detail__player" style="--thematic-color: {{ video.thematic.colorHex }}">
+                        <video class="video-detail__video" controls preload="metadata">
+                            <source src="{{ playbackUrl }}" type="{{ playbackFile.mimeType ?? 'video/mp4' }}">
+                        </video>
                     </div>
                 {% else %}
                     <div class="video-detail__player" style="--thematic-color: {{ video.thematic.colorHex }}">
@@ -53,60 +52,26 @@
                     <h2>Télécharger</h2>
                     <p class="muted">Libre de droits pour rediffusion.<br>Aucun compte requis.</p>
 
-                    {% if downloadUrl %}
+                    {% if availableFiles is not empty %}
                         <ul class="download-list">
-                            {% if video.format.value == 'video' %}
+                            {% for file in availableFiles %}
                                 <li>
-                                    <a href="{{ downloadUrl }}" class="download-list__badge">MP4</a>
+                                    <span class="download-list__badge">{{ file.type.badge }}</span>
                                     <span class="download-list__info">
-                                        <strong>Vidéo HD 1080p</strong>
-                                        <span class="muted">Pour la télévision et les écrans publics</span>
+                                        <strong>{{ file.type.label }}</strong>
+                                        <span class="muted">{{ file.type.description }}</span>
                                     </span>
-                                    <span class="download-list__size">32 Mo</span>
+                                    <span class="download-list__size">{{ (file.fileSize / 1048576)|round(1) }} Mo</span>
+                                    <a href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" class="btn btn--outline btn--sm">Télécharger</a>
                                 </li>
-                                <li>
-                                    <a href="{{ downloadUrl }}" class="download-list__badge">MP4</a>
-                                    <span class="download-list__info">
-                                        <strong>Vidéo allégée 480p</strong>
-                                        <span class="muted">Pour un partage en zone à faible débit</span>
-                                    </span>
-                                    <span class="download-list__size">9 Mo</span>
-                                </li>
-                                <li>
-                                    <a href="{{ downloadUrl }}" class="download-list__badge">9:16</a>
-                                    <span class="download-list__info">
-                                        <strong>Format vertical</strong>
-                                        <span class="muted">Storys, statuts WhatsApp, Facebook…</span>
-                                    </span>
-                                    <span class="download-list__size">26 Mo</span>
-                                </li>
-                            {% elseif video.format.value == 'audio' %}
-                                <li>
-                                    <a href="{{ downloadUrl }}" class="download-list__badge">MP3</a>
-                                    <span class="download-list__info">
-                                        <strong>Version audio</strong>
-                                        <span class="muted">Prête à être diffusée dans les groupes et les radios communautaires</span>
-                                    </span>
-                                    <span class="download-list__size">5 Mo</span>
-                                </li>
-                            {% elseif video.format.value == 'pdf' %}
-                                <li>
-                                    <a href="{{ downloadUrl }}" class="download-list__badge">PDF</a>
-                                    <span class="download-list__info">
-                                        <strong>Fiche de synthèse illustrée</strong>
-                                        <span class="muted">Imprimable, partageable via WhatsApp</span>
-                                    </span>
-                                </li>
-                            {% elseif video.format.value == 'image' %}
-                                <li>
-                                    <a href="{{ downloadUrl }}" class="download-list__badge">JPEG</a>
-                                    <span class="download-list__info">
-                                        <strong>Infographie</strong>
-                                        <span class="muted">Partageable via WhatsApp, Facebook</span>
-                                    </span>
-                                </li>
-                            {% endif %}
+                            {% endfor %}
                         </ul>
+
+                        {% if availableFiles|length > 1 %}
+                            <a href="{{ path('app_video_download_all', {slug: video.slug}) }}" class="btn btn--dark download-panel__all">Tout télécharger (.zip)</a>
+                        {% endif %}
+                    {% else %}
+                        <p class="muted">Aucun fichier disponible pour le moment.</p>
                     {% endif %}
 
                     <p class="download-panel__mention">Mention obligatoire à la diffusion : « Le Gouvernement Plus Près de Nous - République du Bénin. »</p>
@@ -126,7 +91,7 @@
                 {% set learningPoints = video.learningPointsList %}
                 {% if learningPoints is not empty %}
                     <div class="info-box">
-                        <h2>Ce que vous apprendrez dans cette vidéo</h2>
+                        <h2>Ce que vous apprendrez dans ce contenu</h2>
                         <ul>
                             {% for point in learningPoints %}
                                 <li>{{ point }}</li>
@@ -135,23 +100,21 @@
                     </div>
                 {% endif %}
 
-                {% if video.speakers is not empty %}
+                {% if video.speaker is not null %}
                     <div class="video-detail__speakers">
-                        <h2>Intervenants</h2>
+                        <h2>Intervenant</h2>
                         <ul>
-                            {% for speaker in video.speakers %}
-                                <li>
-                                    <strong>{{ speaker.fullName }}</strong>
-                                    {% if speaker.role %}<span class="muted"> — {{ speaker.role }}</span>{% endif %}
-                                </li>
-                            {% endfor %}
+                            <li>
+                                <strong>{{ video.speaker.fullName }}</strong>
+                                {% if video.speaker.role %}<span class="muted"> — {{ video.speaker.role }}</span>{% endif %}
+                            </li>
                         </ul>
                     </div>
                 {% endif %}
 
                 <div class="info-box feedback-box">
-                    <h2>Cette vidéo vous a-t-elle été utile ?</h2>
-                    <p class="muted">Votre réaction nous aide à améliorer la traduction et la clarté des prochaines vidéos.</p>
+                    <h2>Ce contenu vous a-t-il été utile ?</h2>
+                    <p class="muted">Votre réaction nous aide à améliorer la traduction et la clarté des prochains contenus.</p>
 
                     <form action="{{ path('app_video_feedback', {slug: video.slug}) }}" method="post" class="feedback-form" data-controller="feedback">
                         <input type="hidden" name="_token" value="{{ csrf_token('video_feedback_' ~ video.id) }}">
@@ -176,7 +139,7 @@
     {% if relatedVideos is not empty %}
         <section class="section wrap">
             <div class="section__header">
-                <h2>Vidéos similaires</h2>
+                <h2>Contenus similaires</h2>
             </div>
             <div class="video-grid">
                 {% for related in relatedVideos %}
