@@ -1,7 +1,9 @@
 /* ==========================================================================
    Le Gouvernement plus près de nous — feuille de styles principale
-   Mobile-first, sans dépendance externe.
+   Mobile-first.
    ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 :root {
     --color-bg: #ffffff;
@@ -34,7 +36,7 @@ html {
 
 body {
     margin: 0;
-    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    font-family: "Montserrat", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
     color: var(--color-text);
     background: var(--color-bg);
     line-height: 1.55;
@@ -202,13 +204,13 @@ button {
 }
 
 .brand__logo {
-    height: 70px;
+    height: 40px;
     width: auto;
     display: block;
 }
 
 .brand__picto {
-    height: 85px;
+    height: 48px;
     width: auto;
     display: block;
 }
@@ -259,25 +261,53 @@ button {
 }
 
 .header-search {
+    position: relative;
+    order: 2;
+    margin-left: auto;
+}
+
+.header-search__toggle {
     display: flex;
     align-items: center;
-    order: 2;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--color-navy);
+}
+
+.header-search__panel {
+    display: none;
+    align-items: center;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 1;
+    width: min(280px, calc(100vw - 40px));
     border: 1px solid var(--color-border);
     border-radius: 15px;
     padding: 6px 6px 6px 14px;
     background: #f7f5f0;
-    margin-left: auto;
+    box-shadow: var(--shadow-card);
 }
 
-.header-search input {
+.header-search__panel.is-open {
+    display: flex;
+}
+
+.header-search__panel input {
+    flex: 1;
+    min-width: 0;
     border: 0;
     background: transparent;
     outline: none;
-    width: 120px;
     font-size: 0.9rem;
 }
 
-.header-search button {
+.header-search__panel button {
+    flex-shrink: 0;
     border: 0;
     background: var(--color-navy);
     color: #fff;
@@ -886,14 +916,97 @@ button {
     min-width: 0;
 }
 
-/* ---- Filters sidebar -------------------------------------------------- */
+/* ---- Filters panel (collapsible on mobile) ----------------------------- */
+
+.filters-panel {
+    border: 1px solid var(--color-navy);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: #fff;
+}
+
+.filters-panel__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 18px;
+    border: 0;
+    background: transparent;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-navy);
+}
+
+.filters-panel__toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filters-panel__count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--color-navy);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.filters-panel__chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.filters-panel__toggle[aria-expanded="true"] .filters-panel__chevron {
+    transform: rotate(180deg);
+}
+
+.filters-panel__body {
+    display: none;
+    padding: 0 18px 20px;
+    border-top: 1px solid var(--color-border);
+}
+
+.filters-panel__body.is-open {
+    display: block;
+}
+
+.filters-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 16px 4px;
+}
+
+.filters-panel__title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-navy);
+}
+
+.filters-panel__reset {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-green);
+}
+
+.filters-panel__reset:hover {
+    color: var(--color-green-dark);
+    text-decoration: underline;
+}
 
 .filters-sidebar {
     display: grid;
-    gap: 24px;
-    padding: 20px;
-    border: 1px solid var(--color-navy);
-    border-radius: var(--radius-md);
+    gap: 20px;
+    padding-top: 6px;
 }
 
 .filters-sidebar__group {
@@ -924,6 +1037,46 @@ button {
     width: 16px;
     height: 16px;
     accent-color: var(--color-navy);
+}
+
+/* Chip-style options, scoped to the collapsible video filters panel only. */
+
+.filters-panel .filters-sidebar__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filters-panel .filters-sidebar__option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.filters-panel .filters-sidebar__option:hover {
+    border-color: var(--color-navy);
+}
+
+.filters-panel .filters-sidebar__option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+}
+
+.filters-panel .filters-sidebar__option:has(input:checked) {
+    background: var(--color-navy);
+    border-color: var(--color-navy);
+    color: #fff;
 }
 
 /* ---- Sélection de fichiers par conseil des ministres (espace média) ------ */
@@ -1515,6 +1668,16 @@ button {
     .video-layout__main .video-grid {
         grid-template-columns: repeat(3, 1fr);
     }
+
+    .filters-panel__toggle {
+        display: none;
+    }
+
+    .filters-panel__body {
+        display: block;
+        padding: 0 20px 20px;
+        border-top: 0;
+    }
 }
 
 @media (min-width: 860px) {
@@ -1547,8 +1710,27 @@ button {
         order: 3;
     }
 
-    .header-search input {
+    .header-search__toggle {
+        display: none;
+    }
+
+    .header-search__panel {
+        display: flex;
+        position: static;
+        width: auto;
+        box-shadow: none;
+    }
+
+    .header-search__panel input {
         width: 160px;
+    }
+
+    .brand__logo {
+        height: 70px;
+    }
+
+    .brand__picto {
+        height: 85px;
     }
 
     .hero__inner {

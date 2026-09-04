@@ -1,45 +1,73 @@
-<form class="filters-sidebar" action="{{ action }}" method="get">
-    {% if query %}
-        <input type="hidden" name="q" value="{{ query }}">
-    {% endif %}
+{% set activeFiltersCount = (selectedThematicSlugs is defined ? selectedThematicSlugs|length : 0) + (selectedLanguageSlugs is defined ? selectedLanguageSlugs|length : 0) + (selectedFormatValues is defined ? selectedFormatValues|length : 0) %}
 
-    {% if selectedRole is defined and selectedRole and selectedRole != 'tous' %}
-        <input type="hidden" name="role" value="{{ selectedRole }}">
-    {% endif %}
+<div class="filters-panel" data-controller="filters">
+    <button type="button" class="filters-panel__toggle" data-action="filters#toggle" data-filters-target="toggle" aria-expanded="false" aria-controls="filters-panel-body">
+        <span class="filters-panel__toggle-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+            Filtres
+            {% if activeFiltersCount > 0 %}<span class="filters-panel__count">{{ activeFiltersCount }}</span>{% endif %}
+        </span>
+        <svg class="filters-panel__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
 
-    {% if languages is defined and languages %}
-        <fieldset class="filters-sidebar__group">
-            <legend>Langue</legend>
-            {% for row in languages %}
-                <label class="filters-sidebar__option">
-                    <input type="checkbox" name="langue[]" value="{{ row.language.slug }}"{{ selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs ? ' checked' }} onchange="this.form.submit()">
-                    {{ row.language.name }}
-                </label>
-            {% endfor %}
-        </fieldset>
-    {% endif %}
+    <div class="filters-panel__body" id="filters-panel-body" data-filters-target="body">
+        <div class="filters-panel__head">
+            <span class="filters-panel__title">Filtres</span>
+            {% if activeFiltersCount > 0 %}
+                <a class="filters-panel__reset" href="{{ path('app_video_index', {role: selectedRole is defined and selectedRole != 'tous' ? selectedRole : null}) }}">Réinitialiser</a>
+            {% endif %}
+        </div>
 
-    {% if thematics is defined and thematics %}
-        <fieldset class="filters-sidebar__group">
-            <legend>Thématique</legend>
-            {% for row in thematics %}
-                <label class="filters-sidebar__option">
-                    <input type="checkbox" name="thematique[]" value="{{ row.thematic.slug }}"{{ selectedThematicSlugs is defined and row.thematic.slug in selectedThematicSlugs ? ' checked' }} onchange="this.form.submit()">
-                    {{ row.thematic.name }}
-                </label>
-            {% endfor %}
-        </fieldset>
-    {% endif %}
+        <form class="filters-sidebar" action="{{ action }}" method="get">
+            {% if query %}
+                <input type="hidden" name="q" value="{{ query }}">
+            {% endif %}
 
-    {% if formats is defined and formats %}
-        <fieldset class="filters-sidebar__group">
-            <legend>Format</legend>
-            {% for format in formats %}
-                <label class="filters-sidebar__option">
-                    <input type="checkbox" name="format[]" value="{{ format.value }}"{{ selectedFormatValues is defined and format.value in selectedFormatValues ? ' checked' }} onchange="this.form.submit()">
-                    {{ format.label }}
-                </label>
-            {% endfor %}
-        </fieldset>
-    {% endif %}
-</form>
+            {% if selectedRole is defined and selectedRole and selectedRole != 'tous' %}
+                <input type="hidden" name="role" value="{{ selectedRole }}">
+            {% endif %}
+
+            {% if languages is defined and languages %}
+                <fieldset class="filters-sidebar__group">
+                    <legend>Langue</legend>
+                    <div class="filters-sidebar__options">
+                        {% for row in languages %}
+                            <label class="filters-sidebar__option">
+                                <input type="checkbox" name="langue[]" value="{{ row.language.slug }}"{{ selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs ? ' checked' }} onchange="this.form.submit()">
+                                {{ row.language.name }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+            {% endif %}
+
+            {% if thematics is defined and thematics %}
+                <fieldset class="filters-sidebar__group">
+                    <legend>Thématique</legend>
+                    <div class="filters-sidebar__options">
+                        {% for row in thematics %}
+                            <label class="filters-sidebar__option">
+                                <input type="checkbox" name="thematique[]" value="{{ row.thematic.slug }}"{{ selectedThematicSlugs is defined and row.thematic.slug in selectedThematicSlugs ? ' checked' }} onchange="this.form.submit()">
+                                {{ row.thematic.name }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+            {% endif %}
+
+            {% if formats is defined and formats %}
+                <fieldset class="filters-sidebar__group">
+                    <legend>Format</legend>
+                    <div class="filters-sidebar__options">
+                        {% for format in formats %}
+                            <label class="filters-sidebar__option">
+                                <input type="checkbox" name="format[]" value="{{ format.value }}"{{ selectedFormatValues is defined and format.value in selectedFormatValues ? ' checked' }} onchange="this.form.submit()">
+                                {{ format.label }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+            {% endif %}
+        </form>
+    </div>
+</div>
