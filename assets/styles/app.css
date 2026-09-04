@@ -1049,44 +1049,46 @@ button {
     accent-color: var(--color-navy);
 }
 
-/* Chip-style options, scoped to the collapsible video filters panel only. */
+/* Chip-style, collapsible filters — mobile only. Desktop keeps the original plain list. */
 
-.filters-panel .filters-sidebar__options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
+@media (max-width: 719px) {
+    .filters-panel .filters-sidebar__options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
 
-.filters-panel .filters-sidebar__option {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 0;
-    padding: 8px 16px;
-    border-radius: 999px;
-    border: 1px solid var(--color-border);
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
+    .filters-panel .filters-sidebar__option {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: 1px solid var(--color-border);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
 
-.filters-panel .filters-sidebar__option:hover {
-    border-color: var(--color-navy);
-}
+    .filters-panel .filters-sidebar__option:hover {
+        border-color: var(--color-navy);
+    }
 
-.filters-panel .filters-sidebar__option input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: 0;
-    opacity: 0;
-}
+    .filters-panel .filters-sidebar__option input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+        opacity: 0;
+    }
 
-.filters-panel .filters-sidebar__option:has(input:checked) {
-    background: var(--color-navy);
-    border-color: var(--color-navy);
-    color: #fff;
+    .filters-panel .filters-sidebar__option:has(input:checked) {
+        background: var(--color-navy);
+        border-color: var(--color-navy);
+        color: #fff;
+    }
 }
 
 /* ---- Sélection de fichiers par conseil des ministres (espace média) ------ */
@@ -1689,8 +1691,17 @@ button {
 
     .filters-panel__body {
         display: block;
-        padding: 0 20px 20px;
+        padding: 20px;
         border-top: 0;
+    }
+
+    .filters-panel__head {
+        display: none;
+    }
+
+    .filters-sidebar {
+        gap: 24px;
+        padding-top: 0;
     }
 }
 
