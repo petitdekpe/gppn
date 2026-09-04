@@ -4,6 +4,8 @@
 {% block page_title %}{{ video.id ? 'Modifier le contenu' : 'Nouveau contenu' }}{% endblock %}
 
 {% block body %}
+    {% set playbackFile = video.primaryPlaybackFile %}
+    {% set playbackCategory = playbackFile ? playbackFile.type.category.value : null %}
     <div class="admin-form-card">
         {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
             {{ form_errors(form) }}
@@ -13,11 +15,8 @@
                 {{ form_row(form.status) }}
                 {{ form_row(form.durationSeconds) }}
             </div>
-            <div class="form-grid-2">
-                {{ form_row(form.thematic) }}
-                {{ form_row(form.language) }}
-            </div>
-            {{ form_row(form.councilSession) }}
+            {{ form_row(form.language) }}
+            {{ form_row(form.subject) }}
 
             <h2>Fichiers proposés au téléchargement</h2>
             <p class="form-help">Un contenu peut proposer n'importe laquelle de ces variantes, sans obligation de toutes les fournir.</p>
@@ -33,6 +32,35 @@
                     {% endif %}
                 </div>
             {% endfor %}
+
+            {% if playbackFile %}
+                {% set initialX = form.coverPositionX.vars.value %}
+                {% set initialY = form.coverPositionY.vars.value %}
+                <div class="admin-form-card__file-slot">
+                    <label>Cadrage de la couverture</label>
+                    <p class="form-help">Glissez l'aperçu pour choisir la partie de l'image affichée en couverture (carte, à la une, fiche détail).</p>
+                    <div class="cover-picker" data-controller="cover-picker">
+                        <div class="cover-picker__frame" data-cover-picker-target="frame" data-action="pointerdown->cover-picker#start">
+                            {% if playbackCategory == 'video' %}
+                                <video class="cover-picker__media" data-cover-picker-target="media" muted preload="metadata" playsinline style="object-position: {{ initialX }}% {{ initialY }}%">
+                                    <source src="{{ video_file_url(playbackFile) }}" type="{{ playbackFile.mimeType ?? 'video/mp4' }}">
+                                </video>
+                            {% else %}
+                                <img class="cover-picker__media" data-cover-picker-target="media" src="{{ video_file_url(playbackFile) }}" alt="" draggable="false" style="object-position: {{ initialX }}% {{ initialY }}%">
+                            {% endif %}
+                        </div>
+                        <div class="cover-picker__toolbar">
+                            <span class="cover-picker__readout" data-cover-picker-target="readout">{{ initialX }}% / {{ initialY }}%</span>
+                            <button type="button" class="btn btn--outline btn--sm" data-action="cover-picker#reset">Recentrer</button>
+                        </div>
+                        {{ form_widget(form.coverPositionX, {'attr': {'data-cover-picker-target': 'x'}}) }}
+                        {{ form_widget(form.coverPositionY, {'attr': {'data-cover-picker-target': 'y'}}) }}
+                    </div>
+                </div>
+            {% else %}
+                {{ form_widget(form.coverPositionX) }}
+                {{ form_widget(form.coverPositionY) }}
+            {% endif %}
 
             {{ form_row(form.learningPoints) }}
             {{ form_row(form.featured) }}

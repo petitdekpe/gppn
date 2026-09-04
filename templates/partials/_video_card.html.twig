@@ -2,7 +2,7 @@
 {% set previewFile = video.primaryPlaybackFile %}
 {% set previewCategory = previewFile ? previewFile.type.category.value : null %}
 <article class="video-card">
-    <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="video-card__thumb" style="--thematic-color: {{ video.thematic.colorHex }}">
+    <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="video-card__thumb" style="--thematic-color: {{ video.thematic.colorHex }}; --cover-position: {{ video.coverPositionX }}% {{ video.coverPositionY }}%">
         {% if previewFile %}
             <span class="video-card__format-tag">{{ previewFile.type.category.label }}</span>
         {% endif %}

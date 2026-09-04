@@ -60,6 +60,17 @@ class Video
     #[ORM\Column]
     private bool $featured = false;
 
+    /**
+     * Point de cadrage (en %) de l'image de couverture dans les zones en
+     * object-fit: cover (card, spotlight, fiche détail) — réglé à la souris
+     * depuis l'admin, cf. cover_picker_controller.js. 50/50 = centré.
+     */
+    #[ORM\Column(options: ['default' => 50])]
+    private int $coverPositionX = 50;
+
+    #[ORM\Column(options: ['default' => 50])]
+    private int $coverPositionY = 50;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -242,6 +253,30 @@ class Video
     public function setFeatured(bool $featured): static
     {
         $this->featured = $featured;
+
+        return $this;
+    }
+
+    public function getCoverPositionX(): int
+    {
+        return $this->coverPositionX;
+    }
+
+    public function setCoverPositionX(int $coverPositionX): static
+    {
+        $this->coverPositionX = max(0, min(100, $coverPositionX));
+
+        return $this;
+    }
+
+    public function getCoverPositionY(): int
+    {
+        return $this->coverPositionY;
+    }
+
+    public function setCoverPositionY(int $coverPositionY): static
+    {
+        $this->coverPositionY = max(0, min(100, $coverPositionY));
 
         return $this;
     }

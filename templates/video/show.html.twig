@@ -26,7 +26,7 @@
                         <audio class="video-detail__audio" controls src="{{ playbackUrl }}"></audio>
                     </div>
                 {% elseif playbackCategory == 'image' %}
-                    <div class="video-detail__player video-detail__player--image" style="--thematic-color: {{ video.thematic.colorHex }}">
+                    <div class="video-detail__player video-detail__player--image" style="--thematic-color: {{ video.thematic.colorHex }}; --cover-position: {{ video.coverPositionX }}% {{ video.coverPositionY }}%">
                         <span class="video-card__lang-tag">{{ video.language.name }}</span>
                         <img src="{{ playbackUrl }}" alt="{{ video.title }}">
                     </div>

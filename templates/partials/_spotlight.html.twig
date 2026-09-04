@@ -9,7 +9,7 @@
                 <div class="spotlight__slide{{ loop.first ? ' is-active' }}" data-carousel-target="slide">
                     {% set previewFile = spotlight.primaryPlaybackFile %}
                     {% set previewCategory = previewFile ? previewFile.type.category.value : null %}
-                    <a href="{{ path('app_video_show', {slug: spotlight.slug}) }}" class="spotlight__media" style="--thematic-color: {{ spotlight.thematic.colorHex }}">
+                    <a href="{{ path('app_video_show', {slug: spotlight.slug}) }}" class="spotlight__media" style="--thematic-color: {{ spotlight.thematic.colorHex }}; --cover-position: {{ spotlight.coverPositionX }}% {{ spotlight.coverPositionY }}%">
                         <span class="video-card__lang-tag">{{ spotlight.language.name }}</span>
                         {% if previewCategory == 'video' %}
                             <video class="video-card__preview" muted preload="metadata" playsinline>

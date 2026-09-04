@@ -15,6 +15,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -74,6 +75,8 @@ class VideoType extends AbstractType
                     ->createQueryBuilder('cs')
                     ->orderBy('cs.date', 'DESC'),
             ])
+            ->add('coverPositionX', HiddenType::class)
+            ->add('coverPositionY', HiddenType::class)
             ->add('files', CollectionType::class, [
                 'label' => false,
                 'entry_type' => VideoFileEntryType::class,
