@@ -15,8 +15,11 @@
                 {{ form_row(form.status) }}
                 {{ form_row(form.durationSeconds) }}
             </div>
-            {{ form_row(form.language) }}
-            {{ form_row(form.subject) }}
+            <div class="form-grid-2">
+                {{ form_row(form.thematic) }}
+                {{ form_row(form.language) }}
+            </div>
+            {{ form_row(form.councilSession) }}
 
             <h2>Fichiers proposés au téléchargement</h2>
             <p class="form-help">Un contenu peut proposer n'importe laquelle de ces variantes, sans obligation de toutes les fournir.</p>
