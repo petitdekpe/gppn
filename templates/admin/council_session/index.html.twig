@@ -28,7 +28,7 @@
                             <a class="btn btn--outline btn--sm" href="{{ path('admin_council_session_edit', {id: councilSession.id}) }}">Modifier</a>
                             <form method="post" action="{{ path('admin_council_session_delete', {id: councilSession.id}) }}" onsubmit="return confirm('Supprimer ce conseil des ministres ?');">
                                 <input type="hidden" name="_token" value="{{ csrf_token('delete-council-session-' ~ councilSession.id) }}">
-                                <button type="submit" class="btn btn--danger btn--sm" {{ videoCounts[councilSession.id] > 0 ? 'disabled' }}>Supprimer</button>
+                                <button type="submit" class="btn btn--danger btn--sm" {{ subjectCounts[councilSession.id] > 0 ? 'disabled' }}>Supprimer</button>
                             </form>
                         </td>
                     </tr>

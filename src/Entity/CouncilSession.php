@@ -28,13 +28,13 @@ class CouncilSession
     #[ORM\Column(length: 220, unique: true)]
     private string $slug = '';
 
-    /** @var Collection<int, Video> */
-    #[ORM\OneToMany(targetEntity: Video::class, mappedBy: 'councilSession')]
-    private Collection $videos;
+    /** @var Collection<int, Subject> */
+    #[ORM\OneToMany(targetEntity: Subject::class, mappedBy: 'councilSession')]
+    private Collection $subjects;
 
     public function __construct()
     {
-        $this->videos = new ArrayCollection();
+        $this->subjects = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -79,10 +79,10 @@ class CouncilSession
     }
 
     /**
-     * @return Collection<int, Video>
+     * @return Collection<int, Subject>
      */
-    public function getVideos(): Collection
+    public function getSubjects(): Collection
     {
-        return $this->videos;
+        return $this->subjects;
     }
 }

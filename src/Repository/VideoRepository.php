@@ -31,8 +31,9 @@ class VideoRepository extends ServiceEntityRepository
     private function baseQueryBuilder(): \Doctrine\ORM\QueryBuilder
     {
         return $this->createQueryBuilder('v')
-            ->addSelect('t', 'l')
-            ->innerJoin('v.thematic', 't')
+            ->addSelect('s', 't', 'l')
+            ->innerJoin('v.subject', 's')
+            ->innerJoin('s.thematic', 't')
             ->innerJoin('v.language', 'l')
             ->andWhere('v.status = :status')
             ->setParameter('status', VideoStatus::PUBLIE);
@@ -83,7 +84,7 @@ class VideoRepository extends ServiceEntityRepository
     public function findPublishedByCouncilSession(CouncilSession $councilSession): array
     {
         return $this->baseQueryBuilder()
-            ->andWhere('v.councilSession = :councilSession')
+            ->andWhere('s.councilSession = :councilSession')
             ->setParameter('councilSession', $councilSession)
             ->orderBy('v.title', 'ASC')
             ->getQuery()
@@ -190,6 +191,36 @@ class VideoRepository extends ServiceEntityRepository
         };
 
         return array_column($qb->getQuery()->getScalarResult(), 'id');
+    }
+
+    /**
+     * `count(['councilSession' => ...])` ne fonctionne plus depuis que le
+     * conseil des ministres est porté par le sujet et non plus directement
+     * par le contenu.
+     */
+    public function countByCouncilSession(CouncilSession $councilSession): int
+    {
+        return (int) $this->createQueryBuilder('v')
+            ->select('COUNT(v.id)')
+            ->innerJoin('v.subject', 's')
+            ->andWhere('s.councilSession = :councilSession')
+            ->setParameter('councilSession', $councilSession)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Idem pour la thématique, désormais portée par le sujet.
+     */
+    public function countByThematic(Thematic $thematic): int
+    {
+        return (int) $this->createQueryBuilder('v')
+            ->select('COUNT(v.id)')
+            ->innerJoin('v.subject', 's')
+            ->andWhere('s.thematic = :thematic')
+            ->setParameter('thematic', $thematic)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     public function countAll(): int

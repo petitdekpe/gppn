@@ -2,13 +2,12 @@
 
 namespace App\Form\Admin;
 
-use App\Entity\CouncilSession;
 use App\Entity\Language;
 use App\Entity\Speaker;
-use App\Entity\Thematic;
+use App\Entity\Subject;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
-use App\Repository\CouncilSessionRepository;
+use App\Repository\SubjectRepository;
 use App\Repository\VideoRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -55,25 +54,28 @@ class VideoType extends AbstractType
             ->add('durationSeconds', IntegerType::class, [
                 'label' => 'Durée (secondes)',
             ])
-            ->add('thematic', EntityType::class, [
-                'class' => Thematic::class,
-                'choice_label' => 'name',
-                'label' => 'Thématique',
-            ])
             ->add('language', EntityType::class, [
                 'class' => Language::class,
                 'choice_label' => 'name',
                 'label' => 'Langue',
             ])
-            ->add('councilSession', EntityType::class, [
-                'class' => CouncilSession::class,
-                'label' => 'Conseil des ministres (source du lot)',
-                'choice_label' => static fn (CouncilSession $councilSession) => $councilSession->getLabel()
-                    ? sprintf('%s (%s)', $councilSession->getLabel(), $councilSession->getDate()->format('d/m/Y'))
-                    : sprintf('Conseil des ministres du %s', $councilSession->getDate()->format('d/m/Y')),
-                'query_builder' => static fn (CouncilSessionRepository $repository) => $repository
-                    ->createQueryBuilder('cs')
-                    ->orderBy('cs.date', 'DESC'),
+            ->add('subject', EntityType::class, [
+                'class' => Subject::class,
+                'label' => 'Sujet',
+                'help' => 'Le sujet porte la thématique et le conseil des ministres. Pas encore de sujet pour ce contenu ? Créez-le d\'abord dans Sujets.',
+                'choice_label' => static fn (Subject $subject) => sprintf(
+                    '%s — %s (%s)',
+                    $subject->getCouncilSession()->getLabel()
+                        ?: sprintf('Conseil du %s', $subject->getCouncilSession()->getDate()->format('d/m/Y')),
+                    $subject->getReferenceTitle(),
+                    $subject->getThematic()->getName(),
+                ),
+                'query_builder' => static fn (SubjectRepository $repository) => $repository
+                    ->createQueryBuilder('s')
+                    ->innerJoin('s.councilSession', 'cs')->addSelect('cs')
+                    ->innerJoin('s.thematic', 't')->addSelect('t')
+                    ->orderBy('cs.date', 'DESC')
+                    ->addOrderBy('s.referenceTitle', 'ASC'),
             ])
             ->add('coverPositionX', HiddenType::class)
             ->add('coverPositionY', HiddenType::class)

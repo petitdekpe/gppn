@@ -5,6 +5,7 @@ namespace App\Controller\Admin;
 use App\Entity\CouncilSession;
 use App\Form\Admin\CouncilSessionType;
 use App\Repository\CouncilSessionRepository;
+use App\Repository\SubjectRepository;
 use App\Repository\VideoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,17 +19,20 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class CouncilSessionController extends AbstractController
 {
     #[Route('', name: 'admin_council_session_index')]
-    public function index(CouncilSessionRepository $councilSessionRepository, VideoRepository $videoRepository): Response
+    public function index(CouncilSessionRepository $councilSessionRepository, VideoRepository $videoRepository, SubjectRepository $subjectRepository): Response
     {
         $councilSessions = $councilSessionRepository->findBy([], ['date' => 'DESC']);
         $videoCounts = [];
+        $subjectCounts = [];
         foreach ($councilSessions as $councilSession) {
-            $videoCounts[$councilSession->getId()] = $videoRepository->count(['councilSession' => $councilSession]);
+            $videoCounts[$councilSession->getId()] = $videoRepository->countByCouncilSession($councilSession);
+            $subjectCounts[$councilSession->getId()] = $subjectRepository->count(['councilSession' => $councilSession]);
         }
 
         return $this->render('admin/council_session/index.html.twig', [
             'councilSessions' => $councilSessions,
             'videoCounts' => $videoCounts,
+            'subjectCounts' => $subjectCounts,
         ]);
     }
 
@@ -77,14 +81,16 @@ class CouncilSessionController extends AbstractController
     }
 
     #[Route('/{id}/supprimer', name: 'admin_council_session_delete', methods: ['POST'])]
-    public function delete(CouncilSession $councilSession, Request $request, EntityManagerInterface $entityManager, VideoRepository $videoRepository): Response
+    public function delete(CouncilSession $councilSession, Request $request, EntityManagerInterface $entityManager, SubjectRepository $subjectRepository): Response
     {
         if (!$this->isCsrfTokenValid('delete-council-session-' . $councilSession->getId(), $request->request->get('_token'))) {
             return $this->redirectToRoute('admin_council_session_index');
         }
 
-        if ($videoRepository->count(['councilSession' => $councilSession]) > 0) {
-            $this->addFlash('error', 'Impossible de supprimer un conseil des ministres encore rattaché à des contenus.');
+        // Un sujet exige un conseil des ministres (colonne non nullable) :
+        // il faut donc bloquer dès qu'un sujet existe, même sans contenu.
+        if ($subjectRepository->count(['councilSession' => $councilSession]) > 0) {
+            $this->addFlash('error', 'Impossible de supprimer un conseil des ministres encore rattaché à des sujets.');
 
             return $this->redirectToRoute('admin_council_session_index');
         }

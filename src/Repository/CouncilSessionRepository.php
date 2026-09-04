@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\CouncilSession;
+use App\Entity\Subject;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -30,7 +31,8 @@ class CouncilSessionRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('cs')
             ->select('cs AS councilSession', 'COUNT(v.id) AS videoCount')
-            ->leftJoin(Video::class, 'v', 'WITH', 'v.councilSession = cs AND v.status = :status')
+            ->leftJoin(Subject::class, 's', 'WITH', 's.councilSession = cs')
+            ->leftJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status')
             ->groupBy('cs.id')
             ->orderBy('cs.date', 'DESC')
             ->setParameter('status', VideoStatus::PUBLIE)

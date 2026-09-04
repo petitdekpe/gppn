@@ -27,13 +27,13 @@ class Thematic
     #[ORM\Column(length: 7)]
     private string $colorHex = '#1F7A4D';
 
-    /** @var Collection<int, Video> */
-    #[ORM\OneToMany(targetEntity: Video::class, mappedBy: 'thematic')]
-    private Collection $videos;
+    /** @var Collection<int, Subject> */
+    #[ORM\OneToMany(targetEntity: Subject::class, mappedBy: 'thematic')]
+    private Collection $subjects;
 
     public function __construct()
     {
-        $this->videos = new ArrayCollection();
+        $this->subjects = new ArrayCollection();
     }
 
     public function getId(): ?int

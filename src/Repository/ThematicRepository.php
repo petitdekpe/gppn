@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Subject;
 use App\Entity\Thematic;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
@@ -25,7 +26,8 @@ class ThematicRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('t')
             ->select('t AS thematic', 'COUNT(v.id) AS videoCount')
-            ->leftJoin(Video::class, 'v', 'WITH', 'v.thematic = t AND v.status = :status')
+            ->leftJoin(Subject::class, 's', 'WITH', 's.thematic = t')
+            ->leftJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status')
             ->groupBy('t.id')
             ->orderBy('t.name', 'ASC')
             ->setParameter('status', VideoStatus::PUBLIE)

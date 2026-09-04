@@ -36,8 +36,9 @@ class VideoFileRepository extends ServiceEntityRepository
 
         return $this->createQueryBuilder('f')
             ->innerJoin('f.video', 'v')
+            ->innerJoin('v.subject', 's')
             ->andWhere('f.id IN (:ids)')
-            ->andWhere('v.councilSession = :councilSession')
+            ->andWhere('s.councilSession = :councilSession')
             ->andWhere('v.status = :status')
             ->andWhere('f.fileName IS NOT NULL')
             ->setParameter('ids', $ids)

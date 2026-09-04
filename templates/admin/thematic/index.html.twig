@@ -30,7 +30,7 @@
                             <a class="btn btn--outline btn--sm" href="{{ path('admin_thematic_edit', {id: thematic.id}) }}">Modifier</a>
                             <form method="post" action="{{ path('admin_thematic_delete', {id: thematic.id}) }}" onsubmit="return confirm('Supprimer cette thématique ?');">
                                 <input type="hidden" name="_token" value="{{ csrf_token('delete-thematic-' ~ thematic.id) }}">
-                                <button type="submit" class="btn btn--danger btn--sm" {{ videoCounts[thematic.id] > 0 ? 'disabled' }}>Supprimer</button>
+                                <button type="submit" class="btn btn--danger btn--sm" {{ subjectCounts[thematic.id] > 0 ? 'disabled' }}>Supprimer</button>
                             </form>
                         </td>
                     </tr>

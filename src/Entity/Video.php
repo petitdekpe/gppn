@@ -33,17 +33,18 @@ class Video
     #[ORM\Column(enumType: VideoStatus::class, options: ['default' => 'publie'])]
     private VideoStatus $status = VideoStatus::BROUILLON;
 
-    #[ORM\ManyToOne(targetEntity: Thematic::class, inversedBy: 'videos')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?Thematic $thematic = null;
-
     #[ORM\ManyToOne(targetEntity: Language::class, inversedBy: 'videos')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Language $language = null;
 
-    #[ORM\ManyToOne(targetEntity: CouncilSession::class, inversedBy: 'videos')]
+    /**
+     * Le sujet porte la thématique et le conseil des ministres : plusieurs
+     * contenus (langues différentes, ou plusieurs fois la même langue)
+     * peuvent partager un même sujet.
+     */
+    #[ORM\ManyToOne(targetEntity: Subject::class, inversedBy: 'videos')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?CouncilSession $councilSession = null;
+    private ?Subject $subject = null;
 
     #[ORM\Column]
     private int $durationSeconds = 0;
@@ -141,18 +142,6 @@ class Video
         return $this;
     }
 
-    public function getThematic(): ?Thematic
-    {
-        return $this->thematic;
-    }
-
-    public function setThematic(?Thematic $thematic): static
-    {
-        $this->thematic = $thematic;
-
-        return $this;
-    }
-
     public function getLanguage(): ?Language
     {
         return $this->language;
@@ -165,16 +154,31 @@ class Video
         return $this;
     }
 
-    public function getCouncilSession(): ?CouncilSession
+    public function getSubject(): ?Subject
     {
-        return $this->councilSession;
+        return $this->subject;
     }
 
-    public function setCouncilSession(?CouncilSession $councilSession): static
+    public function setSubject(?Subject $subject): static
     {
-        $this->councilSession = $councilSession;
+        $this->subject = $subject;
 
         return $this;
+    }
+
+    /**
+     * Délègue au sujet : conservé pour que le reste du code (templates,
+     * requêtes basées sur l'entité) continue de lire `video.thematic` sans
+     * savoir que la thématique est en fait portée par le sujet.
+     */
+    public function getThematic(): ?Thematic
+    {
+        return $this->subject?->getThematic();
+    }
+
+    public function getCouncilSession(): ?CouncilSession
+    {
+        return $this->subject?->getCouncilSession();
     }
 
     public function getDurationSeconds(): int

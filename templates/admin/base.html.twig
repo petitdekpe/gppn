@@ -26,6 +26,7 @@
                         <a href="{{ path('admin_language_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_language' ? 'is-active' }}">Langues</a>
                         <a href="{{ path('admin_speaker_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_speaker' ? 'is-active' }}">Intervenants</a>
                         <a href="{{ path('admin_council_session_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_council_session' ? 'is-active' }}">Conseils des ministres</a>
+                        <a href="{{ path('admin_subject_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_subject' ? 'is-active' }}">Sujets</a>
                     {% endif %}
                     {% if is_granted('ROLE_MODERATEUR') %}
                         <a href="{{ path('admin_suggestion_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_suggestion' ? 'is-active' }}">Suggestions</a>
