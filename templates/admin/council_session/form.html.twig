@@ -16,4 +16,47 @@
             </div>
         {{ form_end(form) }}
     </div>
+
+    {% if councilSession.id %}
+        <div class="admin-form-card admin-form-card--subjects">
+            <div class="admin-toolbar admin-toolbar--split">
+                <h2>Sujets de ce conseil</h2>
+                <a class="btn btn--primary btn--sm" href="{{ path('admin_council_session_subject_new', {id: councilSession.id}) }}">+ Nouveau sujet</a>
+            </div>
+            <p class="form-help">Un sujet regroupe les contenus (langues, ou plusieurs fois la même langue) qui traitent du même point à l'ordre du jour de ce conseil.</p>
+
+            {% if subjects is empty %}
+                <p class="empty-state">Aucun sujet pour ce conseil.</p>
+            {% else %}
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Thématique</th>
+                                <th>Titre du sujet</th>
+                                <th>Contenus</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subject in subjects %}
+                                <tr>
+                                    <td>{{ subject.thematic.name }}</td>
+                                    <td>{{ subject.referenceTitle }}</td>
+                                    <td>{{ videoCounts[subject.id] }}</td>
+                                    <td class="admin-table__actions">
+                                        <a class="btn btn--outline btn--sm" href="{{ path('admin_council_session_subject_edit', {id: councilSession.id, subjectId: subject.id}) }}">Modifier</a>
+                                        <form method="post" action="{{ path('admin_council_session_subject_delete', {id: councilSession.id, subjectId: subject.id}) }}" onsubmit="return confirm('Supprimer ce sujet ?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete-subject-' ~ subject.id) }}">
+                                            <button type="submit" class="btn btn--danger btn--sm" {{ videoCounts[subject.id] > 0 ? 'disabled' }}>Supprimer</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
 {% endblock %}

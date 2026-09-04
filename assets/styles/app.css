@@ -1970,6 +1970,19 @@ button {
     margin-bottom: 16px;
 }
 
+.admin-toolbar--split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.admin-toolbar--split h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
 .admin-table-wrap {
     overflow-x: auto;
     background: #fff;
@@ -2039,6 +2052,11 @@ button {
     border-radius: var(--radius-lg);
     padding: 24px;
     max-width: 720px;
+}
+
+.admin-form-card--subjects {
+    margin-top: 24px;
+    max-width: 900px;
 }
 
 .admin-form-card label {

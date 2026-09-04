@@ -3,11 +3,14 @@
 namespace App\Controller\Admin;
 
 use App\Entity\CouncilSession;
+use App\Entity\Subject;
 use App\Form\Admin\CouncilSessionType;
+use App\Form\Admin\SubjectType;
 use App\Repository\CouncilSessionRepository;
 use App\Repository\SubjectRepository;
 use App\Repository\VideoRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,7 +63,7 @@ class CouncilSessionController extends AbstractController
     }
 
     #[Route('/{id}/modifier', name: 'admin_council_session_edit')]
-    public function edit(CouncilSession $councilSession, Request $request, EntityManagerInterface $entityManager): Response
+    public function edit(CouncilSession $councilSession, Request $request, EntityManagerInterface $entityManager, SubjectRepository $subjectRepository, VideoRepository $videoRepository): Response
     {
         $form = $this->createForm(CouncilSessionType::class, $councilSession);
         $form->handleRequest($request);
@@ -71,12 +74,27 @@ class CouncilSessionController extends AbstractController
 
             $this->addFlash('success', 'Conseil des ministres mis à jour.');
 
-            return $this->redirectToRoute('admin_council_session_index');
+            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+        }
+
+        $subjects = $subjectRepository->createQueryBuilder('s')
+            ->innerJoin('s.thematic', 't')->addSelect('t')
+            ->andWhere('s.councilSession = :councilSession')
+            ->setParameter('councilSession', $councilSession)
+            ->orderBy('s.referenceTitle', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $videoCounts = [];
+        foreach ($subjects as $subject) {
+            $videoCounts[$subject->getId()] = $videoRepository->count(['subject' => $subject]);
         }
 
         return $this->render('admin/council_session/form.html.twig', [
             'form' => $form,
             'councilSession' => $councilSession,
+            'subjects' => $subjects,
+            'videoCounts' => $videoCounts,
         ]);
     }
 
@@ -101,6 +119,72 @@ class CouncilSessionController extends AbstractController
         $this->addFlash('success', 'Conseil des ministres supprimé.');
 
         return $this->redirectToRoute('admin_council_session_index');
+    }
+
+    #[Route('/{id}/sujets/nouveau', name: 'admin_council_session_subject_new')]
+    public function newSubject(CouncilSession $councilSession, Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $subject = new Subject();
+        $subject->setCouncilSession($councilSession);
+        $form = $this->createForm(SubjectType::class, $subject);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($subject);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Sujet créé.');
+
+            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+        }
+
+        return $this->render('admin/council_session/subject_form.html.twig', [
+            'form' => $form,
+            'councilSession' => $councilSession,
+            'subject' => $subject,
+        ]);
+    }
+
+    #[Route('/{id}/sujets/{subjectId}/modifier', name: 'admin_council_session_subject_edit')]
+    public function editSubject(CouncilSession $councilSession, #[MapEntity(id: 'subjectId')] Subject $subject, Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(SubjectType::class, $subject);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Sujet mis à jour.');
+
+            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+        }
+
+        return $this->render('admin/council_session/subject_form.html.twig', [
+            'form' => $form,
+            'councilSession' => $councilSession,
+            'subject' => $subject,
+        ]);
+    }
+
+    #[Route('/{id}/sujets/{subjectId}/supprimer', name: 'admin_council_session_subject_delete', methods: ['POST'])]
+    public function deleteSubject(CouncilSession $councilSession, #[MapEntity(id: 'subjectId')] Subject $subject, Request $request, EntityManagerInterface $entityManager, VideoRepository $videoRepository): Response
+    {
+        if (!$this->isCsrfTokenValid('delete-subject-' . $subject->getId(), $request->request->get('_token'))) {
+            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+        }
+
+        if ($videoRepository->count(['subject' => $subject]) > 0) {
+            $this->addFlash('error', 'Impossible de supprimer un sujet encore rattaché à des contenus.');
+
+            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+        }
+
+        $entityManager->remove($subject);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Sujet supprimé.');
+
+        return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
     }
 
     /**
