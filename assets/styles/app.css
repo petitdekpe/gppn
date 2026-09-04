@@ -387,6 +387,7 @@ button {
 /* ---- Stats bar ------------------------------------------------------- */
 
 .stats-bar {
+    display: none;
     position: relative;
     z-index: 1;
     color: #fff;
@@ -745,17 +746,26 @@ button {
 
 .tile--thematic {
     color: #fff;
+    aspect-ratio: 1 / 1;
+    padding: 14px;
 }
 
 .tile--thematic .tile__name {
     margin-top: auto;
     font-weight: 700;
-    font-size: 1.02rem;
+    font-size: 0.85rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .tile--thematic .tile__count {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .tile--language {
@@ -1634,6 +1644,10 @@ button {
    ========================================================================== */
 
 @media (min-width: 640px) {
+    .stats-bar {
+        display: block;
+    }
+
     .stats-bar__grid {
         grid-template-columns: repeat(4, 1fr);
     }
