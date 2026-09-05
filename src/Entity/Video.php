@@ -49,9 +49,6 @@ class Video
     #[ORM\Column]
     private \DateTimeImmutable $publishedAt;
 
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $learningPoints = null;
-
     #[ORM\Column]
     private bool $featured = false;
 
@@ -212,14 +209,7 @@ class Video
 
     public function getLearningPoints(): ?string
     {
-        return $this->learningPoints;
-    }
-
-    public function setLearningPoints(?string $learningPoints): static
-    {
-        $this->learningPoints = $learningPoints;
-
-        return $this;
+        return $this->subject?->getLearningPoints();
     }
 
     /**
@@ -227,11 +217,7 @@ class Video
      */
     public function getLearningPointsList(): array
     {
-        if ($this->learningPoints === null || trim($this->learningPoints) === '') {
-            return [];
-        }
-
-        return array_values(array_filter(array_map('trim', explode("\n", $this->learningPoints)), static fn (string $line) => $line !== ''));
+        return $this->subject?->getLearningPointsList() ?? [];
     }
 
     public function isFeatured(): bool

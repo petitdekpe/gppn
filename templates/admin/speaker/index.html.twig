@@ -13,6 +13,7 @@
             <thead>
                 <tr>
                     <th>Nom complet</th>
+                    <th>Sigle</th>
                     <th>Fonction</th>
                     <th>Contenus</th>
                     <th></th>
@@ -22,6 +23,7 @@
                 {% for speaker in speakers %}
                     <tr>
                         <td>{{ speaker.fullName }}</td>
+                        <td>{{ speaker.sigle ?: '—' }}</td>
                         <td>{{ speaker.role ?: '—' }}</td>
                         <td>{{ speaker.videos|length }}</td>
                         <td class="admin-table__actions">

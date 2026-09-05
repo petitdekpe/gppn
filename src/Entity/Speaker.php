@@ -19,6 +19,9 @@ class Speaker
     #[ORM\Column(length: 150)]
     private string $fullName = '';
 
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $sigle = null;
+
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $role = null;
 
@@ -44,6 +47,18 @@ class Speaker
     public function setFullName(string $fullName): static
     {
         $this->fullName = $fullName;
+
+        return $this;
+    }
+
+    public function getSigle(): ?string
+    {
+        return $this->sigle;
+    }
+
+    public function setSigle(?string $sigle): static
+    {
+        $this->sigle = $sigle;
 
         return $this;
     }

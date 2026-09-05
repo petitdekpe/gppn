@@ -34,6 +34,12 @@ class SubjectType extends AbstractType
                 'label' => 'Résumé',
                 'attr' => ['rows' => 5],
             ])
+            ->add('learningPoints', TextareaType::class, [
+                'label' => 'Ce que vous apprendrez dans ce contenu',
+                'help' => 'Une idée par ligne. Laissez vide pour masquer ce bloc sur la page du contenu.',
+                'required' => false,
+                'attr' => ['rows' => 4],
+            ])
         ;
     }
 
