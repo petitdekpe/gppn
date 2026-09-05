@@ -33,7 +33,7 @@
                         <thead>
                             <tr>
                                 <th>Thématique</th>
-                                <th>Titre du sujet</th>
+                                <th>Titre</th>
                                 <th>Contenus</th>
                                 <th></th>
                             </tr>
@@ -42,7 +42,7 @@
                             {% for subject in subjects %}
                                 <tr>
                                     <td>{{ subject.thematic.name }}</td>
-                                    <td>{{ subject.referenceTitle }}</td>
+                                    <td>{{ subject.title }}</td>
                                     <td>{{ videoCounts[subject.id] }}</td>
                                     <td class="admin-table__actions">
                                         <a class="btn btn--outline btn--sm" href="{{ path('admin_council_session_subject_edit', {id: councilSession.id, subjectId: subject.id}) }}">Modifier</a>

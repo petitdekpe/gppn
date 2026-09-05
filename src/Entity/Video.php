@@ -21,14 +21,8 @@ class Video
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 200)]
-    private string $title = '';
-
     #[ORM\Column(length: 220, unique: true)]
     private string $slug = '';
-
-    #[ORM\Column(type: 'text')]
-    private string $summary = '';
 
     #[ORM\Column(enumType: VideoStatus::class, options: ['default' => 'publie'])]
     private VideoStatus $status = VideoStatus::BROUILLON;
@@ -94,18 +88,6 @@ class Video
         return $this->id;
     }
 
-    public function getTitle(): string
-    {
-        return $this->title;
-    }
-
-    public function setTitle(string $title): static
-    {
-        $this->title = $title;
-
-        return $this;
-    }
-
     public function getSlug(): string
     {
         return $this->slug;
@@ -114,18 +96,6 @@ class Video
     public function setSlug(string $slug): static
     {
         $this->slug = $slug;
-
-        return $this;
-    }
-
-    public function getSummary(): string
-    {
-        return $this->summary;
-    }
-
-    public function setSummary(string $summary): static
-    {
-        $this->summary = $summary;
 
         return $this;
     }
@@ -179,6 +149,21 @@ class Video
     public function getCouncilSession(): ?CouncilSession
     {
         return $this->subject?->getCouncilSession();
+    }
+
+    /**
+     * Le titre et le résumé sont désormais saisis une seule fois sur le
+     * sujet (partagés par toutes ses langues) plutôt que dupliqués sur
+     * chaque contenu.
+     */
+    public function getTitle(): string
+    {
+        return $this->subject?->getTitle() ?? '';
+    }
+
+    public function getSummary(): string
+    {
+        return $this->subject?->getSummary() ?? '';
     }
 
     public function getDurationSeconds(): int

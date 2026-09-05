@@ -25,7 +25,10 @@ class Subject
     private ?Thematic $thematic = null;
 
     #[ORM\Column(length: 200)]
-    private string $referenceTitle = '';
+    private string $title = '';
+
+    #[ORM\Column(type: 'text')]
+    private string $summary = '';
 
     /** @var Collection<int, Video> */
     #[ORM\OneToMany(targetEntity: Video::class, mappedBy: 'subject')]
@@ -65,14 +68,26 @@ class Subject
         return $this;
     }
 
-    public function getReferenceTitle(): string
+    public function getTitle(): string
     {
-        return $this->referenceTitle;
+        return $this->title;
     }
 
-    public function setReferenceTitle(string $referenceTitle): static
+    public function setTitle(string $title): static
     {
-        $this->referenceTitle = $referenceTitle;
+        $this->title = $title;
+
+        return $this;
+    }
+
+    public function getSummary(): string
+    {
+        return $this->summary;
+    }
+
+    public function setSummary(string $summary): static
+    {
+        $this->summary = $summary;
 
         return $this;
     }

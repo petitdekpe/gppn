@@ -9,8 +9,6 @@
     <div class="admin-form-card">
         {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
             {{ form_errors(form) }}
-            {{ form_row(form.title) }}
-            {{ form_row(form.summary) }}
             <div class="form-grid-2">
                 {{ form_row(form.status) }}
                 {{ form_row(form.durationSeconds) }}

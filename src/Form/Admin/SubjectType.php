@@ -6,6 +6,7 @@ use App\Entity\Subject;
 use App\Entity\Thematic;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -25,9 +26,13 @@ class SubjectType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'Thématique',
             ])
-            ->add('referenceTitle', TextType::class, [
-                'label' => 'Titre du sujet',
-                'help' => 'Repère interne pour l\'administration. Chaque contenu ajouté sous ce sujet garde son propre titre, dans sa langue.',
+            ->add('title', TextType::class, [
+                'label' => 'Titre',
+                'help' => 'Partagé par tous les contenus (langues) de ce sujet.',
+            ])
+            ->add('summary', TextareaType::class, [
+                'label' => 'Résumé',
+                'attr' => ['rows' => 5],
             ])
         ;
     }

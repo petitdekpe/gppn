@@ -86,7 +86,7 @@ class VideoRepository extends ServiceEntityRepository
         return $this->baseQueryBuilder()
             ->andWhere('s.councilSession = :councilSession')
             ->setParameter('councilSession', $councilSession)
-            ->orderBy('v.title', 'ASC')
+            ->orderBy('s.title', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -139,7 +139,7 @@ class VideoRepository extends ServiceEntityRepository
         }
 
         if ($query !== null && $query !== '') {
-            $qb->andWhere('v.title LIKE :query OR v.summary LIKE :query')
+            $qb->andWhere('s.title LIKE :query OR s.summary LIKE :query')
                 ->setParameter('query', '%' . $query . '%');
         }
 

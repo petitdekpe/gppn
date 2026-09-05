@@ -17,7 +17,6 @@ use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
@@ -33,18 +32,14 @@ class VideoType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('title', TextType::class, ['label' => 'Titre'])
-            // Le slug est calculé automatiquement à partir du titre (voir
-            // FormEvents::SUBMIT ci-dessous) plutôt que saisi à la main : un
-            // slug mal formé (espaces, ponctuation) servant de nom de dossier
-            // sur le serveur faisait planter la mise en ligne. Une fois
-            // attribué, il reste stable même si le titre change ensuite,
-            // pour ne pas casser l'URL publique d'un contenu déjà
-            // partagé/indexé.
-            ->add('summary', TextareaType::class, [
-                'label' => 'Résumé',
-                'attr' => ['rows' => 5],
-            ])
+            // Le titre et le résumé se saisissent sur le sujet (partagés par
+            // toutes ses langues), pas ici. Le slug est calculé automatiquement
+            // à partir du titre du sujet (voir FormEvents::SUBMIT ci-dessous)
+            // plutôt que saisi à la main : un slug mal formé (espaces,
+            // ponctuation) servant de nom de dossier sur le serveur faisait
+            // planter la mise en ligne. Une fois attribué, il reste stable
+            // même si le titre change ensuite, pour ne pas casser l'URL
+            // publique d'un contenu déjà partagé/indexé.
             ->add('status', EnumType::class, [
                 'class' => VideoStatus::class,
                 'choice_label' => static fn (VideoStatus $status) => $status->getLabel(),
@@ -67,7 +62,7 @@ class VideoType extends AbstractType
                     '%s — %s (%s)',
                     $subject->getCouncilSession()->getLabel()
                         ?: sprintf('Conseil du %s', $subject->getCouncilSession()->getDate()->format('d/m/Y')),
-                    $subject->getReferenceTitle(),
+                    $subject->getTitle(),
                     $subject->getThematic()->getName(),
                 ),
                 'query_builder' => static fn (SubjectRepository $repository) => $repository
@@ -75,7 +70,7 @@ class VideoType extends AbstractType
                     ->innerJoin('s.councilSession', 'cs')->addSelect('cs')
                     ->innerJoin('s.thematic', 't')->addSelect('t')
                     ->orderBy('cs.date', 'DESC')
-                    ->addOrderBy('s.referenceTitle', 'ASC'),
+                    ->addOrderBy('s.title', 'ASC'),
             ])
             ->add('coverPositionX', HiddenType::class)
             ->add('coverPositionY', HiddenType::class)

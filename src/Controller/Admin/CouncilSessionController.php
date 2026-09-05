@@ -81,7 +81,7 @@ class CouncilSessionController extends AbstractController
             ->innerJoin('s.thematic', 't')->addSelect('t')
             ->andWhere('s.councilSession = :councilSession')
             ->setParameter('councilSession', $councilSession)
-            ->orderBy('s.referenceTitle', 'ASC')
+            ->orderBy('s.title', 'ASC')
             ->getQuery()
             ->getResult();
 
