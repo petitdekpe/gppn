@@ -24,3 +24,8 @@
 # volumineux et propres à chaque environnement pour être versionnés.
 /public/uploads/
 ###< app/video-pipeline ###
+
+###> app/documents ###
+# Documents projet (cahier des charges, TDR, propositions...) : hors dépôt.
+/GPPN_*
+###< app/documents ###
