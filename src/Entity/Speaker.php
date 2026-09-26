@@ -76,6 +76,30 @@ class Speaker
     }
 
     /**
+     * Un « Ministre Conseiller(ère) » se reconnaît au radical « Conseill »
+     * de sa fonction (accord féminin « Conseillère » compris) : aucune
+     * donnée structurée dédiée pour l'instant.
+     */
+    public function isMinistreConseiller(): bool
+    {
+        return str_contains($this->role ?? '', 'Conseill');
+    }
+
+    /**
+     * Code de l'intervenant dans les noms de fichiers de l'import en masse
+     * (INTERVENANT-LANGUE-FORMAT) : le sigle, précédé de « MCC » pour un
+     * ministre conseiller, ce qui distingue les sigles partagés (MFAS / MCCMFAS).
+     */
+    public function getFileCode(): ?string
+    {
+        if (!$this->sigle) {
+            return null;
+        }
+
+        return ($this->isMinistreConseiller() ? 'MCC' : '') . $this->sigle;
+    }
+
+    /**
      * @return Collection<int, Video>
      */
     public function getVideos(): Collection

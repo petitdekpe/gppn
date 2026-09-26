@@ -1,0 +1,41 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Paramètres — Administration GPPN{% endblock %}
+{% block page_title %}Paramètres{% endblock %}
+
+{% block body %}
+    <div class="admin-form-card">
+        {{ form_start(form) }}
+            {{ form_errors(form) }}
+
+            <fieldset class="admin-settings__group">
+                <legend>Sécurité</legend>
+                <label class="admin-check">
+                    {{ form_widget(form.otpEnabled) }}
+                    <span>{{ form.otpEnabled.vars.label }}</span>
+                </label>
+                <p class="admin-settings__help">{{ form.otpEnabled.vars.help }}</p>
+                {% if mailerDisabled %}
+                    <p class="admin-settings__warning">L’envoi d’e-mails n’est pas configuré (<code>MAILER_DSN=null://null</code>) : aucun code ne partira réellement. En développement, le code s’affiche à l’écran ; ailleurs, configurez <code>MAILER_DSN</code> avant d’activer cette option.</p>
+                {% endif %}
+            </fieldset>
+
+            <fieldset class="admin-settings__group">
+                <legend>{{ form.enabledFormats.vars.label }}</legend>
+                {{ form_errors(form.enabledFormats) }}
+                {% for choice in form.enabledFormats %}
+                    <label class="admin-check">
+                        {{ form_widget(choice) }}
+                        <span>{{ choice.vars.label }}</span>
+                    </label>
+                {% endfor %}
+                <p class="admin-settings__help">{{ form.enabledFormats.vars.help }}</p>
+                {% do form.enabledFormats.setRendered() %}
+            </fieldset>
+
+            <div class="admin-form-actions">
+                <button type="submit" class="btn btn--primary">Enregistrer</button>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

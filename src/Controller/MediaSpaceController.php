@@ -6,7 +6,6 @@ use App\Entity\Language;
 use App\Entity\Subject;
 use App\Entity\VideoFile;
 use App\Enum\CapsuleFormat;
-use App\Repository\CouncilSessionRepository;
 use App\Repository\LanguageRepository;
 use App\Repository\SubjectRepository;
 use App\Repository\VideoFileRepository;
@@ -28,7 +27,6 @@ class MediaSpaceController extends AbstractController
         SubjectRepository $subjectRepository,
         LanguageRepository $languageRepository,
         VideoFileRepository $videoFileRepository,
-        CouncilSessionRepository $councilSessionRepository,
     ): Response {
         $subjectRows = $subjectRepository->findAllWithVideoCount();
 
@@ -38,27 +36,29 @@ class MediaSpaceController extends AbstractController
             static fn (Subject $subject): bool => in_array($subject->getId(), $subjectIds, true),
         ));
 
-        // Le conseil des ministres reste facultatif : il ne fait que réduire
-        // la liste de sujets proposée à l'étape 1, sans jamais faire partie
-        // des critères du lot lui-même (voir VideoFileRepository::findForLot,
+        // Étape 1 : un calendrier des conseils des ministres (comme dans
+        // l'admin) n'affiche que les sujets du conseil choisi. Ce n'est qu'un
+        // affichage : tous les sujets sont rendus, et un sujet coché reste
+        // dans le lot quand on change de conseil (voir VideoFileRepository::findForLot,
         // toujours bâti à partir des sujets/langues/formats sélectionnés).
-        $councilSessionRows = array_values(array_filter(
-            $councilSessionRepository->findAllWithVideoCount(),
-            static fn (array $row): bool => $row['videoCount'] > 0,
-        ));
-        $councilSessionIds = array_map('intval', $request->query->all('conseil'));
-        $visibleSubjectRows = $councilSessionIds === []
-            ? $subjectRows
-            : array_values(array_filter(
-                $subjectRows,
-                static fn (array $row): bool => in_array($row['subject']->getCouncilSession()->getId(), $councilSessionIds, true),
-            ));
+        $subjectRowsBySession = [];
+        foreach ($subjectRows as $row) {
+            $subjectRowsBySession[$row['subject']->getCouncilSession()->getId()][] = $row;
+        }
+        $calendar = array_values(array_map(static fn (array $rows): array => [
+            'id' => $rows[0]['subject']->getCouncilSession()->getId(),
+            'date' => $rows[0]['subject']->getCouncilSession()->getDate()->format('Y-m-d'),
+            'count' => count($rows),
+        ], $subjectRowsBySession));
 
-        // Un sujet déjà sélectionné doit rester dans le lot même si un filtre
-        // par conseil des ministres masque ensuite sa case à cocher — sans
-        // quoi il disparaîtrait silencieusement du lot au prochain rechargement.
-        $visibleSubjectIds = array_map(static fn (array $row): int => $row['subject']->getId(), $visibleSubjectRows);
-        $hiddenSelectedSubjectIds = array_values(array_diff($subjectIds, $visibleSubjectIds));
+        // Conseil affiché : celui demandé, sinon celui du premier sujet coché, sinon le plus récent.
+        $requestedSession = $request->query->all()['conseil'] ?? null;
+        $selectedSessionId = (int) (is_array($requestedSession) ? reset($requestedSession) : $requestedSession);
+        if (!isset($subjectRowsBySession[$selectedSessionId])) {
+            $selectedSessionId = $selectedSubjects !== []
+                ? $selectedSubjects[0]->getCouncilSession()->getId()
+                : array_key_first($subjectRowsBySession);
+        }
 
         $availableLanguages = $languageRepository->findAvailableForSubjects($selectedSubjects);
         $languageIds = array_map('intval', $request->query->all('langue'));
@@ -80,10 +80,9 @@ class MediaSpaceController extends AbstractController
         $matchingFiles = $videoFileRepository->findForLot($selectedSubjects, $selectedLanguages, $selectedFormats);
 
         return $this->render('media_space/index.html.twig', [
-            'visibleSubjectRows' => $visibleSubjectRows,
-            'hiddenSelectedSubjectIds' => $hiddenSelectedSubjectIds,
-            'councilSessionRows' => $councilSessionRows,
-            'selectedCouncilSessionIds' => $councilSessionIds,
+            'subjectRowsBySession' => $subjectRowsBySession,
+            'calendar' => $calendar,
+            'selectedSessionId' => $selectedSessionId,
             'selectedSubjectIds' => $subjectIds,
             'availableLanguages' => $availableLanguages,
             'selectedLanguageIds' => $languageIds,
@@ -110,7 +109,7 @@ class MediaSpaceController extends AbstractController
         $subjectIds = array_map('intval', $request->request->all('sujet'));
         $languageIds = array_map('intval', $request->request->all('langue'));
         $formatValues = $request->request->all('format');
-        $councilSessionIds = array_map('intval', $request->request->all('conseil'));
+        $councilSessionId = $request->request->getInt('conseil');
 
         $subjects = $subjectIds ? $subjectRepository->findBy(['id' => $subjectIds]) : [];
         $languages = $languageIds ? $languageRepository->findBy(['id' => $languageIds]) : [];
@@ -132,7 +131,7 @@ class MediaSpaceController extends AbstractController
                 'sujet' => $subjectIds,
                 'langue' => $languageIds,
                 'format' => $formatValues,
-                'conseil' => $councilSessionIds,
+                'conseil' => $councilSessionId ?: null,
             ]));
         }
 

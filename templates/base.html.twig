@@ -71,7 +71,7 @@
         </main>
 
         {% if app.request.attributes.get('_route') != 'app_video_feed' %}
-            <a href="{{ path('app_video_feed') }}" class="feed-fab" aria-label="Ouvrir le fil vertical">
+            <a href="{{ path('app_video_feed') }}" class="feed-fab" aria-label="Ouvrir le fil vertical" data-controller="feed-fab">
                 <i class="fa-solid fa-play" aria-hidden="true"></i>
             </a>
         {% endif %}
@@ -80,7 +80,7 @@
             <div class="wrap site-footer__grid">
                 <div class="site-footer__about">
                     <div class="brand brand--footer">
-                        <img class="brand__logo brand__logo--footer" src="{{ asset('images/logo-presidence.png') }}" alt="Présidence de la République du Bénin">
+                        <img class="brand__logo brand__logo--footer" src="{{ asset('images/logo-gouv.png') }}" alt="Gouvernement de la République du Bénin">
                     </div>
                     <h3>Abonnez-vous à notre Newsletter</h3>
                     <form class="newsletter-form" action="{{ path('app_home') }}" method="get">

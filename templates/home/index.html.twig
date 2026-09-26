@@ -1,72 +1,248 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Le Gouvernement plus près de nous — L’information publique, dans votre langue
+{% block title %}Le Gouvernement plus près de nous — Les capsules du Gouvernement, dans les langues du Bénin
 {% endblock %}
 
+{% block meta_description %}Regardez, téléchargez et partagez des vidéos et audios du Gouvernement du Bénin, prêts à être diffusés dans les langues nationales.{% endblock %}
+
 {% block body %}
-	<section class="hero">
-		<img class="hero__bg" src="{{ asset('images/hero-gouvernement.jpg') }}" alt="" loading="eager" fetchpriority="high">
-		<div class="hero__scrim" aria-hidden="true"></div>
-		<div class="wrap hero__inner">
-			<div class="hero__text">
-				<h1>L’information publique,<br>dans votre langue.</h1>
-				<p>Des capsules de contenus courtes produites par le Gouvernement,<br>expliquées en Fon, Yoruba, Bariba, Dendi et sept autres langues nationales.<br>À regarder, à écouter, à télécharger et à rediffuser librement.</p>
-				<a class="btn btn--primary" href="{{ path('app_video_index') }}">Explorer les contenus →</a>
-			</div>
-		</div>
+    <section class="home2-hero">
+        <div class="wrap home2-hero__grid">
+            <div class="home2-hero__text">
+                <h1>Les capsules du Gouvernement, dans les langues du Bénin.</h1>
+                <p>Regardez, téléchargez et partagez des vidéos et audios prêts à être diffusés.</p>
+                <div class="home2-hero__actions">
+                    <a class="btn btn--primary" href="#home2-langues">Choisir une langue</a>
+                    <a class="btn btn--outline" href="#home2-a-la-une">Voir les sujets à la une</a>
+                </div>
+            </div>
 
-		{{ include('partials/_stats.html.twig', {stats: stats}) }}
-	</section>
+            {% if heroVideo %}
+                {% set previewFile = heroVideo.primaryPlaybackFile %}
+                {% set previewCategory = previewFile ? previewFile.type.category.value : null %}
+                {% set coverImageUrl = video_cover_url(heroVideo) %}
+                <div class="home2-hero__media">
+                    {% if previewCategory == 'video' %}
+                        <div class="video-detail__player video-detail__player--poster home2-hero__thumb" style="--thematic-color: {{ heroVideo.thematic.colorHex }}" data-controller="video-poster">
+                            <div class="video-detail__poster" data-video-poster-target="poster">
+                                {% if coverImageUrl %}
+                                    <img class="video-detail__poster-image" src="{{ coverImageUrl }}" alt="">
+                                {% endif %}
+                                <span class="video-detail__poster-lang">{{ heroVideo.language.name }}</span>
+                                <span class="video-detail__poster-format">{{ previewFile.type.category.label }}</span>
+                                <button type="button" class="video-detail__poster-play" data-action="video-poster#play" aria-label="Lire la vidéo">▶</button>
+                                <div class="video-detail__poster-footer">
+                                    <div class="video-detail__poster-info">
+                                        <strong>{{ heroVideo.title }}</strong>
+                                        <span>{{ heroVideo.durationLabel }}</span>
+                                    </div>
+                                    <div class="video-detail__poster-actions">
+                                        <a href="{{ path('app_video_show', {slug: heroVideo.slug}) }}" class="btn btn--outline btn--sm">Voir la vidéo</a>
+                                        <a href="{{ video_file_url(previewFile) }}" download="{{ previewFile.originalName ?? previewFile.fileName }}" class="btn btn--dark btn--sm">Télécharger</a>
+                                    </div>
+                                </div>
+                            </div>
 
-	<section class="section wrap">
-		<div class="section__header">
-			<h2>Derniers contenus publiés</h2>
-		</div>
+                            <video class="video-detail__video" controls preload="metadata" data-video-poster-target="video" hidden>
+                                {{ include('partials/_video_sources.html.twig', {file: previewFile}) }}
+                            </video>
+                        </div>
+                        {# Mobile : le pied superposé à la vignette masquait le bouton de lecture ;
+                           titre et actions passent sous la vidéo (voir .home2-hero__below). #}
+                        <div class="home2-hero__below">
+                            <div class="home2-hero__caption">
+                                <p>{{ heroVideo.title }}</p>
+                                <span>{{ heroVideo.durationLabel }} · {{ previewFile.type.category.label }}</span>
+                            </div>
+                            <div class="home2-hero__actions-row">
+                                <a class="btn btn--outline btn--sm" href="{{ path('app_video_show', {slug: heroVideo.slug}) }}">Voir la vidéo</a>
+                                <a class="btn btn--dark btn--sm" href="{{ video_file_url(previewFile) }}" download="{{ previewFile.originalName ?? previewFile.fileName }}">Télécharger</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ path('app_video_show', {slug: heroVideo.slug}) }}" class="video-card__thumb home2-hero__thumb" style="--thematic-color: {{ heroVideo.thematic.colorHex }}">
+                            <span class="video-card__lang-tag">{{ heroVideo.language.name }}</span>
+                            {% if coverImageUrl %}
+                                <img class="video-card__preview" src="{{ coverImageUrl }}" alt="">
+                            {% elseif previewCategory == 'image' %}
+                                <img class="video-card__preview" src="{{ video_file_url(previewFile) }}" alt="">
+                            {% endif %}
+                            <span class="home2-hero__play" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
+                        </a>
+                        <div class="home2-hero__caption">
+                            <p>{{ heroVideo.title }}</p>
+                            <span>{{ heroVideo.durationLabel }} · {{ previewFile ? previewFile.type.category.label : '' }}</span>
+                        </div>
+                        <div class="home2-hero__actions-row">
+                            <a class="btn btn--outline" href="{{ path('app_video_show', {slug: heroVideo.slug}) }}">Voir la vidéo</a>
+                            {% if previewFile %}
+                                <a class="btn btn--dark" href="{{ video_file_url(previewFile) }}" download="{{ previewFile.originalName ?? previewFile.fileName }}">Télécharger</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
 
-		{% if latestVideos is empty %}
-			<p class="empty-state">Aucun contenu publié pour le moment.</p>
-		{% else %}
-			<div class="video-grid">
-				{% for video in latestVideos %}
-					{{ include('partials/_video_card.html.twig', {video: video}) }}
-				{% endfor %}
-			</div>
-			<div class="section__more">
-				<a class="btn btn--dark" href="{{ path('app_video_index') }}">Afficher plus</a>
-			</div>
-		{% endif %}
-	</section>
+    <section class="section wrap" id="home2-langues">
+        <div class="section__header">
+            <h2>Choisissez une langue</h2>
+        </div>
+        {% if languages is empty %}
+            <p class="empty-state">Aucune langue disponible pour le moment.</p>
+        {% else %}
+            {% set visibleLanguages = 8 %}
+            <div data-controller="reveal">
+                <div class="home2-lang-grid">
+                    {% for row in languages %}
+                        <a href="{{ path('app_langue_show', {slug: row.language.slug}) }}" class="home2-lang-pill"
+                           {% if loop.index > visibleLanguages %}data-reveal-target="item" hidden{% endif %}>
+                            <span>{{ row.language.name }}</span>
+                            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+                {% if languages|length > visibleLanguages %}
+                    <div class="section__more">
+                        {# Sans JavaScript, le lien mène au catalogue, filtrable par langue. #}
+                        <a class="btn btn--outline" href="{{ path('app_video_index') }}" data-reveal-target="button" data-action="reveal#show">
+                            Voir plus de langues ({{ languages|length - visibleLanguages }})
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>
 
-	<section class="section wrap">
-		<div class="section__header">
-			<h2>Explorez par thématique</h2>
-		</div>
-		<div class="tile-grid tile-grid--thematics">
-			{% for row in thematics %}
-				{{ include('partials/_thematic_tile.html.twig', {row: row}) }}
-			{% endfor %}
-		</div>
-	</section>
+    <section class="section wrap" id="home2-derniers-contenus">
+        <div class="section__header">
+            <h2>Derniers contenus publiés</h2>
+        </div>
 
-	<section class="section wrap">
-		<div class="section__header">
-			<h2>Choisissez votre langue</h2>
-			<p>Chaque contenu est produit dans plusieurs langues nationales.</p>
-		</div>
-		<div class="tile-grid tile-grid--languages">
-			{% for row in languages %}
-				{{ include('partials/_language_tile.html.twig', {row: row}) }}
-			{% endfor %}
-		</div>
-	</section>
+        {% if latestVideos is empty %}
+            <p class="empty-state">Aucun contenu publié pour le moment.</p>
+        {% else %}
+            <div class="video-grid home2-latest">
+                {% for video in latestVideos %}
+                    {{ include('partials/_video_card.html.twig', {video: video}) }}
+                {% endfor %}
+            </div>
+            <div class="section__more">
+                <a class="btn btn--dark" href="{{ path('app_video_index') }}">Afficher plus</a>
+            </div>
+        {% endif %}
+    </section>
 
-	{{ include('partials/_spotlight.html.twig', {featuredVideos: featuredVideos}) }}
+    <section class="section wrap" id="home2-a-la-une">
+        <div class="section__header">
+            <h2>À la une</h2>
+            <p>Découvrez un sujet clé et explorez d’autres thématiques.</p>
+        </div>
 
-	<section class="section wrap cta-grid cta-grid--single">
-		<div class="cta-card cta-card--dark">
-			<h3>Vous êtes un média ou une institution ?</h3>
-			<p>Téléchargez les capsules en pack, par langue ou par thématique, avec les fiches de diffusion et les mentions à respecter.</p>
-			<a class="btn btn--gold" href="{{ path('app_media_space') }}">Accéder à l’espace média</a>
-		</div>
-	</section>
+        <div class="home2-feature">
+            {% if spotlightVideo %}
+                {% set sPreviewFile = spotlightVideo.primaryPlaybackFile %}
+                {% set sPreviewCategory = sPreviewFile ? sPreviewFile.type.category.value : null %}
+                {% set sCoverImageUrl = video_cover_url(spotlightVideo) %}
+                <article class="home2-feature__card">
+                    <a href="{{ path('app_video_show', {slug: spotlightVideo.slug}) }}" class="video-card__thumb home2-feature__thumb" style="--thematic-color: {{ spotlightVideo.thematic.colorHex }}">
+                        {% if sCoverImageUrl %}
+                            <img class="video-card__preview" src="{{ sCoverImageUrl }}" alt="">
+                        {% elseif sPreviewCategory == 'video' %}
+                            <video class="video-card__preview" muted preload="metadata" playsinline>
+                                {{ include('partials/_video_sources.html.twig', {file: sPreviewFile}) }}
+                            </video>
+                        {% elseif sPreviewCategory == 'image' %}
+                            <img class="video-card__preview" src="{{ video_file_url(sPreviewFile) }}" alt="">
+                        {% endif %}
+                        <span class="video-detail__poster-lang">{{ spotlightVideo.language.name }}</span>
+                        {% if sPreviewFile %}
+                            <span class="video-detail__poster-format">{{ sPreviewFile.type.category.label }}</span>
+                        {% endif %}
+                        <span class="video-detail__poster-play" aria-hidden="true">▶</span>
+                        <div class="video-detail__poster-footer">
+                            <div class="video-detail__poster-info">
+                                <strong>{{ spotlightVideo.title }}</strong>
+                                <span>{{ spotlightVideo.durationLabel }}</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="home2-feature__body">
+                        <a href="{{ path('app_thematique_show', {slug: spotlightVideo.thematic.slug}) }}" class="video-card__thematic" style="color: {{ spotlightVideo.thematic.colorHex }}">{{ spotlightVideo.thematic.name|upper }}</a>
+                        <p>{{ spotlightVideo.summary }}</p>
+                        <a class="home2-feature__link" href="{{ path('app_video_show', {slug: spotlightVideo.slug}) }}">Voir la capsule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                    </div>
+                </article>
+            {% else %}
+                <p class="empty-state">Aucun sujet à la une pour le moment.</p>
+            {% endif %}
+
+            <aside class="home2-thematics">
+                <h3>Explorer par thématique</h3>
+                {% if thematics is empty %}
+                    <p class="empty-state">Aucune thématique disponible.</p>
+                {% else %}
+                    <ul class="home2-thematics__list">
+                        {% for row in thematics %}
+                            <li>
+                                <a href="{{ path('app_thematique_show', {slug: row.thematic.slug}) }}">
+                                    <span>{{ row.thematic.name }}</span>
+                                    <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% if hasMoreThematics %}
+                        <a class="home2-feature__link home2-thematics__more" href="{{ path('app_thematique_index') }}">Voir toutes les thématiques <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                    {% endif %}
+                {% endif %}
+            </aside>
+        </div>
+    </section>
+
+    <section class="section wrap">
+        <div class="section__header">
+            <h2>Comment ça marche</h2>
+        </div>
+        <div class="home2-steps">
+            <div class="home2-step">
+                <span class="home2-step__num">1</span>
+                <div>
+                    <h3>Regarder</h3>
+                    <p>Consultez les capsules dans la langue de votre choix.</p>
+                </div>
+            </div>
+            <div class="home2-step">
+                <span class="home2-step__num">2</span>
+                <div>
+                    <h3>Télécharger</h3>
+                    <p>Récupérez les vidéos et audios prêts à être diffusés.</p>
+                </div>
+            </div>
+            <div class="home2-step">
+                <span class="home2-step__num">3</span>
+                <div>
+                    <h3>Partager</h3>
+                    <p>Diffusez-les sur vos canaux (communautés, médias, réseaux).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section wrap cta-grid cta-grid--single">
+        <div class="cta-card cta-card--dark">
+            <h3>Préparer un pack de diffusion</h3>
+            <p>Téléchargez les capsules en pack, par langue ou par thématique, avec les fiches de diffusion et les mentions à respecter.</p>
+            <a class="btn btn--gold" href="{{ path('app_media_space') }}">Accéder au pack de diffusion</a>
+        </div>
+    </section>
+
+    <section class="wrap home2-trust">
+        <img src="{{ asset('images/picto-logo-gppn.png') }}" alt="" class="home2-trust__emblem" aria-hidden="true">
+        <div>
+            <h3>Une information officielle, au service de tous.</h3>
+            <p>Ces contenus sont produits par le Gouvernement de la République du Bénin pour une meilleure compréhension des actions publiques.</p>
+        </div>
+    </section>
 {% endblock %}

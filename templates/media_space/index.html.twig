@@ -14,60 +14,65 @@
     <section class="section wrap">
         <div class="lot-builder">
             <form method="get" action="{{ path('app_media_space') }}" class="lot-builder__steps">
-                <fieldset class="lot-builder__step" data-controller="subject-search">
+                {# Étape 1 : même calendrier que l'admin ; seuls les sujets du conseil choisi sont affichés.
+                   Un sujet coché reste dans le lot quand on change de conseil (sa case, masquée, est toujours envoyée). #}
+                <fieldset class="lot-builder__step" data-controller="council-calendar subject-search"
+                          data-council-calendar-sessions-value="{{ calendar|json_encode }}"
+                          data-council-calendar-selected-value="{{ selectedSessionId }}"
+                          data-council-calendar-sync-url-value="true"
+                          data-council-calendar-unit-value="sujet">
                     <legend><span class="lot-builder__step-number">1</span> Choisissez les sujets</legend>
+                    <input type="hidden" name="conseil" value="{{ selectedSessionId }}" data-council-calendar-target="field">
 
-                    {% if councilSessionRows is not empty %}
-                        <div class="lot-builder__council-filter">
-                            <span class="lot-builder__council-filter-label">Filtrer par conseil des ministres (facultatif)</span>
-                            <div class="filters-sidebar__options">
-                                {% for row in councilSessionRows %}
-                                    <label class="filters-sidebar__option">
-                                        <input type="checkbox" name="conseil[]" value="{{ row.councilSession.id }}"{{ row.councilSession.id in selectedCouncilSessionIds ? ' checked' }} onchange="this.form.submit()">
-                                        <span>{{ row.councilSession.label ?: 'Conseil du ' ~ row.councilSession.date|date('d/m/Y') }}</span>
-                                        <span class="filters-sidebar__option-count">{{ row.videoCount }}</span>
-                                    </label>
+                    {% if subjectRowsBySession is empty %}
+                        <p class="empty-state">Aucun sujet publié pour le moment.</p>
+                    {% else %}
+                        <div class="lot-builder__council-layout">
+                            {{ include('partials/_council_calendar.html.twig') }}
+
+                            <div class="lot-builder__council-subjects">
+                                {% if max(subjectRowsBySession|map(rows => rows|length)) > 8 %}
+                                    <input
+                                        type="search"
+                                        class="lot-builder__subject-search-input"
+                                        placeholder="Rechercher un sujet…"
+                                        aria-label="Rechercher un sujet dans ce conseil"
+                                        data-subject-search-target="input"
+                                        data-action="input->subject-search#filter"
+                                    >
+                                {% endif %}
+
+                                {% for sessionId, rows in subjectRowsBySession %}
+                                    {% set councilSession = rows|first.subject.councilSession %}
+                                    <div class="lot-builder__council-panel" data-council-calendar-target="panel" data-session-id="{{ sessionId }}"{{ sessionId != selectedSessionId ? ' hidden' }}>
+                                        <p class="lot-builder__council-title">
+                                            <strong>{{ councilSession.label ?: 'Conseil des ministres du ' ~ councilSession.date|date('d/m/Y') }}</strong>
+                                            <span class="muted">{{ rows|length }} sujet{{ rows|length > 1 ? 's' }}</span>
+                                        </p>
+                                        <div class="lot-builder__subjects">
+                                            {% for row in rows %}
+                                                <label
+                                                    class="lot-builder__subject"
+                                                    style="--thematic-color: {{ row.subject.thematic.colorHex }}"
+                                                    data-subject-search-target="item"
+                                                    data-search-text="{{ (row.subject.title ~ ' ' ~ row.subject.thematic.name)|lower }}"
+                                                >
+                                                    <input type="checkbox" name="sujet[]" value="{{ row.subject.id }}"{{ row.subject.id in selectedSubjectIds ? ' checked' }} onchange="this.form.submit()">
+                                                    <span class="lot-builder__subject-swatch" aria-hidden="true"></span>
+                                                    <span class="lot-builder__subject-info">
+                                                        <strong>{{ row.subject.title }}</strong>
+                                                        <span class="muted">{{ row.subject.thematic.name }} · {{ row.videoCount }} contenu{{ row.videoCount > 1 ? 's' : '' }}</span>
+                                                    </span>
+                                                </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
                                 {% endfor %}
+                                <p class="muted lot-builder__hint" data-subject-search-target="empty" hidden>Aucun sujet ne correspond à cette recherche.</p>
+                                <p class="muted lot-builder__hint">Les sujets cochés restent dans votre lot si vous changez de conseil.</p>
                             </div>
                         </div>
                     {% endif %}
-
-                    {% if visibleSubjectRows is empty %}
-                        <p class="empty-state">{{ selectedCouncilSessionIds is empty ? 'Aucun sujet publié pour le moment.' : 'Aucun sujet publié pour ce conseil des ministres.' }}</p>
-                    {% else %}
-                        {% if visibleSubjectRows|length > 8 %}
-                            <input
-                                type="search"
-                                class="lot-builder__subject-search-input"
-                                placeholder="Rechercher un sujet…"
-                                aria-label="Rechercher un sujet"
-                                data-subject-search-target="input"
-                                data-action="input->subject-search#filter"
-                            >
-                        {% endif %}
-
-                        <div class="lot-builder__subjects">
-                            {% for row in visibleSubjectRows %}
-                                <label
-                                    class="lot-builder__subject"
-                                    style="--thematic-color: {{ row.subject.thematic.colorHex }}"
-                                    data-subject-search-target="item"
-                                    data-search-text="{{ (row.subject.title ~ ' ' ~ row.subject.thematic.name)|lower }}"
-                                >
-                                    <input type="checkbox" name="sujet[]" value="{{ row.subject.id }}"{{ row.subject.id in selectedSubjectIds ? ' checked' }} onchange="this.form.submit()">
-                                    <span class="lot-builder__subject-swatch" aria-hidden="true"></span>
-                                    <span class="lot-builder__subject-info">
-                                        <strong>{{ row.subject.title }}</strong>
-                                        <span class="muted">{{ row.subject.thematic.name }} · Conseil du {{ row.subject.councilSession.date|date('d/m/Y') }} · {{ row.videoCount }} contenu{{ row.videoCount > 1 ? 's' : '' }}</span>
-                                    </span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                        <p class="muted lot-builder__hint" data-subject-search-target="empty" hidden>Aucun sujet ne correspond à cette recherche.</p>
-                    {% endif %}
-
-                    {# Un sujet déjà choisi reste dans le lot même si le filtre par conseil masque sa case ci-dessus. #}
-                    {% for id in hiddenSelectedSubjectIds %}<input type="hidden" name="sujet[]" value="{{ id }}">{% endfor %}
                 </fieldset>
 
                 <fieldset class="lot-builder__step">
@@ -142,7 +147,7 @@
                         {% for id in selectedSubjectIds %}<input type="hidden" name="sujet[]" value="{{ id }}">{% endfor %}
                         {% for id in selectedLanguageIds %}<input type="hidden" name="langue[]" value="{{ id }}">{% endfor %}
                         {% for value in selectedFormatValues %}<input type="hidden" name="format[]" value="{{ value }}">{% endfor %}
-                        {% for id in selectedCouncilSessionIds %}<input type="hidden" name="conseil[]" value="{{ id }}">{% endfor %}
+                        <input type="hidden" name="conseil" value="{{ selectedSessionId }}">
 
                         <p class="muted lot-builder__hint">
                             <span class="lot-builder__step-number">5</span>

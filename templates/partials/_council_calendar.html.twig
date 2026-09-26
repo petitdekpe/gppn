@@ -1,0 +1,27 @@
+{# Calendrier des conseils des ministres, piloté par council_calendar_controller.js
+   (l'élément parent porte data-controller="council-calendar").
+   Options : caption, newCouncilUrl (bouton « Nouveau conseil » sous le calendrier). #}
+<aside class="council-calendar" aria-label="Choisir un conseil des ministres">
+    <p class="council-calendar__caption">{{ caption|default('Conseil des ministres') }}</p>
+    {% if calendar is not empty %}
+    <div class="council-calendar__card">
+        <div class="council-calendar__header">
+            <button type="button" class="council-calendar__nav" data-council-calendar-target="prev" data-action="council-calendar#prev" aria-label="Précédent">
+                <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="council-calendar__title" data-council-calendar-target="title" data-action="council-calendar#toggleView"></button>
+            <button type="button" class="council-calendar__nav" data-council-calendar-target="next" data-action="council-calendar#next" aria-label="Suivant">
+                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="council-calendar__grid" data-council-calendar-target="grid"></div>
+        <div class="council-calendar__dates" data-council-calendar-target="dates" hidden>
+            <p class="council-calendar__dates-title">Plusieurs conseils ce mois-ci</p>
+            <div class="council-calendar__date-list" data-role="list"></div>
+        </div>
+    </div>
+    {% endif %}
+    {% if newCouncilUrl|default(null) %}
+        <a class="btn btn--outline btn--sm council-calendar__create" href="{{ newCouncilUrl }}">+ Nouveau conseil des ministres</a>
+    {% endif %}
+</aside>

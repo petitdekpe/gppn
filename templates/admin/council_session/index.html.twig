@@ -4,36 +4,77 @@
 {% block page_title %}Conseils des ministres{% endblock %}
 
 {% block body %}
-    <div class="admin-toolbar">
-        <a class="btn btn--primary" href="{{ path('admin_council_session_new') }}">+ Nouveau conseil des ministres</a>
-    </div>
+    {% if groups is empty %}
+        <div class="admin-toolbar">
+            <a class="btn btn--primary" href="{{ path('admin_council_session_new') }}">+ Nouveau conseil des ministres</a>
+        </div>
+        <p class="empty-state">Aucun conseil des ministres pour le moment.</p>
+    {% else %}
+        <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-selected-value="{{ selectedSessionId }}" data-council-calendar-sync-url-value="true" data-council-calendar-unit-value="sujet">
+            {{ include('partials/_council_calendar.html.twig', {newCouncilUrl: path('admin_council_session_new')}) }}
 
-    <div class="admin-table-wrap">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Libellé</th>
-                    <th>Contenus</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for councilSession in councilSessions %}
-                    <tr>
-                        <td>{{ councilSession.date|date('d/m/Y') }}</td>
-                        <td>{{ councilSession.label ?: '—' }}</td>
-                        <td>{{ videoCounts[councilSession.id] }}</td>
-                        <td class="admin-table__actions">
-                            <a class="btn btn--outline btn--sm" href="{{ path('admin_council_session_edit', {id: councilSession.id}) }}">Modifier</a>
-                            <form method="post" action="{{ path('admin_council_session_delete', {id: councilSession.id}) }}" onsubmit="return confirm('Supprimer ce conseil des ministres ?');">
-                                <input type="hidden" name="_token" value="{{ csrf_token('delete-council-session-' ~ councilSession.id) }}">
-                                <button type="submit" class="btn btn--danger btn--sm" {{ subjectCounts[councilSession.id] > 0 ? 'disabled' }}>Supprimer</button>
-                            </form>
-                        </td>
-                    </tr>
+            <div class="admin-videos-layout__list">
+                {# Sans JavaScript, seul le conseil sélectionné (par défaut le dernier) est affiché. #}
+                {% for group in groups %}
+                    {% set councilSession = group.session %}
+                    {% set subjectCount = group.subjects|length %}
+                    <section class="admin-session" data-council-calendar-target="panel" data-session-id="{{ councilSession.id }}" aria-labelledby="council-{{ councilSession.id }}"{{ councilSession.id != selectedSessionId ? ' hidden' }}>
+                        <header class="admin-session__summary">
+                            <h2 class="admin-session__title" id="council-{{ councilSession.id }}">{{ councilSession.label ?: 'Conseil des ministres du ' ~ councilSession.date|date('d/m/Y') }}</h2>
+                            <span class="admin-table__count">{{ subjectCount }} sujet{{ subjectCount > 1 ? 's' }} · {{ group.videoCount }} contenu{{ group.videoCount > 1 ? 's' }}</span>
+                        </header>
+
+                        <div class="admin-session__body">
+                            <div class="admin-session__actions">
+                                <a class="btn btn--primary btn--sm" href="{{ path('admin_council_session_subject_new', {id: councilSession.id}) }}">+ Nouveau sujet</a>
+                                <a class="btn btn--outline btn--sm" href="{{ path('admin_council_session_edit', {id: councilSession.id}) }}">Modifier le conseil</a>
+                                {% if group.videoCount %}
+                                    <a class="btn btn--outline btn--sm" href="{{ path('admin_video_index', {conseil: councilSession.id}) }}">Voir les contenus</a>
+                                {% endif %}
+                                <form method="post" action="{{ path('admin_council_session_delete', {id: councilSession.id}) }}" onsubmit="return confirm('Supprimer ce conseil des ministres ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-council-session-' ~ councilSession.id) }}">
+                                    <button type="submit" class="btn btn--danger btn--sm" {{ subjectCount > 0 ? 'disabled title="Supprimez d’abord ses sujets"' }}>Supprimer le conseil</button>
+                                </form>
+                            </div>
+
+                            {% if group.subjects is empty %}
+                                <p class="empty-state">Aucun sujet pour ce conseil.</p>
+                            {% else %}
+                                <div class="admin-table-wrap">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Sujet</th>
+                                                <th>Thématique</th>
+                                                <th>Contenus</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for subject in group.subjects %}
+                                                {% set subjectVideos = videoCounts[subject.id] ?? 0 %}
+                                                <tr>
+                                                    <td class="admin-table__wrap"><strong>{{ subject.title }}</strong></td>
+                                                    <td><span class="admin-table__thematic" style="color: {{ subject.thematic.colorHex }}">{{ subject.thematic.name }}</span></td>
+                                                    <td>{{ subjectVideos }}</td>
+                                                    <td class="admin-table__actions">
+                                                        <a class="btn btn--primary btn--sm" href="{{ path('admin_subject_import', {id: subject.id}) }}"><i class="fa-solid fa-upload" aria-hidden="true"></i> Import en masse</a>
+                                                        <a class="btn btn--outline btn--sm" href="{{ path('admin_council_session_subject_edit', {id: councilSession.id, subjectId: subject.id}) }}">Modifier</a>
+                                                        <form method="post" action="{{ path('admin_council_session_subject_delete', {id: councilSession.id, subjectId: subject.id}) }}" onsubmit="return confirm('Supprimer ce sujet ?');">
+                                                            <input type="hidden" name="_token" value="{{ csrf_token('delete-subject-' ~ subject.id) }}">
+                                                            <button type="submit" class="btn btn--danger btn--sm" {{ subjectVideos > 0 ? 'disabled title="Ce sujet a encore des contenus"' }}>Supprimer</button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </section>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}

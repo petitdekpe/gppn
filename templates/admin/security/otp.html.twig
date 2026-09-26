@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noindex, nofollow">
+        <title>Vérification — Administration GPPN</title>
+        {% block javascripts %}
+            {{ importmap('app') }}
+        {% endblock %}
+    </head>
+    <body class="admin-body admin-body--login">
+        <div class="admin-login">
+            <img class="admin-login__logo" src="{{ asset('images/logo-gppn.png') }}" alt="Le Gouvernement plus près de nous">
+            <div class="admin-login__card">
+                <h1>Vérification</h1>
+
+                {{ include('admin/security/_flashes.html.twig') }}
+                {{ include('admin/security/_otp_form.html.twig') }}
+            </div>
+            <a class="admin-login__back" href="{{ path('admin_logout') }}">← Se déconnecter</a>
+        </div>
+    </body>
+</html>

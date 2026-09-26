@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Subject;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
+use App\Doctrine\Filter\CapsuleFormatFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -32,12 +33,23 @@ class SubjectRepository extends ServiceEntityRepository
             ->addSelect('t', 'cs')
             ->innerJoin('s.thematic', 't')
             ->innerJoin('s.councilSession', 'cs')
-            ->innerJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status')
+            ->innerJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status' . $this->visibleVideoCondition())
             ->groupBy('s.id')
             ->orderBy('cs.date', 'DESC')
             ->addOrderBy('s.title', 'ASC')
             ->setParameter('status', VideoStatus::PUBLIE)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Ne compte pas les contenus dont tous les fichiers sont d'un type
+     * désactivé dans les Paramètres (voir CapsuleFormatFilter).
+     */
+    private function visibleVideoCondition(): string
+    {
+        $condition = CapsuleFormatFilter::visibleVideoCondition($this->getEntityManager(), 'v');
+
+        return $condition !== null ? ' AND ' . $condition : '';
     }
 }

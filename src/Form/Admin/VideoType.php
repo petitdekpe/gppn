@@ -9,7 +9,7 @@ use App\Entity\Video;
 use App\Enum\VideoStatus;
 use App\Repository\SpeakerRepository;
 use App\Repository\SubjectRepository;
-use App\Repository\VideoRepository;
+use App\Service\VideoSlugger;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -20,13 +20,12 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Component\Validator\Constraints as Assert;
 use Vich\UploaderBundle\Form\Type\VichImageType;
 
 class VideoType extends AbstractType
 {
-    public function __construct(private readonly VideoRepository $videoRepository)
+    public function __construct(private readonly VideoSlugger $videoSlugger)
     {
     }
 
@@ -47,12 +46,17 @@ class VideoType extends AbstractType
                 'label' => 'Sujet',
                 'help' => 'Le sujet porte la thématique, le conseil des ministres, le titre et le résumé. Pas encore de sujet pour ce contenu ? Créez-le d\'abord depuis la fiche du conseil des ministres concerné.',
                 'choice_label' => static fn (Subject $subject) => sprintf(
-                    '%s — %s (%s)',
-                    $subject->getCouncilSession()->getLabel()
-                        ?: sprintf('Conseil du %s', $subject->getCouncilSession()->getDate()->format('d/m/Y')),
+                    '%s (%s)',
                     $subject->getTitle(),
                     $subject->getThematic()->getName(),
                 ),
+                // Un groupe par conseil ; le calendrier latéral (council-calendar)
+                // n'affiche que les sujets du conseil choisi grâce à data-council-id.
+                'group_by' => static fn (Subject $subject) => $subject->getCouncilSession()->getLabel()
+                    ?: sprintf('Conseil du %s', $subject->getCouncilSession()->getDate()->format('d/m/Y')),
+                'choice_attr' => static fn (Subject $subject) => [
+                    'data-council-id' => $subject->getCouncilSession()->getId(),
+                ],
                 'query_builder' => static fn (SubjectRepository $repository) => $repository
                     ->createQueryBuilder('s')
                     ->innerJoin('s.councilSession', 'cs')->addSelect('cs')
@@ -108,10 +112,8 @@ class VideoType extends AbstractType
                 'choice_label' => static fn (Speaker $speaker) => $speaker->getSigle()
                     ? sprintf('%s — %s', $speaker->getSigle(), $speaker->getFullName())
                     : $speaker->getFullName(),
-                // Même distinction que côté public (VideoRepository::findVideoIdsBySpeakerRole) :
-                // un « Ministre Conseiller(ère) » se reconnaît au radical « Conseill »
-                // (accord féminin « Conseillère » sinon non détecté par un match strict).
-                'group_by' => static fn (Speaker $speaker) => str_contains($speaker->getRole() ?? '', 'Conseill')
+                // Même distinction que côté public (VideoRepository::findVideoIdsBySpeakerRole).
+                'group_by' => static fn (Speaker $speaker) => $speaker->isMinistreConseiller()
                     ? 'Ministres conseillers'
                     : 'Ministres',
                 'query_builder' => static fn (SpeakerRepository $repository) => $repository
@@ -125,31 +127,9 @@ class VideoType extends AbstractType
     private function assignSlug(FormEvent $event): void
     {
         $video = $event->getData();
-        if (!$video instanceof Video) {
-            return;
+        if ($video instanceof Video) {
+            $this->videoSlugger->assign($video);
         }
-
-        // Contenu déjà publié avec un slug stable : on n'y touche plus.
-        if ($video->getId() !== null && $video->getSlug() !== '') {
-            return;
-        }
-
-        $slugger = new AsciiSlugger('fr');
-        $base = strtolower($slugger->slug($video->getTitle()));
-
-        $slug = $base;
-        for ($suffix = 2; $this->slugTakenByAnotherVideo($slug, $video); ++$suffix) {
-            $slug = $base . '-' . $suffix;
-        }
-
-        $video->setSlug($slug);
-    }
-
-    private function slugTakenByAnotherVideo(string $slug, Video $video): bool
-    {
-        $existing = $this->videoRepository->findOneBy(['slug' => $slug]);
-
-        return $existing !== null && $existing !== $video;
     }
 
     public function configureOptions(OptionsResolver $resolver): void

@@ -14,7 +14,7 @@
             <img class="video-card__preview" src="{{ coverImageUrl }}" alt="">
         {% elseif previewCategory == 'video' %}
             <video class="video-card__preview" muted preload="metadata" playsinline>
-                <source src="{{ video_file_url(previewFile) }}" type="{{ previewFile.mimeType ?? 'video/mp4' }}">
+                {{ include('partials/_video_sources.html.twig', {file: previewFile}) }}
             </video>
         {% elseif previewCategory == 'image' %}
             <img class="video-card__preview" src="{{ video_file_url(previewFile) }}" alt="">

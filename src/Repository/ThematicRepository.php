@@ -6,6 +6,7 @@ use App\Entity\Subject;
 use App\Entity\Thematic;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
+use App\Doctrine\Filter\CapsuleFormatFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -27,11 +28,22 @@ class ThematicRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('t')
             ->select('t AS thematic', 'COUNT(v.id) AS videoCount')
             ->leftJoin(Subject::class, 's', 'WITH', 's.thematic = t')
-            ->leftJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status')
+            ->leftJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status' . $this->visibleVideoCondition())
             ->groupBy('t.id')
             ->orderBy('t.name', 'ASC')
             ->setParameter('status', VideoStatus::PUBLIE)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Ne compte pas les contenus dont tous les fichiers sont d'un type
+     * désactivé dans les Paramètres (voir CapsuleFormatFilter).
+     */
+    private function visibleVideoCondition(): string
+    {
+        $condition = CapsuleFormatFilter::visibleVideoCondition($this->getEntityManager(), 'v');
+
+        return $condition !== null ? ' AND ' . $condition : '';
     }
 }

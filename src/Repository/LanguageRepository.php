@@ -6,6 +6,7 @@ use App\Entity\Language;
 use App\Entity\Subject;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
+use App\Doctrine\Filter\CapsuleFormatFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -26,7 +27,7 @@ class LanguageRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('l')
             ->select('l AS language', 'COUNT(v.id) AS videoCount')
-            ->leftJoin(Video::class, 'v', 'WITH', 'v.language = l AND v.status = :status')
+            ->leftJoin(Video::class, 'v', 'WITH', 'v.language = l AND v.status = :status' . $this->visibleVideoCondition())
             ->groupBy('l.id')
             ->orderBy('l.name', 'ASC')
             ->setParameter('status', VideoStatus::PUBLIE)
@@ -50,7 +51,7 @@ class LanguageRepository extends ServiceEntityRepository
         }
 
         return $this->createQueryBuilder('l')
-            ->innerJoin(Video::class, 'v', 'WITH', 'v.language = l AND v.status = :status')
+            ->innerJoin(Video::class, 'v', 'WITH', 'v.language = l AND v.status = :status' . $this->visibleVideoCondition())
             ->andWhere('v.subject IN (:subjects)')
             ->setParameter('subjects', $subjects)
             ->setParameter('status', VideoStatus::PUBLIE)
@@ -58,5 +59,16 @@ class LanguageRepository extends ServiceEntityRepository
             ->orderBy('l.name', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Ne compte pas les contenus dont tous les fichiers sont d'un type
+     * désactivé dans les Paramètres (voir CapsuleFormatFilter).
+     */
+    private function visibleVideoCondition(): string
+    {
+        $condition = CapsuleFormatFilter::visibleVideoCondition($this->getEntityManager(), 'v');
+
+        return $condition !== null ? ' AND ' . $condition : '';
     }
 }

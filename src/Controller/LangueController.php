@@ -6,6 +6,7 @@ use App\Enum\CapsuleFormat;
 use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
+use App\Service\AppSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,6 +14,14 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class LangueController extends AbstractController
 {
+    /**
+     * Langues renommées : l'ancienne adresse redirige vers la nouvelle pour
+     * ne pas casser les liens déjà partagés.
+     */
+    private const RENAMED_SLUGS = [
+        'idatcha' => 'idaasha',
+    ];
+
     #[Route('/langues/{slug}', name: 'app_langue_show')]
     public function show(
         string $slug,
@@ -20,7 +29,12 @@ class LangueController extends AbstractController
         LanguageRepository $languageRepository,
         ThematicRepository $thematicRepository,
         VideoRepository $videoRepository,
+        AppSettings $settings,
     ): Response {
+        if (isset(self::RENAMED_SLUGS[$slug])) {
+            return $this->redirectToRoute('app_langue_show', ['slug' => self::RENAMED_SLUGS[$slug]] + $request->query->all(), Response::HTTP_MOVED_PERMANENTLY);
+        }
+
         $language = $languageRepository->findOneBy(['slug' => $slug]) ?? throw $this->createNotFoundException('Langue introuvable.');
 
         $queryParams = $request->query->all();
@@ -41,7 +55,7 @@ class LangueController extends AbstractController
             'language' => $language,
             'results' => $results,
             'thematics' => $thematicRepository->findAllWithVideoCount(),
-            'formats' => CapsuleFormat::cases(),
+            'formats' => $settings->getEnabledFormats(),
             'selectedThematicSlugs' => $thematicSlugs,
             'selectedFormatValues' => array_map(static fn (CapsuleFormat $format) => $format->value, $selectedFormats),
             'query' => $query,

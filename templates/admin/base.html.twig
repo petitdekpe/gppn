@@ -32,21 +32,25 @@
                     {% endif %}
                     {% if is_granted('ROLE_SUPER_ADMIN') %}
                         <a href="{{ path('admin_user_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_user' ? 'is-active' }}">Utilisateurs</a>
+                        <a href="{{ path('admin_settings') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_settings' ? 'is-active' }}">Paramètres</a>
                     {% endif %}
                 </nav>
-                <div class="admin-sidebar__footer">
-                    <a href="{{ path('app_home') }}" target="_blank" rel="noopener">Voir le site ↗</a>
-                    {% if app.user %}
-                        <span class="admin-user">{{ app.user.userIdentifier }}</span>
-                        <a href="{{ path('admin_logout') }}" class="admin-logout-link">Déconnexion</a>
-                    {% endif %}
-                </div>
             </aside>
 
             <div class="admin-main">
                 <header class="admin-topbar">
-                    {% block back_link %}{% endblock %}
-                    <h1>{% block page_title %}{% endblock %}</h1>
+                    <div class="admin-topbar__title">
+                        {% block back_link %}{% endblock %}
+                        <h1>{% block page_title %}{% endblock %}</h1>
+                    </div>
+                    <div class="admin-topbar__account">
+                        <a href="{{ path('app_home') }}" target="_blank" rel="noopener">Voir le site ↗</a>
+                        {% if app.user %}
+                            <span class="admin-user">{{ app.user.userIdentifier }}</span>
+                            <a href="{{ path('admin_account_password') }}">Mon mot de passe</a>
+                            <a href="{{ path('admin_logout') }}" class="admin-logout-link">Déconnexion</a>
+                        {% endif %}
+                    </div>
                 </header>
 
                 <div class="admin-content">

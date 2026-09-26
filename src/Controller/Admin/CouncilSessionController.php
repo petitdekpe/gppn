@@ -21,21 +21,62 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_EDITEUR')]
 class CouncilSessionController extends AbstractController
 {
+    /**
+     * `?pour=contenu` : parcours lancé depuis « Nouveau contenu » (conseil →
+     * sujet → retour au nouveau contenu, sujet pré-sélectionné). Valeur
+     * fixe plutôt qu'une URL de retour libre, pour éviter toute redirection
+     * ouverte.
+     */
+    public const FLOW_PARAM = 'pour';
+    public const FLOW_VIDEO = 'contenu';
+
     #[Route('', name: 'admin_council_session_index')]
-    public function index(CouncilSessionRepository $councilSessionRepository, VideoRepository $videoRepository, SubjectRepository $subjectRepository): Response
+    public function index(Request $request, CouncilSessionRepository $councilSessionRepository, VideoRepository $videoRepository, SubjectRepository $subjectRepository): Response
     {
         $councilSessions = $councilSessionRepository->findBy([], ['date' => 'DESC']);
-        $videoCounts = [];
-        $subjectCounts = [];
+
+        $subjectsBySession = [];
+        foreach ($subjectRepository->createQueryBuilder('s')
+            ->innerJoin('s.thematic', 't')->addSelect('t')
+            ->orderBy('s.title', 'ASC')
+            ->getQuery()
+            ->getResult() as $subject) {
+            $subjectsBySession[$subject->getCouncilSession()->getId()][] = $subject;
+        }
+
+        $videoCounts = array_map('intval', array_column($videoRepository->createQueryBuilder('v')
+            ->select('IDENTITY(v.subject) AS subjectId', 'COUNT(v.id) AS videoCount')
+            ->groupBy('v.subject')
+            ->getQuery()
+            ->getArrayResult(), 'videoCount', 'subjectId'));
+
+        $groups = [];
         foreach ($councilSessions as $councilSession) {
-            $videoCounts[$councilSession->getId()] = $videoRepository->countByCouncilSession($councilSession);
-            $subjectCounts[$councilSession->getId()] = $subjectRepository->count(['councilSession' => $councilSession]);
+            $subjects = $subjectsBySession[$councilSession->getId()] ?? [];
+            $groups[$councilSession->getId()] = [
+                'session' => $councilSession,
+                'subjects' => $subjects,
+                'videoCount' => array_sum(array_map(fn ($subject) => $videoCounts[$subject->getId()] ?? 0, $subjects)),
+            ];
+        }
+
+        // Calendrier latéral : tous les conseils, même sans sujet (count = sujets).
+        $calendar = array_values(array_map(fn (array $group) => [
+            'id' => $group['session']->getId(),
+            'date' => $group['session']->getDate()->format('Y-m-d'),
+            'count' => count($group['subjects']),
+        ], $groups));
+
+        $selectedId = $request->query->getInt('conseil');
+        if (!isset($groups[$selectedId])) {
+            $selectedId = array_key_first($groups);
         }
 
         return $this->render('admin/council_session/index.html.twig', [
-            'councilSessions' => $councilSessions,
+            'groups' => $groups,
+            'calendar' => $calendar,
+            'selectedSessionId' => $selectedId,
             'videoCounts' => $videoCounts,
-            'subjectCounts' => $subjectCounts,
         ]);
     }
 
@@ -51,14 +92,25 @@ class CouncilSessionController extends AbstractController
             $entityManager->persist($councilSession);
             $entityManager->flush();
 
+            if ($this->isVideoFlow($request)) {
+                // Un contenu se rattache à un sujet : on enchaîne sur sa création.
+                $this->addFlash('success', 'Conseil des ministres créé. Ajoutez maintenant le sujet du contenu.');
+
+                return $this->redirectToRoute('admin_council_session_subject_new', [
+                    'id' => $councilSession->getId(),
+                    self::FLOW_PARAM => self::FLOW_VIDEO,
+                ]);
+            }
+
             $this->addFlash('success', 'Conseil des ministres créé.');
 
-            return $this->redirectToRoute('admin_council_session_index');
+            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $councilSession->getId()]);
         }
 
         return $this->render('admin/council_session/form.html.twig', [
             'form' => $form,
             'councilSession' => $councilSession,
+            'videoFlow' => $this->isVideoFlow($request),
         ]);
     }
 
@@ -133,15 +185,22 @@ class CouncilSessionController extends AbstractController
             $entityManager->persist($subject);
             $entityManager->flush();
 
+            if ($this->isVideoFlow($request)) {
+                $this->addFlash('success', 'Sujet créé et sélectionné pour votre nouveau contenu.');
+
+                return $this->redirectToRoute('admin_video_new', ['sujet' => $subject->getId()]);
+            }
+
             $this->addFlash('success', 'Sujet créé.');
 
-            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $councilSession->getId()]);
         }
 
         return $this->render('admin/council_session/subject_form.html.twig', [
             'form' => $form,
             'councilSession' => $councilSession,
             'subject' => $subject,
+            'videoFlow' => $this->isVideoFlow($request),
         ]);
     }
 
@@ -156,7 +215,7 @@ class CouncilSessionController extends AbstractController
 
             $this->addFlash('success', 'Sujet mis à jour.');
 
-            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $councilSession->getId()]);
         }
 
         return $this->render('admin/council_session/subject_form.html.twig', [
@@ -170,13 +229,13 @@ class CouncilSessionController extends AbstractController
     public function deleteSubject(CouncilSession $councilSession, #[MapEntity(id: 'subjectId')] Subject $subject, Request $request, EntityManagerInterface $entityManager, VideoRepository $videoRepository): Response
     {
         if (!$this->isCsrfTokenValid('delete-subject-' . $subject->getId(), $request->request->get('_token'))) {
-            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $councilSession->getId()]);
         }
 
         if ($videoRepository->count(['subject' => $subject]) > 0) {
             $this->addFlash('error', 'Impossible de supprimer un sujet encore rattaché à des contenus.');
 
-            return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $councilSession->getId()]);
         }
 
         $entityManager->remove($subject);
@@ -184,7 +243,12 @@ class CouncilSessionController extends AbstractController
 
         $this->addFlash('success', 'Sujet supprimé.');
 
-        return $this->redirectToRoute('admin_council_session_edit', ['id' => $councilSession->getId()]);
+        return $this->redirectToRoute('admin_council_session_index', ['conseil' => $councilSession->getId()]);
+    }
+
+    private function isVideoFlow(Request $request): bool
+    {
+        return $request->query->get(self::FLOW_PARAM) === self::FLOW_VIDEO;
     }
 
     /**

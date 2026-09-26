@@ -1,0 +1,72 @@
+{% extends 'admin/base.html.twig' %}
+
+{% set councilSession = subject.councilSession %}
+{% set councilLabel = councilSession.label ?: 'Conseil des ministres du ' ~ councilSession.date|date('d/m/Y') %}
+
+{% block title %}Import en masse — {{ subject.title }} — Administration GPPN{% endblock %}
+{% block page_title %}Import en masse{% endblock %}
+{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_council_session_index', {conseil: councilSession.id}), label: 'Retour au conseil des ministres'}) }}{% endblock %}
+
+{% block body %}
+    <div class="bulk-import" data-controller="bulk-import" data-bulk-import-config-value="{{ config|json_encode }}">
+        <section class="bulk-import__intro">
+            <p class="bulk-import__subject">
+                <strong>{{ subject.title }}</strong>
+                <span class="admin-table__thematic" style="color: {{ subject.thematic.colorHex }}">{{ subject.thematic.name }}</span>
+                <span class="admin-table__muted">· {{ councilLabel }}</span>
+            </p>
+            <p class="form-help">
+                Nommez chaque fichier <code>INTERVENANT-LANGUE-FORMAT</code>, par exemple <code>MPMEPE-DENDI-TV.mp4</code>.
+                Pour un ministre conseiller, le sigle est précédé de <code>MCC</code> (<code>MCCMFAS-FON-TV.mp4</code>).
+                Formats : <strong>TV</strong> (vidéo horizontale 1080p), <strong>MOBILE</strong> (vidéo verticale), <strong>AUDIO</strong>.
+                Un nom hors convention reste accepté : il suffit de compléter sa ligne.
+                Les contenus créés le sont en <strong>brouillon</strong> ; la publication reste à faire depuis la liste des contenus.
+            </p>
+            {% if speakersWithoutSigle is not empty %}
+                <p class="admin-flow-note">
+                    Sans sigle, ces intervenants ne peuvent pas être reconnus dans les noms de fichiers :
+                    {% for speaker in speakersWithoutSigle %}<a href="{{ path('admin_speaker_edit', {id: speaker.id}) }}">{{ speaker.fullName }}</a>{{ not loop.last ? ', ' }}{% endfor %}.
+                </p>
+            {% endif %}
+        </section>
+
+        <label class="bulk-import__dropzone" data-bulk-import-target="dropzone"
+               data-action="dragover->bulk-import#dragOver dragleave->bulk-import#dragLeave drop->bulk-import#drop">
+            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+            <strong>Déposez vos fichiers ici</strong>
+            <span>ou cliquez pour les choisir (vidéos et audios, plusieurs à la fois)</span>
+            <input type="file" multiple accept="video/*,audio/*" class="sr-only"
+                   data-bulk-import-target="input" data-action="change->bulk-import#pick">
+        </label>
+
+        <div class="bulk-import__report" data-bulk-import-target="report" role="status" hidden>
+            <p data-role="text"></p>
+            <a class="btn btn--outline btn--sm" href="{{ path('admin_video_index', {conseil: councilSession.id}) }}">Voir les contenus de ce conseil</a>
+        </div>
+
+        <div data-bulk-import-target="table" hidden>
+            <div class="admin-table-wrap">
+                <table class="admin-table bulk-import__table">
+                    <thead>
+                        <tr>
+                            <th>Fichier</th>
+                            <th>Intervenant</th>
+                            <th>Langue</th>
+                            <th>Format</th>
+                            <th>État</th>
+                            <th><span class="sr-only">Retirer</span></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bulk-import-target="rows"></tbody>
+                </table>
+            </div>
+
+            <div class="bulk-import__footer">
+                <span class="bulk-import__summary" data-bulk-import-target="summary" aria-live="polite"></span>
+                <button type="button" class="btn btn--outline" data-action="bulk-import#clear">Vider la liste</button>
+                <button type="button" class="btn btn--outline" data-bulk-import-target="retry" data-action="bulk-import#retryFailed" hidden>Réessayer les échecs</button>
+                <button type="button" class="btn btn--primary" data-bulk-import-target="start" data-action="bulk-import#start" disabled>Lancer l’envoi</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}

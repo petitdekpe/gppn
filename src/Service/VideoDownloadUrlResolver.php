@@ -11,6 +11,8 @@ class VideoDownloadUrlResolver
     public function __construct(
         #[Autowire(service: 'download.storage')]
         private readonly FilesystemOperator $storage,
+        #[Autowire(service: 'stream.storage')]
+        private readonly FilesystemOperator $streamStorage,
     ) {
     }
 
@@ -23,5 +25,17 @@ class VideoDownloadUrlResolver
         }
 
         return $this->storage->publicUrl($fileName);
+    }
+
+    /**
+     * URL de la version WebM de lecture, null tant qu'elle n'est pas prête.
+     */
+    public function resolveWebm(VideoFile $file): ?string
+    {
+        if (!$file->hasPlayableWebm()) {
+            return null;
+        }
+
+        return $this->streamStorage->publicUrl($file->getWebmFileName());
     }
 }

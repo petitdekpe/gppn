@@ -10,6 +10,9 @@
             {{ form_errors(form) }}
             {{ form_row(form.email) }}
             {{ form_row(form.role) }}
+            {% if form.currentPassword is defined %}
+                {{ form_row(form.currentPassword) }}
+            {% endif %}
             {{ form_row(form.plainPassword) }}
 
             <div class="admin-form-actions">

@@ -12,6 +12,7 @@ parameters:
     app.uploads_dir: '%kernel.project_dir%/public/uploads'
     app.downloads_dir: '%app.uploads_dir%/downloads'
     app.covers_dir: '%app.uploads_dir%/covers'
+    app.streams_dir: '%app.uploads_dir%/streams'
 
 services:
     # default configuration for services in *this* file

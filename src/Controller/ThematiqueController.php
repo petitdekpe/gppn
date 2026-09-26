@@ -6,6 +6,7 @@ use App\Enum\CapsuleFormat;
 use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
+use App\Service\AppSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,6 +29,7 @@ class ThematiqueController extends AbstractController
         ThematicRepository $thematicRepository,
         LanguageRepository $languageRepository,
         VideoRepository $videoRepository,
+        AppSettings $settings,
     ): Response {
         $thematic = $thematicRepository->findOneBy(['slug' => $slug]) ?? throw $this->createNotFoundException('Thématique introuvable.');
 
@@ -49,7 +51,7 @@ class ThematiqueController extends AbstractController
             'thematic' => $thematic,
             'results' => $results,
             'languages' => $languageRepository->findAllWithVideoCount(),
-            'formats' => CapsuleFormat::cases(),
+            'formats' => $settings->getEnabledFormats(),
             'selectedLanguageSlugs' => $languageSlugs,
             'selectedFormatValues' => array_map(static fn (CapsuleFormat $format) => $format->value, $selectedFormats),
             'query' => $query,

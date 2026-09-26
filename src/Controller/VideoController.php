@@ -8,6 +8,7 @@ use App\Repository\CouncilSessionRepository;
 use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
+use App\Service\AppSettings;
 use App\Service\VideoFileZipBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,6 +28,7 @@ class VideoController extends AbstractController
         ThematicRepository $thematicRepository,
         LanguageRepository $languageRepository,
         CouncilSessionRepository $councilSessionRepository,
+        AppSettings $settings,
     ): Response {
         $queryParams = $request->query->all();
         $thematicSlugs = isset($queryParams['thematique']) ? array_values((array) $queryParams['thematique']) : [];
@@ -56,7 +58,7 @@ class VideoController extends AbstractController
             'results' => $results,
             'thematics' => $thematicRepository->findAllWithVideoCount(),
             'languages' => $languageRepository->findAllWithVideoCount(),
-            'formats' => CapsuleFormat::cases(),
+            'formats' => $settings->getEnabledFormats(),
             'formatCounts' => $videoRepository->countAllByFormat(),
             'councilSessions' => $councilSessionRepository->findAllWithVideoCount(),
             'selectedThematicSlugs' => $thematicSlugs,

@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Enum\VideoFileType;
+use App\Enum\WebmStatus;
 use App\Repository\VideoFileRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
@@ -44,6 +45,19 @@ class VideoFile
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    /**
+     * Version WebM servie par le lecteur du site (stockage `stream.storage`),
+     * générée en tâche de fond à partir du fichier d'origine.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $webmFileName = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $webmFileSize = null;
+
+    #[ORM\Column(length: 20, nullable: true, enumType: WebmStatus::class)]
+    private ?WebmStatus $webmStatus = null;
 
     public function getId(): ?int
     {
@@ -154,5 +168,46 @@ class VideoFile
         $this->updatedAt = $updatedAt;
 
         return $this;
+    }
+
+    public function getWebmFileName(): ?string
+    {
+        return $this->webmFileName;
+    }
+
+    public function setWebmFileName(?string $webmFileName): static
+    {
+        $this->webmFileName = $webmFileName;
+
+        return $this;
+    }
+
+    public function getWebmFileSize(): ?int
+    {
+        return $this->webmFileSize;
+    }
+
+    public function setWebmFileSize(?int $webmFileSize): static
+    {
+        $this->webmFileSize = $webmFileSize;
+
+        return $this;
+    }
+
+    public function getWebmStatus(): ?WebmStatus
+    {
+        return $this->webmStatus;
+    }
+
+    public function setWebmStatus(?WebmStatus $webmStatus): static
+    {
+        $this->webmStatus = $webmStatus;
+
+        return $this;
+    }
+
+    public function hasPlayableWebm(): bool
+    {
+        return $this->webmStatus === WebmStatus::READY && $this->webmFileName !== null;
     }
 }

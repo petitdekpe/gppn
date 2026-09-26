@@ -1,0 +1,8 @@
+{# Sources d'un <video> : la version WebM générée pour la lecture en priorité,
+   l'original (fichier téléchargeable) en repli tant qu'elle n'est pas prête
+   ou si le navigateur ne lit pas le WebM. #}
+{% set webmUrl = video_webm_url(file) %}
+{% if webmUrl %}
+    <source src="{{ webmUrl }}" type="video/webm">
+{% endif %}
+<source src="{{ video_file_url(file) }}" type="{{ file.mimeType ?? 'video/mp4' }}">

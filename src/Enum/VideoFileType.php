@@ -83,6 +83,16 @@ enum VideoFileType: string
         return in_array($this, [self::MP4_1080P, self::MP4_480P, self::MP4_VERTICAL], true);
     }
 
+    /**
+     * Vidéos TV (1080p, 480p) et Mobile (vertical) : lues sur le site via une
+     * version WebM générée à l'upload, l'original restant le fichier
+     * téléchargeable.
+     */
+    public function hasWebmPlayback(): bool
+    {
+        return $this->isVideo();
+    }
+
     public function isAudio(): bool
     {
         return $this === self::AUDIO;

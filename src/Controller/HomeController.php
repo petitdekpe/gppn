@@ -11,7 +11,18 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class HomeController extends AbstractController
 {
-    #[Route('/accueil2', name: 'app_home')]
+    /**
+     * Ancienne adresse de l'accueil (page mise en brouillon, voir
+     * templates/home/brouillons/accueil2.html.twig) : redirigée pour ne pas
+     * casser les liens déjà partagés.
+     */
+    #[Route('/accueil2', name: 'app_home_legacy')]
+    public function legacy(): Response
+    {
+        return $this->redirectToRoute('app_home', [], Response::HTTP_MOVED_PERMANENTLY);
+    }
+
+    #[Route('/', name: 'app_home')]
     public function index(
         VideoRepository $videoRepository,
         ThematicRepository $thematicRepository,
@@ -19,33 +30,14 @@ class HomeController extends AbstractController
     ): Response {
         $thematics = $thematicRepository->findAllWithVideoCount();
         $languages = $languageRepository->findAllWithVideoCount();
-        $activeLanguages = array_filter($languages, static fn(array $row) => $row['videoCount'] > 0);
 
-        return $this->render('home/index.html.twig', [
-            'latestVideos' => $videoRepository->findLatest(8),
-            'featuredVideos' => $videoRepository->findFeatured(3),
-            'thematics' => $thematics,
-            'languages' => $languages,
-            'stats' => [
-                'videos' => $videoRepository->countAll(),
-                'languages' => count($activeLanguages),
-                'thematics' => count($thematics),
-                'views' => $videoRepository->sumViews(),
-            ],
-        ]);
-    }
-
-    #[Route('/', name: 'app_home2')]
-    public function index2(
-        VideoRepository $videoRepository,
-        ThematicRepository $thematicRepository,
-        LanguageRepository $languageRepository,
-    ): Response {
-        $thematics = $thematicRepository->findAllWithVideoCount();
-        $languages = $languageRepository->findAllWithVideoCount();
-
+        // Les plus fournies d'abord (à égalité, ordre alphabétique conservé par usort stable).
+        $byVideoCount = static fn(array $a, array $b) => $b['videoCount'] <=> $a['videoCount'];
         $activeLanguages = array_values(array_filter($languages, static fn(array $row) => $row['videoCount'] > 0));
         $activeThematics = array_values(array_filter($thematics, static fn(array $row) => $row['videoCount'] > 0));
+        usort($activeLanguages, $byVideoCount);
+        usort($activeThematics, $byVideoCount);
+        $shownThematics = $activeThematics ?: $thematics;
 
         $featuredVideos = $videoRepository->findFeatured(2);
         if (\count($featuredVideos) < 2) {
@@ -59,11 +51,14 @@ class HomeController extends AbstractController
             }
         }
 
-        return $this->render('home/index2.html.twig', [
+        return $this->render('home/index.html.twig', [
             'heroVideo' => $featuredVideos[0] ?? null,
             'spotlightVideo' => $featuredVideos[1] ?? ($featuredVideos[0] ?? null),
-            'languages' => \array_slice($activeLanguages ?: $languages, 0, 4),
-            'thematics' => \array_slice($activeThematics ?: $thematics, 0, 4),
+            'latestVideos' => $videoRepository->findLatest(6),
+            // Toutes : le gabarit en montre 8, les autres derrière « Voir plus ».
+            'languages' => $activeLanguages ?: $languages,
+            'thematics' => \array_slice($shownThematics, 0, 6),
+            'hasMoreThematics' => \count($shownThematics) > 6,
         ]);
     }
 }

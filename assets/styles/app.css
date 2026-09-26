@@ -34,6 +34,11 @@ html {
     -webkit-text-size-adjust: 100%;
 }
 
+/* L'attribut hidden doit l'emporter sur les display: flex/grid des composants. */
+[hidden] {
+    display: none !important;
+}
+
 body {
     margin: 0;
     font-family: "Montserrat", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
@@ -331,6 +336,27 @@ button {
     background: #fbeaea;
     color: #a12727;
     border-color: #f3caca;
+}
+
+.flash--info {
+    background: #eaf1fb;
+    color: #1d4a86;
+    border-color: #c9dbf3;
+}
+
+.admin-content .flash {
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    border: 1px solid #cdeeda;
+    border-radius: var(--radius-md);
+}
+
+.admin-content .flash--error {
+    border-color: #f3caca;
+}
+
+.admin-content .flash--info {
+    border-color: #c9dbf3;
 }
 
 /* ---- Hero --------------------------------------------------------------- */
@@ -1285,22 +1311,6 @@ button {
     margin-bottom: 0;
 }
 
-.lot-builder__council-filter {
-    padding: 12px 14px 16px;
-    margin-bottom: 14px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.lot-builder__council-filter-label {
-    display: block;
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-muted);
-    margin-bottom: 10px;
-}
-
 .lot-builder__subject-search-input {
     display: block;
     width: 100%;
@@ -1315,6 +1325,38 @@ button {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+/* Étape 1 : calendrier des conseils à gauche, sujets du conseil choisi à droite. */
+.lot-builder__council-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.lot-builder__council-subjects {
+    min-width: 0;
+}
+
+.lot-builder__council-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin: 0 0 10px;
+    color: var(--color-navy);
+}
+
+.lot-builder__council-layout .council-calendar__caption {
+    display: none;
+}
+
+@media (min-width: 1100px) {
+    .lot-builder__council-layout {
+        grid-template-columns: 260px minmax(0, 1fr);
+    }
 }
 
 .lot-builder__subject {
@@ -2030,6 +2072,22 @@ button {
     font-size: 0.9rem;
 }
 
+@media (max-width: 859px) {
+    /* Logo (et newsletter) sur toute la largeur, Rubriques et Suivez-nous côte à côte. */
+    .site-footer__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px 20px;
+    }
+
+    .site-footer__about {
+        grid-column: 1 / -1;
+    }
+
+    .brand__logo--footer {
+        margin-inline: auto;
+    }
+}
+
 .site-footer__bottom {
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     font-size: 0.8rem;
@@ -2299,35 +2357,17 @@ button {
     color: #fff;
 }
 
-.admin-sidebar__footer {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 16px;
-    margin-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.14);
-    font-size: 0.82rem;
-}
-
-.admin-sidebar__footer a {
-    color: rgba(255, 255, 255, 0.72);
-}
-
-.admin-user {
-    color: #fff;
-    font-weight: 600;
-}
-
-.admin-logout-link {
-    color: var(--color-gold);
-}
-
 .admin-main {
     flex: 1;
     min-width: 0;
 }
 
 .admin-topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
     padding: 20px 28px;
     border-bottom: 1px solid var(--color-border);
     background: #fff;
@@ -2336,6 +2376,38 @@ button {
 .admin-topbar h1 {
     margin: 0;
     font-size: 1.3rem;
+}
+
+.admin-topbar__title {
+    min-width: 0;
+}
+
+.admin-topbar__account {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 18px;
+    font-size: 0.82rem;
+}
+
+.admin-topbar__account a {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.admin-topbar__account a:hover {
+    color: var(--color-navy);
+}
+
+.admin-user {
+    color: var(--color-navy);
+    font-weight: 700;
+    padding-left: 18px;
+    border-left: 1px solid var(--color-border);
+}
+
+.admin-topbar__account .admin-logout-link {
+    color: #a12727;
 }
 
 .admin-content {
@@ -2371,6 +2443,306 @@ button {
 
 .admin-stat-card--accent {
     border-color: var(--color-gold);
+}
+
+.admin-stat-card small {
+    color: var(--color-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+/* ---- Tableau de bord : panneaux de statistiques ---------------------- */
+
+.admin-dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+}
+
+/* Groupes repliables du tableau de bord (<details>) */
+
+.admin-group {
+    margin-top: 24px;
+}
+
+.admin-group__summary {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.admin-group__summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-group__summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 1em;
+    color: var(--color-muted);
+    transition: transform 0.15s ease;
+}
+
+.admin-group[open] > .admin-group__summary::before {
+    transform: rotate(90deg);
+}
+
+.admin-group__summary:focus-visible {
+    outline: 2px solid var(--color-green);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.admin-group__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-navy);
+}
+
+.admin-group__hint {
+    color: var(--color-muted);
+    font-size: 0.82rem;
+}
+
+.admin-group > .admin-dashboard-grid {
+    margin: 16px 0 0;
+}
+
+.admin-overview h2 {
+    display: block;
+    margin: 0 0 12px;
+}
+
+.admin-panel {
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    min-width: 0;
+}
+
+.admin-panel h2 {
+    margin: 0 0 16px;
+    font-size: 1rem;
+    color: var(--color-navy);
+}
+
+.admin-panel h3 {
+    margin: 20px 0 10px;
+    font-size: 0.85rem;
+    color: var(--color-navy);
+}
+
+.admin-panel ul,
+.admin-panel ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.admin-histogram {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 6px;
+    height: 180px;
+}
+
+.admin-histogram__col {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.admin-histogram__bar {
+    width: 100%;
+    max-width: 36px;
+    min-height: 2px;
+    background: var(--color-green);
+    border-radius: 4px 4px 0 0;
+}
+
+.admin-histogram__value {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-navy);
+}
+
+.admin-histogram__label {
+    font-size: 0.68rem;
+    color: var(--color-muted);
+    white-space: nowrap;
+}
+
+.admin-rank {
+    counter-reset: rank;
+}
+
+.admin-rank li {
+    counter-increment: rank;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    column-gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.88rem;
+}
+
+.admin-rank li:last-child {
+    border-bottom: 0;
+}
+
+.admin-rank li::before {
+    content: counter(rank);
+    grid-row: span 2;
+    font-weight: 700;
+    color: var(--color-gold);
+}
+
+.admin-rank a {
+    color: var(--color-navy);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-rank strong {
+    grid-row: span 2;
+    align-self: center;
+    white-space: nowrap;
+}
+
+.admin-rank__meta {
+    color: var(--color-muted);
+    font-size: 0.75rem;
+}
+
+.admin-bars li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    row-gap: 4px;
+    padding: 6px 0;
+    font-size: 0.85rem;
+}
+
+.admin-bars__label small {
+    color: var(--color-muted);
+    font-size: 0.72rem;
+}
+
+.admin-bars strong {
+    text-align: right;
+}
+
+.admin-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: block;
+    height: 8px;
+    background: var(--color-cream);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.admin-bar__fill {
+    display: block;
+    height: 100%;
+    background: var(--color-green);
+    border-radius: inherit;
+}
+
+.admin-stack {
+    display: flex;
+    height: 14px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--color-cream);
+}
+
+.admin-stack__part--clear {
+    background: var(--color-green);
+}
+
+.admin-stack__part--unclear {
+    background: var(--color-gold);
+}
+
+.admin-stack__part--not_clear {
+    background: var(--color-red);
+}
+
+.admin-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 12px !important;
+    font-size: 0.82rem;
+}
+
+.admin-legend__dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.admin-comments li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.admin-comments li:last-child {
+    border-bottom: 0;
+}
+
+.admin-comments p {
+    margin: 0 0 4px;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.admin-kv li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.88rem;
+}
+
+.admin-kv li:last-child {
+    border-bottom: 0;
+}
+
+.admin-kv li.is-alert strong,
+.admin-alerts li {
+    color: #a12727;
+}
+
+.admin-alerts {
+    margin-top: 12px !important;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+@media (min-width: 960px) {
+    .admin-dashboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-panel--wide {
+        grid-column: 1 / -1;
+    }
 }
 
 .admin-quick-actions {
@@ -2426,6 +2798,468 @@ button {
     opacity: 0.6;
 }
 
+/* Liste des contenus regroupée : conseil des ministres → sujet → langue */
+
+.admin-session__summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--color-navy);
+    color: #fff;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.admin-session__title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* Parcours « Nouveau contenu » → nouveau conseil / nouveau sujet */
+
+/* Dernière option de la liste « Sujet » (ajoutée par council_calendar_controller.js) */
+select option.subject-create-option {
+    background: var(--color-navy);
+    color: #fff;
+    font-weight: 700;
+}
+
+.council-calendar__create {
+    width: 100%;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.admin-flow-note {
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    border-left: 3px solid var(--color-gold);
+    border-radius: var(--radius-sm);
+    background: var(--color-cream);
+    color: var(--color-navy);
+    font-size: 0.85rem;
+}
+
+/* ---- Import en masse d'un sujet ------------------------------------- */
+
+.bulk-import__subject {
+    margin: 0 0 6px;
+    font-size: 1.05rem;
+    color: var(--color-navy);
+}
+
+.bulk-import__intro code {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--color-cream);
+    font-size: 0.85em;
+}
+
+.bulk-import__dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 20px 0;
+    padding: 36px 20px;
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    background: #fff;
+    color: var(--color-muted);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.bulk-import__dropzone i {
+    font-size: 2rem;
+    color: var(--color-green);
+}
+
+.bulk-import__dropzone strong {
+    color: var(--color-navy);
+}
+
+.bulk-import__dropzone:hover,
+.bulk-import__dropzone.is-dragover {
+    border-color: var(--color-green);
+    background: #f3faf6;
+}
+
+.bulk-import__dropzone:focus-within {
+    outline: 2px solid var(--color-green);
+    outline-offset: 2px;
+}
+
+.bulk-import__table select {
+    max-width: 220px;
+    padding: 6px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: 0.85rem;
+    background: #fff;
+}
+
+.bulk-import__file {
+    white-space: normal !important;
+    min-width: 200px;
+}
+
+.bulk-import__file strong {
+    display: block;
+    word-break: break-all;
+}
+
+.bulk-import__file small {
+    color: var(--color-muted);
+}
+
+.bulk-import__state {
+    white-space: normal !important;
+    min-width: 220px;
+    font-size: 0.82rem;
+}
+
+.bulk-import__label {
+    display: block;
+    font-weight: 600;
+}
+
+.bulk-import__row.is-todo .bulk-import__label,
+.bulk-import__row.is-replace .bulk-import__label {
+    color: #9a6700;
+}
+
+.bulk-import__row.is-warning .bulk-import__label {
+    color: #9a6700;
+    font-weight: 500;
+}
+
+.bulk-import__row.is-ready .bulk-import__label,
+.bulk-import__row.is-done .bulk-import__label {
+    color: var(--color-green-dark);
+}
+
+.bulk-import__row.is-error .bulk-import__label {
+    color: #a12727;
+}
+
+.bulk-import__row.is-todo td:first-child,
+.bulk-import__row.is-replace td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-gold);
+}
+
+.bulk-import__row.is-error td:first-child {
+    box-shadow: inset 3px 0 0 #a12727;
+}
+
+.bulk-import__replace {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.bulk-import__progress {
+    display: block;
+    height: 6px;
+    margin-top: 6px;
+    border-radius: 999px;
+    background: var(--color-cream);
+    overflow: hidden;
+}
+
+.bulk-import__progress span {
+    display: block;
+    height: 100%;
+    background: var(--color-green);
+    transition: width 0.2s ease;
+}
+
+.bulk-import__state a {
+    display: inline-block;
+    margin-top: 4px;
+    font-weight: 600;
+    color: var(--color-green-dark);
+}
+
+.bulk-import__remove {
+    border: 0;
+    background: transparent;
+    color: var(--color-muted);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.bulk-import__remove:hover {
+    color: #a12727;
+}
+
+.bulk-import__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.bulk-import__summary {
+    margin-right: auto;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+.bulk-import__report {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 14px 18px;
+    border: 1px solid #cdeeda;
+    border-radius: var(--radius-md);
+    background: #eaf7ee;
+    color: var(--color-green-dark);
+    font-weight: 600;
+}
+
+.bulk-import__report.has-errors {
+    border-color: #f3caca;
+    background: #fbeaea;
+    color: #a12727;
+}
+
+.bulk-import__report p {
+    margin: 0;
+}
+
+/* ---- Contenus : calendrier des conseils + liste ---------------------- */
+
+.admin-videos-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.admin-videos-layout__list {
+    min-width: 0;
+}
+
+.council-calendar__caption {
+    margin: 0 0 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-navy);
+}
+
+.council-calendar__card {
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.council-calendar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.council-calendar__nav {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--color-navy);
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.council-calendar__nav:hover:not(:disabled) {
+    background: #f3f1ec;
+}
+
+.council-calendar__nav:disabled {
+    color: #c9c5bc;
+    cursor: default;
+}
+
+.council-calendar__title {
+    border: 0;
+    background: transparent;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-weight: 700;
+    color: var(--color-navy);
+    cursor: pointer;
+}
+
+.council-calendar__title:hover {
+    background: #f3f1ec;
+}
+
+.council-calendar__grid,
+.council-calendar__date-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 14px 16px;
+}
+
+.council-calendar__cell {
+    position: relative;
+    padding: 8px 4px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--color-navy);
+    cursor: pointer;
+}
+
+.council-calendar__cell:hover:not(:disabled):not(.is-selected) {
+    background: #eeece7;
+}
+
+.council-calendar__cell:disabled {
+    color: #c9c5bc;
+    font-weight: 400;
+    cursor: default;
+}
+
+.council-calendar__cell.is-selected {
+    background: var(--color-navy);
+    color: #fff;
+}
+
+.council-calendar__nav:focus-visible,
+.council-calendar__title:focus-visible,
+.council-calendar__cell:focus-visible {
+    outline: 2px solid var(--color-green);
+    outline-offset: 2px;
+}
+
+.council-calendar__badge {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--color-gold);
+    color: var(--color-navy);
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 16px;
+}
+
+.council-calendar__dates {
+    border-top: 1px solid var(--color-border);
+}
+
+.council-calendar__dates-title {
+    margin: 12px 16px 0;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+}
+
+.council-calendar__date-list {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 1024px) {
+    .admin-videos-layout {
+        grid-template-columns: 280px minmax(0, 1fr);
+    }
+
+    .council-calendar {
+        position: sticky;
+        top: 24px;
+    }
+}
+
+.admin-session__body {
+    padding: 16px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-top: 0;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.admin-session__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.admin-session__actions form {
+    margin: 0 0 0 auto;
+}
+
+.admin-session__body .empty-state {
+    margin: 0;
+}
+
+.admin-table td.admin-table__wrap {
+    white-space: normal;
+    min-width: 220px;
+}
+
+.admin-session > .admin-table-wrap {
+    border-top: 0;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.admin-table--grouped .admin-table__subject th {
+    background: var(--color-cream);
+    color: var(--color-navy);
+    font-weight: 700;
+    white-space: normal;
+}
+
+.admin-table__count {
+    font-weight: 500;
+    font-size: 0.8rem;
+    opacity: 0.75;
+    white-space: nowrap;
+}
+
+.admin-table__thematic {
+    margin-left: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.admin-table__speaker {
+    color: var(--color-navy);
+}
+
+.admin-table__muted {
+    color: var(--color-muted);
+}
+
 .admin-table__actions {
     display: flex;
     gap: 8px;
@@ -2473,6 +3307,83 @@ button {
     max-width: 900px;
 }
 
+/* ---- Modale de progression d'upload --------------------------------- */
+
+.upload-dialog {
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-lg);
+    width: min(460px, calc(100vw - 32px));
+    box-shadow: 0 24px 60px rgba(16, 25, 44, 0.35);
+    color: var(--color-text);
+}
+
+.upload-dialog::backdrop {
+    background: rgba(16, 25, 44, 0.65);
+}
+
+.upload-dialog__panel {
+    padding: 24px;
+}
+
+.upload-dialog h2 {
+    margin: 0 0 12px;
+    font-size: 1.15rem;
+    color: var(--color-navy);
+}
+
+.upload-dialog__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.upload-dialog__close {
+    border: none;
+    background: transparent;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 4px;
+    color: var(--color-muted);
+    cursor: pointer;
+}
+
+.upload-dialog__close:hover {
+    color: var(--color-navy);
+}
+
+.upload-dialog__progress {
+    height: 12px;
+    border-radius: 999px;
+    background: var(--color-cream);
+    overflow: hidden;
+}
+
+.upload-dialog__bar {
+    width: 0;
+    height: 100%;
+    background: var(--color-green);
+    border-radius: inherit;
+    transition: width 0.2s ease;
+}
+
+.upload-dialog__percent {
+    margin: 10px 0 4px;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--color-navy);
+}
+
+.upload-dialog__status {
+    margin: 0 0 8px;
+}
+
+.upload-dialog__status.is-error {
+    color: #a12727;
+    font-weight: 600;
+}
+
 /* ---- Formulaire en étapes (ex. Nouveau/Modifier contenu) ----------------- */
 
 .form-steps__indicators {
@@ -2502,6 +3413,7 @@ button {
 
 .admin-form-card input[type="text"],
 .admin-form-card input[type="email"],
+.admin-form-card input[type="password"],
 .admin-form-card input[type="number"],
 .admin-form-card input[type="datetime-local"],
 .admin-form-card textarea,
@@ -2640,6 +3552,109 @@ button {
     margin-top: 4px;
 }
 
+.admin-login__card .flash {
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    border: 1px solid;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+}
+
+/* ---- Code à usage unique (connexion, changement de mot de passe) ---------- */
+
+.otp-intro {
+    margin: 0 0 16px;
+    font-size: 0.9rem;
+    color: var(--color-muted);
+}
+
+.otp-intro strong {
+    color: var(--color-navy);
+    overflow-wrap: anywhere;
+}
+
+.admin-form-card .otp-input,
+.admin-login__card .otp-input {
+    font-size: 1.4rem;
+    letter-spacing: 0.4em;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.otp-resend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: baseline;
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+}
+
+.otp-resend__button {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--color-green-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.admin-form-card--narrow {
+    max-width: 440px;
+}
+
+/* ---- Paramètres ------------------------------------------------------------ */
+
+.admin-settings__group {
+    margin: 0 0 20px;
+    padding: 0 0 20px;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.admin-settings__group legend {
+    padding: 0;
+    margin-bottom: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-navy);
+}
+
+.admin-form-card .admin-check {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.admin-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--color-green-dark);
+}
+
+.admin-settings__help {
+    margin: 4px 0 0;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+}
+
+.admin-settings__warning {
+    margin: 8px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: #fdf5e6;
+    color: #7a5310;
+    font-size: 0.82rem;
+}
+
 .admin-login__back {
     color: rgba(255, 255, 255, 0.75);
     font-size: 0.85rem;
@@ -2672,15 +3687,8 @@ button {
         order: 3;
     }
 
-    .admin-sidebar__footer {
-        flex-direction: row;
-        align-items: center;
-        gap: 12px;
-        border-top: 0;
-        padding-top: 0;
-        margin-top: 0;
-        order: 2;
-        margin-left: auto;
+    .admin-topbar {
+        padding: 16px;
     }
 }
 
@@ -2709,6 +3717,14 @@ button {
     font-size: 1.2rem;
     text-decoration: none;
     box-shadow: var(--shadow-card);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Au-dessus du pied de page (même fond bleu nuit), le bouton s'inverse pour
+   rester visible : fond blanc, icône bleu nuit (voir feed_fab_controller.js). */
+.feed-fab.is-over-footer {
+    background: #fff;
+    color: var(--color-navy);
 }
 
 @media (min-width: 860px) {
@@ -2920,19 +3936,28 @@ button {
 
 .home2-lang-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 
 .home2-lang-pill {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 18px;
+    gap: 8px;
+    padding: 12px 14px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
+    font-size: 0.92rem;
     font-weight: 700;
     color: var(--color-navy);
+}
+
+.home2-lang-pill span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .home2-lang-pill:hover {
@@ -2955,15 +3980,17 @@ button {
 .home2-feature__thumb {
     border-radius: var(--radius-lg);
     aspect-ratio: 16 / 10;
+    overflow: hidden;
+    color: #fff;
+}
+
+.home2-feature__thumb:hover .video-detail__poster-play {
+    background: #fff;
+    transform: translate(-50%, -50%) scale(1.06);
 }
 
 .home2-feature__body {
     padding-top: 16px;
-}
-
-.home2-feature__body h3 {
-    font-size: 1.3rem;
-    margin: 8px 0 8px;
 }
 
 .home2-feature__body p {
@@ -3012,6 +4039,36 @@ button {
 .home2-thematics__list i {
     color: var(--color-muted);
     font-size: 0.8rem;
+}
+
+.home2-thematics__more {
+    margin-top: 14px;
+}
+
+/* Légende de la vidéo du hero sous la vignette : mobile uniquement (voir plus bas). */
+.home2-hero__below {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@media (max-width: 639px) {
+    /* Les ancres « Choisir une langue » / « Voir les sujets à la une » pointent
+       vers des sections déjà visibles juste en dessous sur mobile. */
+    .home2-hero__actions {
+        display: none;
+    }
+
+    /* Le pied superposé (titre, durée, boutons) recouvrait le bouton de lecture :
+       il est remplacé par .home2-hero__below, sous la vidéo. */
+    .home2-hero .video-detail__poster-footer {
+        display: none;
+    }
+
+    .home2-hero .video-detail__poster-play {
+        width: 72px;
+        height: 72px;
+    }
 }
 
 /* ---- Comment ça marche ---- */
@@ -3080,8 +4137,13 @@ button {
 }
 
 @media (min-width: 640px) {
-    .home2-lang-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .home2-hero__below {
+        display: none;
+    }
+
+    .home2-lang-pill {
+        padding: 18px;
+        font-size: 1rem;
     }
 
     .home2-steps {
@@ -3096,7 +4158,12 @@ button {
     }
 
     .home2-lang-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    /* 6 derniers contenus : deux rangées de 3 plutôt que 4 + 2. */
+    .video-grid.home2-latest {
+        grid-template-columns: repeat(3, 1fr);
     }
 
     .home2-feature {

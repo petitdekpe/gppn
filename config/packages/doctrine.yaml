@@ -28,6 +28,11 @@ doctrine:
                 alias: App
         controller_resolver:
             auto_mapping: false
+        filters:
+            # Activé sur le site public par App\EventSubscriber\CapsuleFormatFilterSubscriber.
+            capsule_format:
+                class: App\Doctrine\Filter\CapsuleFormatFilter
+                enabled: false
 
 when@test:
     doctrine:

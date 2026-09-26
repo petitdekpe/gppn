@@ -1,36 +1,218 @@
 {% extends 'admin/base.html.twig' %}
 
+{% macro size(bytes) %}{% if bytes >= 1073741824 %}{{ (bytes / 1073741824)|number_format(1, ',', ' ') }} Go{% else %}{{ (bytes / 1048576)|number_format(0, ',', ' ') }} Mo{% endif %}{% endmacro %}
+{% macro bar(value, max, color) %}<span class="admin-bar"><span class="admin-bar__fill" style="width: {{ max > 0 ? (value * 100 / max)|round(1) : 0 }}%{% if color %}; background: {{ color }}{% endif %}"></span></span>{% endmacro %}
+
 {% block title %}Tableau de bord — Administration GPPN{% endblock %}
 {% block page_title %}Tableau de bord{% endblock %}
 
 {% block body %}
-    <div class="admin-stat-grid">
-        <a class="admin-stat-card" href="{{ path('admin_video_index') }}">
-            <strong>{{ videoCount }}</strong>
-            <span>Contenus</span>
-        </a>
-        <a class="admin-stat-card" href="{{ path('admin_thematic_index') }}">
-            <strong>{{ thematicCount }}</strong>
-            <span>Thématiques</span>
-        </a>
-        <a class="admin-stat-card" href="{{ path('admin_language_index') }}">
-            <strong>{{ languageCount }}</strong>
-            <span>Langues</span>
-        </a>
-        <a class="admin-stat-card" href="{{ path('admin_speaker_index') }}">
-            <strong>{{ speakerCount }}</strong>
-            <span>Intervenants</span>
-        </a>
-        <a class="admin-stat-card admin-stat-card--accent" href="{{ path('admin_suggestion_index') }}">
-            <strong>{{ untreatedSuggestionCount }}</strong>
-            <span>Suggestions non traitées</span>
-        </a>
-    </div>
+    <section class="admin-overview" aria-labelledby="overview-title">
+        <h2 id="overview-title" class="admin-group__title">Vue d’ensemble</h2>
+        <div class="admin-stat-grid">
+            <a class="admin-stat-card" href="{{ path('admin_video_index') }}">
+                <strong>{{ videoCount }}</strong>
+                <span>Contenus</span>
+                <small>{{ videosByStatus.publie }} publiés · {{ videosByStatus.brouillon }} brouillons · {{ videosByStatus.masque }} masqués</small>
+            </a>
+            <div class="admin-stat-card">
+                <strong>{{ views.views|number_format(0, ',', ' ') }}</strong>
+                <span>Vues au total</span>
+                <small>{{ views.average|number_format(0, ',', ' ') }} vues en moyenne par contenu publié</small>
+            </div>
+            <div class="admin-stat-card">
+                <strong>{{ feedback.total }}</strong>
+                <span>Avis reçus</span>
+                <small>{{ feedback.total ? feedback.ratings[0].percent ~ ' % jugent le contenu clair' : 'Aucun avis pour l’instant' }}</small>
+            </div>
+            <a class="admin-stat-card admin-stat-card--accent" href="{{ path('admin_suggestion_index') }}">
+                <strong>{{ untreatedSuggestionCount }}</strong>
+                <span>Suggestions non traitées</span>
+            </a>
+            <a class="admin-stat-card" href="{{ path('admin_thematic_index') }}">
+                <strong>{{ thematicCount }}</strong>
+                <span>Thématiques</span>
+            </a>
+            <a class="admin-stat-card" href="{{ path('admin_language_index') }}">
+                <strong>{{ languageCount }}</strong>
+                <span>Langues</span>
+            </a>
+            <a class="admin-stat-card" href="{{ path('admin_speaker_index') }}">
+                <strong>{{ speakerCount }}</strong>
+                <span>Intervenants</span>
+            </a>
+        </div>
+    </section>
 
     <div class="admin-quick-actions">
         <a class="btn btn--primary" href="{{ path('admin_video_new') }}">+ Nouveau contenu</a>
         <a class="btn btn--outline" href="{{ path('admin_thematic_new') }}">+ Nouvelle thématique</a>
         <a class="btn btn--outline" href="{{ path('admin_language_new') }}">+ Nouvelle langue</a>
         <a class="btn btn--outline" href="{{ path('admin_speaker_new') }}">+ Nouvel intervenant</a>
+    </div>
+
+    <div data-controller="dashboard-groups">
+        <details class="admin-group" data-dashboard-groups-target="group" data-group="audience" open>
+            <summary class="admin-group__summary">
+                <span class="admin-group__title">Audience</span>
+                <span class="admin-group__hint">{{ views.views|number_format(0, ',', ' ') }} vues</span>
+            </summary>
+            <div class="admin-dashboard-grid">
+                <section class="admin-panel">
+                    <h2>Contenus les plus vus</h2>
+                    {% if topVideos is empty %}
+                        <p class="form-help">Aucun contenu publié.</p>
+                    {% else %}
+                        <ol class="admin-rank">
+                            {% for video in topVideos %}
+                                <li>
+                                    <a href="{{ path('admin_video_edit', {id: video.id}) }}">{{ video.title }}</a>
+                                    <span class="admin-rank__meta">{{ video.language }}</span>
+                                    <strong>{{ video.views|number_format(0, ',', ' ') }} vues</strong>
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    {% endif %}
+                </section>
+
+                <section class="admin-panel">
+                    <h2>Vues par thématique</h2>
+                    {% set thematicMax = max(byThematic|map(t => t.views)|merge([0])) %}
+                    <ul class="admin-bars">
+                        {% for t in byThematic %}
+                            <li>
+                                <span class="admin-bars__label">{{ t.name }} <small>{{ t.videos }} contenu(s)</small></span>
+                                {{ _self.bar(t.views, thematicMax, t.color) }}
+                                <strong>{{ t.views|number_format(0, ',', ' ') }}</strong>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+
+                <section class="admin-panel">
+                    <h2>Vues par langue</h2>
+                    {% set languageMax = max(byLanguage|map(l => l.views)|merge([0])) %}
+                    <ul class="admin-bars">
+                        {% for l in byLanguage %}
+                            <li>
+                                <span class="admin-bars__label">{{ l.name }} <small>{{ l.videos }} contenu(s)</small></span>
+                                {{ _self.bar(l.views, languageMax, null) }}
+                                <strong>{{ l.views|number_format(0, ',', ' ') }}</strong>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            </div>
+        </details>
+
+        <details class="admin-group" data-dashboard-groups-target="group" data-group="feedback" open>
+            <summary class="admin-group__summary">
+                <span class="admin-group__title">Retours du public</span>
+                <span class="admin-group__hint">{{ feedback.total }} avis</span>
+            </summary>
+            <div class="admin-dashboard-grid">
+                <section class="admin-panel admin-panel--wide">
+                    <h2>Avis des visiteurs</h2>
+                    {% if feedback.total == 0 %}
+                        <p class="form-help">Aucun avis reçu pour l’instant.</p>
+                    {% else %}
+                        <div class="admin-stack" role="img" aria-label="{% for r in feedback.ratings %}{{ r.label }} : {{ r.percent }} %{{ not loop.last ? ', ' }}{% endfor %}">
+                            {% for r in feedback.ratings %}
+                                {% if r.count %}<span class="admin-stack__part admin-stack__part--{{ r.key }}" style="width: {{ r.percent }}%"></span>{% endif %}
+                            {% endfor %}
+                        </div>
+                        <ul class="admin-legend">
+                            {% for r in feedback.ratings %}
+                                <li><span class="admin-legend__dot admin-stack__part--{{ r.key }}"></span>{{ r.label }} <strong>{{ r.count }}</strong> ({{ r.percent }} %)</li>
+                            {% endfor %}
+                        </ul>
+                        {% if latestComments is not empty %}
+                            <h3>Derniers commentaires</h3>
+                            <ul class="admin-comments">
+                                {% for c in latestComments %}
+                                    <li>
+                                        <p>« {{ c.comment|length > 180 ? c.comment|slice(0, 180) ~ '…' : c.comment }} »</p>
+                                        <span class="admin-rank__meta">{{ c.title }} · {{ c.ratingLabel }} · {{ c.createdAt|date('d/m/Y') }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endif %}
+                </section>
+            </div>
+        </details>
+
+        <details class="admin-group" data-dashboard-groups-target="group" data-group="production" open>
+            <summary class="admin-group__summary">
+                <span class="admin-group__title">Production</span>
+                <span class="admin-group__hint">{{ videosByStatus.publie }} contenus publiés</span>
+            </summary>
+            <div class="admin-dashboard-grid">
+                <section class="admin-panel admin-panel--wide">
+                    <h2>Contenus publiés par mois</h2>
+                    {% set monthMax = max(publishedPerMonth|map(m => m.count)) %}
+                    <div class="admin-histogram">
+                        {% for month in publishedPerMonth %}
+                            <div class="admin-histogram__col" title="{{ month.count }} contenu(s)">
+                                <span class="admin-histogram__value">{{ month.count ?: '' }}</span>
+                                <span class="admin-histogram__bar" style="height: {{ monthMax > 0 ? (month.count * 100 / monthMax)|round(1) : 0 }}%"></span>
+                                <span class="admin-histogram__label">{{ month.label }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="admin-panel admin-panel--wide">
+                    <h2>Formats proposés</h2>
+                    <p class="form-help">Part des {{ fileCoverage.published }} contenus publiés proposant chaque fichier.</p>
+                    <ul class="admin-bars">
+                        {% for type in fileCoverage.types %}
+                            <li>
+                                <span class="admin-bars__label">{{ type.label }}</span>
+                                {{ _self.bar(type.percent, 100, null) }}
+                                <strong>{{ type.percent }} %</strong>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% if fileCoverage.withoutFiles or fileCoverage.withoutCover %}
+                        <ul class="admin-alerts">
+                            {% if fileCoverage.withoutFiles %}<li>{{ fileCoverage.withoutFiles }} contenu(s) publié(s) sans aucun fichier</li>{% endif %}
+                            {% if fileCoverage.withoutCover %}<li>{{ fileCoverage.withoutCover }} contenu(s) publié(s) sans image de couverture</li>{% endif %}
+                        </ul>
+                    {% endif %}
+                </section>
+            </div>
+        </details>
+
+        <details class="admin-group" data-dashboard-groups-target="group" data-group="files" open>
+            <summary class="admin-group__summary">
+                <span class="admin-group__title">Fichiers et stockage</span>
+                <span class="admin-group__hint">{{ _self.size(storage.originals + storage.webm + storage.covers) }}{% if webm.missing %} · {{ webm.missing }} vidéo(s) sans version WebM{% endif %}</span>
+            </summary>
+            <div class="admin-dashboard-grid">
+                <section class="admin-panel">
+                    <h2>Stockage utilisé</h2>
+                    <ul class="admin-kv">
+                        <li><span>Fichiers d’origine (téléchargements)</span><strong>{{ _self.size(storage.originals) }}</strong></li>
+                        <li><span>Versions WebM de lecture</span><strong>{{ _self.size(storage.webm) }}</strong></li>
+                        <li><span>Images de couverture</span><strong>{{ _self.size(storage.covers) }}</strong></li>
+                        <li><span>Total</span><strong>{{ _self.size(storage.originals + storage.webm + storage.covers) }}</strong></li>
+                    </ul>
+                </section>
+
+                <section class="admin-panel">
+                    <h2>Versions de lecture WebM</h2>
+                    <ul class="admin-kv">
+                        {% for row in webm.rows %}
+                            <li class="{{ row.status.value == 'failed' and row.count ? 'is-alert' }}"><span>{{ row.status.label|capitalize }}</span><strong>{{ row.count }}</strong></li>
+                        {% endfor %}
+                        <li class="{{ webm.missing ? 'is-alert' }}"><span>Jamais converties</span><strong>{{ webm.missing }}</strong></li>
+                    </ul>
+                    {% if webm.missing %}
+                        <p class="form-help">Pour les convertir : <code>php bin/console app:video:transcode-webm</code></p>
+                    {% endif %}
+                </section>
+            </div>
+        </details>
     </div>
 {% endblock %}

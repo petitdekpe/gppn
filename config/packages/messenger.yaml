@@ -9,6 +9,15 @@ framework:
                 retry_strategy:
                     max_retries: 3
                     multiplier: 2
+            # File dédiée aux conversions WebM : un encodage peut durer
+            # plusieurs minutes et ne doit pas retarder les e-mails (OTP…) de
+            # la file async. Worker : messenger:consume transcode
+            transcode:
+                dsn: '%env(MESSENGER_TRANSCODE_DSN)%'
+                # Les échecs ffmpeg sont gérés par le handler (statut « échec ») ;
+                # relancer un encodage de plusieurs minutes n'aurait pas de sens.
+                retry_strategy:
+                    max_retries: 0
             failed: 'doctrine://default?queue_name=failed'
             # sync: 'sync://'
 
@@ -21,6 +30,7 @@ framework:
             Symfony\Component\Mailer\Messenger\SendEmailMessage: async
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
+            App\Message\TranscodeToWebm: transcode
 
 when@prod:
     framework:
@@ -30,3 +40,5 @@ when@prod:
                 # dépendre de la base applicative.
                 async:
                     dsn: '%env(REDIS_MESSENGER_DSN)%'
+                transcode:
+                    dsn: '%env(REDIS_TRANSCODE_DSN)%'

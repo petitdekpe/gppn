@@ -1,0 +1,17 @@
+{# Saisie d'un code OTP + renvoi. Attend : form, email, resendPath, resendWait. #}
+<p class="otp-intro">Un code à 6 chiffres a été envoyé à <strong>{{ email }}</strong>. Il est valable 10 minutes.</p>
+
+{{ form_start(form) }}
+    {{ form_row(form.code) }}
+    <button type="submit" class="btn btn--primary">Valider</button>
+{{ form_end(form) }}
+
+<form method="post" action="{{ path(resendPath) }}" class="otp-resend">
+    <input type="hidden" name="_token" value="{{ csrf_token('otp-resend') }}">
+    {% if resendWait > 0 %}
+        <span>Vous pourrez demander un nouveau code dans {{ resendWait }} s.</span>
+    {% else %}
+        <span>Rien reçu ?</span>
+        <button type="submit" class="otp-resend__button">Renvoyer un code</button>
+    {% endif %}
+</form>

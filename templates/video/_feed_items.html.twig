@@ -3,7 +3,7 @@
     {% if verticalFile %}
         <article class="feed-item" data-feed-target="item" style="--thematic-color: {{ video.thematic.colorHex }}">
             <video class="feed-item__video" data-feed-target="video" data-action="click->feed#togglePlay" muted loop playsinline preload="metadata">
-                <source src="{{ video_file_url(verticalFile) }}" type="{{ verticalFile.mimeType ?? 'video/mp4' }}">
+                {{ include('partials/_video_sources.html.twig', {file: verticalFile}) }}
             </video>
 
             <button type="button" class="feed-item__sound" data-action="feed#toggleMute" aria-label="Activer le son">

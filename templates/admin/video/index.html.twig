@@ -8,46 +8,72 @@
         <a class="btn btn--primary" href="{{ path('admin_video_new') }}">+ Nouveau contenu</a>
     </div>
 
-    {% if videos is empty %}
+    {% if sessions is empty %}
         <p class="empty-state">Aucun contenu pour le moment.</p>
     {% else %}
-        <div class="admin-table-wrap">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Titre</th>
-                        <th>Statut</th>
-                        <th>Thématique</th>
-                        <th>Langue</th>
-                        <th>Conseil des ministres</th>
-                        <th>Publiée le</th>
-                        <th>Vues</th>
-                        <th>À la une</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for video in videos %}
-                        <tr>
-                            <td><a href="{{ path('app_video_show', {slug: video.slug}) }}" target="_blank" rel="noopener">{{ video.title }}</a></td>
-                            <td>{{ video.status.label }}</td>
-                            <td>{{ video.thematic.name }}</td>
-                            <td>{{ video.language.name }}</td>
-                            <td>{{ video.councilSession.date|date('d/m/Y') }}</td>
-                            <td>{{ video.publishedAt|date('d/m/Y') }}</td>
-                            <td>{{ video.viewsCount|number_format(0, ',', ' ') }}</td>
-                            <td>{{ video.featured ? 'Oui' : 'Non' }}</td>
-                            <td class="admin-table__actions">
-                                <a class="btn btn--outline btn--sm" href="{{ path('admin_video_edit', {id: video.id}) }}">Modifier</a>
-                                <form method="post" action="{{ path('admin_video_delete', {id: video.id}) }}" onsubmit="return confirm('Supprimer ce contenu ?');">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-video-' ~ video.id) }}">
-                                    <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-selected-value="{{ selectedSessionId }}" data-council-calendar-sync-url-value="true">
+            {{ include('partials/_council_calendar.html.twig') }}
+
+            <div class="admin-videos-layout__list">
+                {# Sans JavaScript, seul le conseil sélectionné (par défaut le dernier) est affiché. #}
+                {% for group in sessions %}
+                    {% set session = group.session %}
+                    <section class="admin-session" data-council-calendar-target="panel" data-session-id="{{ session.id }}" aria-labelledby="council-{{ session.id }}"{{ session.id != selectedSessionId ? ' hidden' }}>
+                        <header class="admin-session__summary">
+                            <h2 class="admin-session__title" id="council-{{ session.id }}">{{ session.label ?: 'Conseil des ministres du ' ~ session.date|date('d/m/Y') }}</h2>
+                            <span class="admin-table__count">{{ group.count }} contenu{{ group.count > 1 ? 's' }}</span>
+                        </header>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table admin-table--grouped">
+                                <thead>
+                                    <tr>
+                                        <th>Intervenant</th>
+                                        <th>Langue</th>
+                                        <th>Statut</th>
+                                        <th>Publiée le</th>
+                                        <th>Vues</th>
+                                        <th>À la une</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in group.subjects %}
+                                        <tr class="admin-table__subject">
+                                            <th colspan="7" scope="rowgroup">
+                                                {{ item.subject.title }}
+                                                <span class="admin-table__thematic" style="color: {{ item.subject.thematic.colorHex }}">{{ item.subject.thematic.name }}</span>
+                                            </th>
+                                        </tr>
+                                        {% for video in item.videos %}
+                                            <tr>
+                                                <td>
+                                                    {% if video.speaker %}
+                                                        <strong class="admin-table__speaker" title="{{ video.speaker.fullName }}">{{ video.speaker.sigle ?: video.speaker.fullName }}</strong>
+                                                    {% else %}
+                                                        <span class="admin-table__muted">—</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td><a href="{{ path('app_video_show', {slug: video.slug}) }}" target="_blank" rel="noopener">{{ video.language.name }}</a></td>
+                                                <td>{{ video.status.label }}</td>
+                                                <td>{{ video.publishedAt|date('d/m/Y') }}</td>
+                                                <td>{{ video.viewsCount|number_format(0, ',', ' ') }}</td>
+                                                <td>{{ video.featured ? 'Oui' : 'Non' }}</td>
+                                                <td class="admin-table__actions">
+                                                    <a class="btn btn--outline btn--sm" href="{{ path('admin_video_edit', {id: video.id}) }}">Modifier</a>
+                                                    <form method="post" action="{{ path('admin_video_delete', {id: video.id}) }}" onsubmit="return confirm('Supprimer ce contenu ?');">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-video-' ~ video.id) }}">
+                                                        <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
         </div>
     {% endif %}
 {% endblock %}

@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Doctrine\Filter\CapsuleFormatFilter;
 use App\Entity\CouncilSession;
 use App\Entity\Language;
 use App\Entity\Thematic;
@@ -31,13 +32,26 @@ class VideoRepository extends ServiceEntityRepository
      */
     private function baseQueryBuilder(): \Doctrine\ORM\QueryBuilder
     {
-        return $this->createQueryBuilder('v')
+        $qb = $this->createQueryBuilder('v')
             ->addSelect('s', 't', 'l')
             ->innerJoin('v.subject', 's')
             ->innerJoin('s.thematic', 't')
             ->innerJoin('v.language', 'l')
             ->andWhere('v.status = :status')
             ->setParameter('status', VideoStatus::PUBLIE);
+
+        return $this->onlyVisible($qb);
+    }
+
+    /**
+     * Écarte les contenus dont tous les fichiers sont d'un type désactivé
+     * dans les Paramètres (voir CapsuleFormatFilter).
+     */
+    private function onlyVisible(\Doctrine\ORM\QueryBuilder $qb): \Doctrine\ORM\QueryBuilder
+    {
+        $condition = CapsuleFormatFilter::visibleVideoCondition($this->getEntityManager(), 'v');
+
+        return $condition !== null ? $qb->andWhere($condition) : $qb;
     }
 
     /**
@@ -52,6 +66,29 @@ class VideoRepository extends ServiceEntityRepository
             ->setParameter('slug', $slug)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Liste de l'admin, tous statuts confondus, triée pour être regroupée par
+     * conseil des ministres (le plus récent d'abord), puis sujet, puis langue.
+     *
+     * @return Video[]
+     */
+    public function findForAdminIndex(): array
+    {
+        return $this->createQueryBuilder('v')
+            ->addSelect('s', 'c', 't', 'l', 'sp')
+            ->innerJoin('v.subject', 's')
+            ->innerJoin('s.councilSession', 'c')
+            ->innerJoin('s.thematic', 't')
+            ->innerJoin('v.language', 'l')
+            ->leftJoin('v.speaker', 'sp')
+            ->orderBy('c.date', 'DESC')
+            ->addOrderBy('s.title', 'ASC')
+            ->addOrderBy('l.name', 'ASC')
+            ->addOrderBy('v.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**
@@ -288,7 +325,7 @@ class VideoRepository extends ServiceEntityRepository
 
     public function countAll(): int
     {
-        return (int) $this->createQueryBuilder('v')
+        return (int) $this->onlyVisible($this->createQueryBuilder('v'))
             ->select('COUNT(v.id)')
             ->andWhere('v.status = :status')
             ->setParameter('status', VideoStatus::PUBLIE)
@@ -298,7 +335,7 @@ class VideoRepository extends ServiceEntityRepository
 
     public function sumViews(): int
     {
-        return (int) ($this->createQueryBuilder('v')
+        return (int) ($this->onlyVisible($this->createQueryBuilder('v'))
             ->select('COALESCE(SUM(v.viewsCount), 0)')
             ->andWhere('v.status = :status')
             ->setParameter('status', VideoStatus::PUBLIE)

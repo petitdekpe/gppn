@@ -5,64 +5,109 @@
 {% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_video_index'), label: 'Retour aux contenus'}) }}{% endblock %}
 
 {% block body %}
-    <div class="admin-form-card">
-        {{ form_start(form, {'attr': {'enctype': 'multipart/form-data', 'data-controller': 'form-steps'}}) }}
-            {{ form_errors(form) }}
+    <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-unit-value="sujet">
+        {# Parcours ?pour=contenu : la création d'un conseil ou d'un sujet revient ici, le nouveau sujet pré-sélectionné. #}
+        {{ include('partials/_council_calendar.html.twig', {
+            caption: 'Choisir le conseil des ministres',
+            newCouncilUrl: video.id ? null : path('admin_council_session_new', {pour: 'contenu'}),
+        }) }}
+        <div class="admin-form-card" data-controller="upload-progress" data-action="submit->upload-progress#submit">
+            {{ form_start(form, {'attr': {'enctype': 'multipart/form-data', 'data-controller': 'form-steps'}}) }}
+                {{ form_errors(form) }}
 
-            <div class="form-steps__indicators">
-                <span class="form-steps__indicator" data-form-steps-target="indicator">1. Informations</span>
-                <span class="form-steps__indicator" data-form-steps-target="indicator">2. Fichiers</span>
-            </div>
-
-            <div data-form-steps-target="step">
-                {{ form_row(form.subject) }}
-                {{ form_row(form.language) }}
-                <div class="form-grid-2">
-                    {{ form_row(form.status) }}
-                    {{ form_row(form.durationSeconds) }}
+                <div class="form-steps__indicators">
+                    <span class="form-steps__indicator" data-form-steps-target="indicator">1. Informations</span>
+                    <span class="form-steps__indicator" data-form-steps-target="indicator">2. Fichiers</span>
                 </div>
-                {{ form_row(form.featured) }}
-                {{ form_row(form.speaker) }}
 
-                <div class="admin-form-card__file-slot">
-                    {{ form_label(form.coverImageFile) }}
-                    {{ form_help(form.coverImageFile) }}
-                    {% if form.coverImageFile.vars.image_uri %}
-                        <p class="form-help">Image actuelle :</p>
-                        <img class="admin-cover-preview" src="{{ form.coverImageFile.vars.image_uri }}" alt="">
+                <div data-form-steps-target="step">
+                    {# Nouveau contenu : le JS ajoute en bas de la liste l'option « + Nouveau sujet pour ce conseil »,
+                       qui ouvre la création d'un sujet du conseil choisi (__ID__ remplacé en JS). #}
+                    {% set subjectAttr = {'data-council-calendar-target': 'subject'} %}
+                    {% if not video.id %}
+                        {% set subjectAttr = subjectAttr|merge({'data-create-url-template': path('admin_council_session_subject_new', {id: '__ID__', pour: 'contenu'})}) %}
                     {% endif %}
-                    {{ form_widget(form.coverImageFile) }}
-                    {{ form_errors(form.coverImageFile) }}
-                </div>
-
-                <div class="admin-form-actions">
-                    <button type="button" class="btn btn--primary" data-action="form-steps#next">Suivant : Fichiers →</button>
-                    <a class="btn btn--outline" href="{{ path('admin_video_index') }}">Annuler</a>
-                </div>
-            </div>
-
-            <div data-form-steps-target="step" hidden>
-                <h2>Fichiers proposés au téléchargement</h2>
-                <p class="form-help">Un contenu peut proposer n'importe laquelle de ces variantes, sans obligation de toutes les fournir.</p>
-                {% for fileForm in form.files %}
-                    {% set videoFile = fileForm.vars.data %}
-                    <div class="admin-form-card__file-slot">
-                        <label>{{ videoFile.type.label }}</label>
-                        <p class="form-help">{{ videoFile.type.description }}</p>
-                        {{ form_widget(fileForm.file) }}
-                        {{ form_errors(fileForm.file) }}
-                        {% if videoFile.fileName %}
-                            <p class="form-help">Fichier actuel : <a href="{{ video_file_url(videoFile) }}" target="_blank" rel="noopener">{{ videoFile.originalName ?? videoFile.fileName }}</a> ({{ (videoFile.fileSize / 1048576)|round(1) }} Mo)</p>
-                        {% endif %}
+                    {{ form_row(form.subject, {attr: subjectAttr, help: 'Choisissez d’abord le conseil des ministres dans le calendrier : seuls ses sujets sont proposés.'}) }}
+                    {{ form_row(form.language) }}
+                    <div class="form-grid-2">
+                        {{ form_row(form.status) }}
+                        {{ form_row(form.durationSeconds) }}
                     </div>
-                {% endfor %}
+                    {{ form_row(form.featured) }}
+                    {{ form_row(form.speaker) }}
 
-                <div class="admin-form-actions">
-                    <button type="button" class="btn btn--outline" data-action="form-steps#prev">← Précédent</button>
-                    <button type="submit" class="btn btn--primary">Enregistrer</button>
-                    <a class="btn btn--outline" href="{{ path('admin_video_index') }}">Annuler</a>
+                    <div class="admin-form-card__file-slot">
+                        {{ form_label(form.coverImageFile) }}
+                        {{ form_help(form.coverImageFile) }}
+                        {% if form.coverImageFile.vars.image_uri %}
+                            <p class="form-help">Image actuelle :</p>
+                            <img class="admin-cover-preview" src="{{ form.coverImageFile.vars.image_uri }}" alt="">
+                        {% endif %}
+                        {{ form_widget(form.coverImageFile) }}
+                        {{ form_errors(form.coverImageFile) }}
+                    </div>
+
+                    <div class="admin-form-actions">
+                        <button type="button" class="btn btn--primary" data-action="form-steps#next">Suivant : Fichiers →</button>
+                        <a class="btn btn--outline" href="{{ path('admin_video_index') }}">Annuler</a>
+                    </div>
                 </div>
-            </div>
-        {{ form_end(form) }}
+
+                <div data-form-steps-target="step" hidden>
+                    <h2>Fichiers proposés au téléchargement</h2>
+                    <p class="form-help">Un contenu peut proposer n'importe laquelle de ces variantes, sans obligation de toutes les fournir.</p>
+                    {% for fileForm in form.files %}
+                        {% set videoFile = fileForm.vars.data %}
+                        <div class="admin-form-card__file-slot">
+                            <label>{{ videoFile.type.label }}</label>
+                            <p class="form-help">{{ videoFile.type.description }}</p>
+                            {{ form_widget(fileForm.file) }}
+                            {{ form_errors(fileForm.file) }}
+                            {% if videoFile.fileName %}
+                                <p class="form-help">Fichier actuel : <a href="{{ video_file_url(videoFile) }}" target="_blank" rel="noopener">{{ videoFile.originalName ?? videoFile.fileName }}</a> ({{ (videoFile.fileSize / 1048576)|round(1) }} Mo)</p>
+                                {% if videoFile.webmStatus %}
+                                    <p class="form-help">Version de lecture WebM : {{ videoFile.webmStatus.label }}{% if videoFile.hasPlayableWebm and videoFile.webmFileSize %} ({{ (videoFile.webmFileSize / 1048576)|round(1) }} Mo){% endif %}</p>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="admin-form-actions">
+                        <button type="button" class="btn btn--outline" data-action="form-steps#prev">← Précédent</button>
+                        <button type="submit" class="btn btn--primary">Enregistrer</button>
+                        <a class="btn btn--outline" href="{{ path('admin_video_index') }}">Annuler</a>
+                    </div>
+                </div>
+            {{ form_end(form) }}
+
+            <dialog class="upload-dialog" aria-labelledby="upload-dialog-title"
+                    data-upload-progress-target="dialog"
+                    data-action="cancel->upload-progress#requestClose close->upload-progress#closed click->upload-progress#backdropClick">
+                <div class="upload-dialog__panel">
+                    <div data-upload-progress-target="main">
+                        <div class="upload-dialog__header">
+                            <h2 id="upload-dialog-title">Envoi du contenu</h2>
+                            <button type="button" class="upload-dialog__close" aria-label="Fermer et annuler l'envoi" data-action="upload-progress#requestClose">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="upload-dialog__progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="upload-dialog-title" data-upload-progress-target="progress">
+                            <div class="upload-dialog__bar" data-upload-progress-target="bar"></div>
+                        </div>
+                        <p class="upload-dialog__percent" data-upload-progress-target="percent">0 %</p>
+                        <p class="upload-dialog__status" aria-live="polite" data-upload-progress-target="status">Envoi des fichiers en cours…</p>
+                        <p class="form-help">Fermer cette fenêtre annule l'envoi.</p>
+                    </div>
+                    <div data-upload-progress-target="confirm" hidden>
+                        <h2>Annuler l'envoi ?</h2>
+                        <p>Êtes-vous sûr de vouloir fermer cette fenêtre ? L'envoi en cours sera annulé et les fichiers ne seront pas enregistrés.</p>
+                        <div class="admin-form-actions">
+                            <button type="button" class="btn btn--danger" data-action="upload-progress#abort">Oui, annuler l'envoi</button>
+                            <button type="button" class="btn btn--outline" data-action="upload-progress#resume">Non, continuer</button>
+                        </div>
+                    </div>
+                </div>
+            </dialog>
+        </div>
     </div>
 {% endblock %}

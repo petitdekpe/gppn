@@ -8,6 +8,12 @@ flysystem:
             local:
                 directory: '%app.covers_dir%'
             public_url: '/uploads/covers'
+        # Versions WebM servies par le lecteur du site (voir
+        # TranscodeToWebmHandler) ; les originaux restent dans download.storage.
+        stream.storage:
+            local:
+                directory: '%app.streams_dir%'
+            public_url: '/uploads/streams'
 
 # En prod, public/uploads/ est un partage NFS monté depuis le serveur de
 # données : la même configuration locale s'applique, seul l'emplacement

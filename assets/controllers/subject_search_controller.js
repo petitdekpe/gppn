@@ -10,7 +10,8 @@ export default class extends Controller {
         this.itemTargets.forEach((item) => {
             const matches = query === '' || item.dataset.searchText.includes(query);
             item.hidden = !matches;
-            if (matches) {
+            // Un sujet d'un conseil masqué (calendrier de l'espace média) ne compte pas.
+            if (matches && !item.parentElement.closest('[hidden]')) {
                 visibleCount += 1;
             }
         });

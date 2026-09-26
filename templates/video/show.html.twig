@@ -59,7 +59,7 @@
                             </div>
 
                             <video class="video-detail__video" controls preload="metadata" data-video-poster-target="video" hidden>
-                                <source src="{{ playbackUrl }}" type="{{ playbackFile.mimeType ?? 'video/mp4' }}">
+                                {{ include('partials/_video_sources.html.twig', {file: playbackFile}) }}
                             </video>
                         </div>
                     {% else %}
