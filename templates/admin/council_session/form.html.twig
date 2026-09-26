@@ -2,6 +2,7 @@
 
 {% block title %}{{ councilSession.id ? 'Modifier' : 'Nouveau' }} conseil des ministres — Administration GPPN{% endblock %}
 {% block page_title %}{{ councilSession.id ? 'Modifier le conseil des ministres' : 'Nouveau conseil des ministres' }}{% endblock %}
+{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_council_session_index'), label: 'Retour aux conseils des ministres'}) }}{% endblock %}
 
 {% block body %}
     <div class="admin-form-card">

@@ -15,13 +15,14 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\String\Slugger\AsciiSlugger;
+use Symfony\Component\Validator\Constraints as Assert;
+use Vich\UploaderBundle\Form\Type\VichImageType;
 
 class VideoType extends AbstractType
 {
@@ -73,8 +74,21 @@ class VideoType extends AbstractType
             ->add('durationSeconds', IntegerType::class, [
                 'label' => 'Durée (secondes)',
             ])
-            ->add('coverPositionX', HiddenType::class)
-            ->add('coverPositionY', HiddenType::class)
+            ->add('coverImageFile', VichImageType::class, [
+                'label' => 'Image de couverture',
+                'help' => 'Affichée dans les cartes, à la une et la fiche détail. Laisser vide pour ne pas en définir.',
+                'required' => false,
+                'allow_delete' => true,
+                'delete_label' => 'Supprimer cette image',
+                'download_uri' => false,
+                'constraints' => [
+                    new Assert\Image(
+                        maxSize: '10M',
+                        mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+                        mimeTypesMessage: 'Format d\'image non pris en charge.',
+                    ),
+                ],
+            ])
             ->add('files', CollectionType::class, [
                 'label' => false,
                 'entry_type' => VideoFileEntryType::class,

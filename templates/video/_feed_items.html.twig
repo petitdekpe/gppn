@@ -1,0 +1,29 @@
+{% for video in videos %}
+    {% set verticalFile = video.verticalFile %}
+    {% if verticalFile %}
+        <article class="feed-item" data-feed-target="item" style="--thematic-color: {{ video.thematic.colorHex }}">
+            <video class="feed-item__video" data-feed-target="video" data-action="click->feed#togglePlay" muted loop playsinline preload="metadata">
+                <source src="{{ video_file_url(verticalFile) }}" type="{{ verticalFile.mimeType ?? 'video/mp4' }}">
+            </video>
+
+            <button type="button" class="feed-item__sound" data-action="feed#toggleMute" aria-label="Activer le son">
+                <i class="fa-solid fa-volume-xmark" aria-hidden="true"></i>
+            </button>
+
+            <div class="feed-item__overlay">
+                <div class="feed-item__info">
+                    <div class="feed-item__tags">
+                        <span class="video-card__lang-tag video-card__lang-tag--static">{{ video.language.name }}</span>
+                        <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>
+                    </div>
+                    <h2 class="feed-item__title">{{ video.title }}</h2>
+                    <p class="feed-item__meta">{{ video.viewsCount|number_format(0, ',', ' ') }} vues</p>
+                </div>
+
+                <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="btn btn--dark btn--sm feed-item__download">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger
+                </a>
+            </div>
+        </article>
+    {% endif %}
+{% endfor %}

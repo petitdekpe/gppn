@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% set statusCode = status_code|default(500) %}
+{% set isForbidden = statusCode == 403 %}
+
+{% block title %}{{ isForbidden ? 'Accès refusé' : 'Une erreur est survenue' }} — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}{{ isForbidden ? 'Vous n’avez pas les droits nécessaires pour accéder à cette page.' : 'Une erreur est survenue de notre côté.' }}{% endblock %}
+
+{% block body %}
+    <section class="wrap error-page">
+        <div class="error-page__stripe" aria-hidden="true"></div>
+        <p class="error-page__code">{{ statusCode }}</p>
+        <h1 class="error-page__title">{{ isForbidden ? 'Accès refusé' : 'Une erreur est survenue' }}</h1>
+        <p class="error-page__text">
+            {% if isForbidden %}
+                Vous n’avez pas les droits nécessaires pour accéder à cette page.
+            {% else %}
+                Quelque chose s’est mal passé de notre côté. Réessayez dans un instant, ou revenez à l’accueil.
+            {% endif %}
+        </p>
+        <div class="error-page__actions">
+            <a class="btn btn--primary" href="{{ path('app_home') }}">Retour à l’accueil</a>
+            <a class="btn btn--outline" href="{{ path('app_video_index') }}">Explorer les contenus</a>
+        </div>
+    </section>
+{% endblock %}

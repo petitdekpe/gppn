@@ -2,6 +2,7 @@
 
 {% block title %}{{ suggestion.subject }} — Administration GPPN{% endblock %}
 {% block page_title %}Suggestion{% endblock %}
+{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_suggestion_index'), label: 'Retour aux suggestions'}) }}{% endblock %}
 
 {% block body %}
     <div class="admin-form-card">

@@ -2,6 +2,7 @@
 
 {% block title %}{{ subject.id ? 'Modifier' : 'Nouveau' }} sujet — Administration GPPN{% endblock %}
 {% block page_title %}{{ subject.id ? 'Modifier le sujet' : 'Nouveau sujet' }}{% endblock %}
+{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_council_session_edit', {id: councilSession.id}), label: 'Retour au conseil des ministres'}) }}{% endblock %}
 
 {% block body %}
     <div class="admin-form-card">

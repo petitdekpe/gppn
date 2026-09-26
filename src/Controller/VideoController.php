@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\VideoFeedback;
 use App\Enum\CapsuleFormat;
+use App\Repository\CouncilSessionRepository;
 use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
@@ -11,6 +12,7 @@ use App\Service\VideoFileZipBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
@@ -24,14 +26,17 @@ class VideoController extends AbstractController
         VideoRepository $videoRepository,
         ThematicRepository $thematicRepository,
         LanguageRepository $languageRepository,
+        CouncilSessionRepository $councilSessionRepository,
     ): Response {
         $queryParams = $request->query->all();
         $thematicSlugs = isset($queryParams['thematique']) ? array_values((array) $queryParams['thematique']) : [];
         $languageSlugs = isset($queryParams['langue']) ? array_values((array) $queryParams['langue']) : [];
         $formatValues = isset($queryParams['format']) ? array_values((array) $queryParams['format']) : [];
+        $councilSessionSlugs = isset($queryParams['conseil']) ? array_values((array) $queryParams['conseil']) : [];
 
         $selectedThematics = $thematicSlugs ? $thematicRepository->findBy(['slug' => $thematicSlugs]) : [];
         $selectedLanguages = $languageSlugs ? $languageRepository->findBy(['slug' => $languageSlugs]) : [];
+        $selectedCouncilSessions = $councilSessionSlugs ? $councilSessionRepository->findBy(['slug' => $councilSessionSlugs]) : [];
         $selectedFormats = array_filter(array_map(
             static fn (mixed $value): ?CapsuleFormat => CapsuleFormat::tryFrom((string) $value),
             $formatValues,
@@ -45,26 +50,55 @@ class VideoController extends AbstractController
             $selectedRole = 'tous';
         }
 
-        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole);
+        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole, councilSessions: $selectedCouncilSessions);
 
         return $this->render('video/index.html.twig', [
             'results' => $results,
             'thematics' => $thematicRepository->findAllWithVideoCount(),
             'languages' => $languageRepository->findAllWithVideoCount(),
             'formats' => CapsuleFormat::cases(),
+            'formatCounts' => $videoRepository->countAllByFormat(),
+            'councilSessions' => $councilSessionRepository->findAllWithVideoCount(),
             'selectedThematicSlugs' => $thematicSlugs,
             'selectedLanguageSlugs' => $languageSlugs,
             'selectedFormatValues' => array_map(static fn (CapsuleFormat $format) => $format->value, $selectedFormats),
+            'selectedCouncilSessionSlugs' => $councilSessionSlugs,
             'query' => $query,
             'selectedRole' => $selectedRole,
             'routeParams' => array_filter([
                 'thematique' => $thematicSlugs,
                 'langue' => $languageSlugs,
                 'format' => $formatValues,
+                'conseil' => $councilSessionSlugs,
                 'q' => $query,
                 'role' => $selectedRole !== 'tous' ? $selectedRole : null,
             ]),
             'featuredVideos' => $videoRepository->findFeatured(3),
+        ]);
+    }
+
+    #[Route('/feed', name: 'app_video_feed')]
+    public function feed(VideoRepository $videoRepository): Response
+    {
+        $results = $videoRepository->findVerticalFeed();
+
+        return $this->render('video/feed.html.twig', [
+            'videos' => $results['videos'],
+            'hasMore' => $results['hasMore'],
+            'nextPage' => $results['page'] + 1,
+        ]);
+    }
+
+    #[Route('/feed/plus', name: 'app_video_feed_more')]
+    public function feedMore(Request $request, VideoRepository $videoRepository): JsonResponse
+    {
+        $page = max(1, $request->query->getInt('page', 1));
+        $results = $videoRepository->findVerticalFeed($page);
+
+        return $this->json([
+            'html' => $this->renderView('video/_feed_items.html.twig', ['videos' => $results['videos']]),
+            'hasMore' => $results['hasMore'],
+            'nextPage' => $results['page'] + 1,
         ]);
     }
 
@@ -89,7 +123,7 @@ class VideoController extends AbstractController
 
         $availableFiles = array_values(array_filter(
             iterator_to_array($video->getFiles()),
-            static fn ($file) => $file->getFileName() !== null,
+            static fn ($file) => $file->getFileName() !== null && $file->getType()->isPubliclyDownloadable(),
         ));
 
         if ($availableFiles === []) {

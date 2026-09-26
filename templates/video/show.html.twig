@@ -16,39 +16,119 @@
         {% set playbackFile = video.primaryPlaybackFile %}
         {% set playbackUrl = playbackFile ? video_file_url(playbackFile) : null %}
         {% set playbackCategory = playbackFile ? playbackFile.type.category.value : null %}
-        {% set availableFiles = video.files|filter(f => f.fileName is not null) %}
+        {% set coverImageUrl = video_cover_url(video) %}
+        {% set availableFiles = video.files|filter(f => f.fileName is not null and f.type.isPubliclyDownloadable) %}
         <div class="video-detail__content">
-            <div class="video-detail__top">
-                {% if playbackCategory == 'audio' %}
-                    <div class="video-detail__player video-detail__player--audio" style="--thematic-color: {{ video.thematic.colorHex }}">
-                        <span class="video-card__lang-tag">{{ video.language.name }}</span>
-                        <span class="video-detail__format-icon" aria-hidden="true">♪</span>
-                        <audio class="video-detail__audio" controls src="{{ playbackUrl }}"></audio>
-                    </div>
-                {% elseif playbackCategory == 'image' %}
-                    <div class="video-detail__player video-detail__player--image" style="--thematic-color: {{ video.thematic.colorHex }}; --cover-position: {{ video.coverPositionX }}% {{ video.coverPositionY }}%">
-                        <span class="video-card__lang-tag">{{ video.language.name }}</span>
-                        <img src="{{ playbackUrl }}" alt="{{ video.title }}">
-                    </div>
-                {% elseif playbackCategory == 'pdf' %}
-                    <div class="video-detail__player video-detail__player--pdf" style="--thematic-color: {{ video.thematic.colorHex }}">
-                        <span class="video-card__lang-tag">{{ video.language.name }}</span>
-                        <iframe class="video-detail__pdf" src="{{ playbackUrl }}" title="{{ video.title }}"></iframe>
-                    </div>
-                {% elseif playbackCategory == 'video' %}
-                    <div class="video-detail__player" style="--thematic-color: {{ video.thematic.colorHex }}">
-                        <video class="video-detail__video" controls preload="metadata">
-                            <source src="{{ playbackUrl }}" type="{{ playbackFile.mimeType ?? 'video/mp4' }}">
-                        </video>
-                    </div>
-                {% else %}
-                    <div class="video-detail__player" style="--thematic-color: {{ video.thematic.colorHex }}">
-                        <span class="video-card__lang-tag">{{ video.language.name }}</span>
-                        <span class="video-card__play video-card__play--lg" aria-hidden="true">▶</span>
-                    </div>
-                {% endif %}
+            <div class="video-detail__layout">
+                <div class="video-detail__primary">
+                    {% if playbackCategory == 'audio' %}
+                        <div class="video-detail__player video-detail__player--audio" style="--thematic-color: {{ video.thematic.colorHex }}">
+                            <span class="video-card__lang-tag">{{ video.language.name }}</span>
+                            <span class="video-detail__format-icon" aria-hidden="true">♪</span>
+                            <audio class="video-detail__audio" controls src="{{ playbackUrl }}"></audio>
+                        </div>
+                    {% elseif playbackCategory == 'image' %}
+                        <div class="video-detail__player video-detail__player--image" style="--thematic-color: {{ video.thematic.colorHex }}">
+                            <span class="video-card__lang-tag">{{ video.language.name }}</span>
+                            <img src="{{ playbackUrl }}" alt="{{ video.title }}">
+                        </div>
+                    {% elseif playbackCategory == 'pdf' %}
+                        <div class="video-detail__player video-detail__player--pdf" style="--thematic-color: {{ video.thematic.colorHex }}">
+                            <span class="video-card__lang-tag">{{ video.language.name }}</span>
+                            <iframe class="video-detail__pdf" src="{{ playbackUrl }}" title="{{ video.title }}"></iframe>
+                        </div>
+                    {% elseif playbackCategory == 'video' %}
+                        <div class="video-detail__player video-detail__player--poster" style="--thematic-color: {{ video.thematic.colorHex }}" data-controller="video-poster">
+                            <div class="video-detail__poster" data-video-poster-target="poster">
+                                {% if coverImageUrl %}
+                                    <img class="video-detail__poster-image" src="{{ coverImageUrl }}" alt="">
+                                {% endif %}
+                                <span class="video-detail__poster-lang">{{ video.language.name }}</span>
+                                <span class="video-detail__poster-format">{{ playbackFile.type.category.label }}</span>
+                                <button type="button" class="video-detail__poster-play" data-action="video-poster#play" aria-label="Lire la vidéo">▶</button>
+                                <div class="video-detail__poster-footer">
+                                    <div class="video-detail__poster-info">
+                                        <strong>{{ video.title }}</strong>
+                                        <span>{{ video.durationLabel }}</span>
+                                    </div>
+                                    <div class="video-detail__poster-actions">
+                                        <button type="button" class="btn btn--outline btn--sm" data-action="video-poster#play">Voir la vidéo</button>
+                                        <a href="#telecharger" class="btn btn--dark btn--sm">Télécharger</a>
+                                    </div>
+                                </div>
+                            </div>
 
-                <aside class="download-panel">
+                            <video class="video-detail__video" controls preload="metadata" data-video-poster-target="video" hidden>
+                                <source src="{{ playbackUrl }}" type="{{ playbackFile.mimeType ?? 'video/mp4' }}">
+                            </video>
+                        </div>
+                    {% else %}
+                        <div class="video-detail__player" style="--thematic-color: {{ video.thematic.colorHex }}">
+                            <span class="video-card__lang-tag">{{ video.language.name }}</span>
+                            <span class="video-card__play video-card__play--lg" aria-hidden="true">▶</span>
+                        </div>
+                    {% endif %}
+
+                    <div class="video-detail__main">
+                        <div class="video-detail__tags">
+                            <span class="video-card__lang-tag video-card__lang-tag--static">{{ video.language.name }}</span>
+                            <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>
+                        </div>
+
+                        <h1>{{ video.title }}</h1>
+                        <p class="video-card__meta">Publiée le {{ video.publishedAt|date('d F Y') }} · <strong>{{ video.viewsCount|number_format(0, ',', ' ') }} vues</strong></p>
+                        <p class="video-detail__summary">{{ video.summary }}</p>
+
+                        {% set learningPoints = video.learningPointsList %}
+                        {% if learningPoints is not empty %}
+                            <div class="info-box">
+                                <h2>Ce que vous apprendrez dans ce contenu</h2>
+                                <ul>
+                                    {% for point in learningPoints %}
+                                        <li>{{ point }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if video.speaker is not null %}
+                            <div class="video-detail__speakers">
+                                <h2>Intervenant</h2>
+                                <ul>
+                                    <li>
+                                        <strong>{{ video.speaker.fullName }}</strong>
+                                        {% if video.speaker.role %}<span class="muted"> — {{ video.speaker.role }}</span>{% endif %}
+                                    </li>
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <details class="info-box feedback-disclosure">
+                            <summary class="feedback-disclosure__summary">Signaler un problème de traduction ou de clarté</summary>
+                            <div class="feedback-disclosure__body">
+                                <p class="muted">Ce que vous nous signalez est reçu par l’équipe éditoriale, examiné, puis corrigé si nécessaire.</p>
+
+                                <form action="{{ path('app_video_feedback', {slug: video.slug}) }}" method="post" class="feedback-form" data-controller="feedback">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('video_feedback_' ~ video.id) }}">
+                                    <input type="hidden" name="rating" data-feedback-target="rating">
+
+                                    <div class="feedback-form__choices">
+                                        <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="clear">Oui, c’est clair</button>
+                                        <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="unclear">Pas très clair</button>
+                                        <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="not_clear">Non, pas clair</button>
+                                    </div>
+
+                                    <label class="sr-only" for="feedback-comment">Votre commentaire</label>
+                                    <textarea id="feedback-comment" name="comment" rows="3" placeholder="Dites-nous en plus (facultatif) : un mot mal traduit, un point à préciser…"></textarea>
+
+                                    <button type="submit" class="btn btn--dark">Envoyer</button>
+                                </form>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+                <aside class="download-panel" id="telecharger">
                     <h2>Télécharger</h2>
                     <p class="muted">Libre de droits pour rediffusion.<br>Aucun compte requis.</p>
 
@@ -58,8 +138,8 @@
                                 <li>
                                     <span class="download-list__badge">{{ file.type.badge }}</span>
                                     <span class="download-list__info">
-                                        <strong>{{ file.type.label }}</strong>
-                                        <span class="muted">{{ file.type.description }}</span>
+                                        <strong>{{ file.type.usageLabel }}</strong>
+                                        {% if video.durationSeconds > 0 %}<span class="muted">{{ video.durationLabel }}</span>{% endif %}
                                     </span>
                                     <span class="download-list__size">{{ (file.fileSize / 1048576)|round(1) }} Mo</span>
                                     <a href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" class="btn btn--outline btn--sm">Télécharger</a>
@@ -76,62 +156,6 @@
 
                     <p class="download-panel__mention">Mention obligatoire à la diffusion : « Le Gouvernement Plus Près de Nous - République du Bénin. »</p>
                 </aside>
-            </div>
-
-            <div class="video-detail__main">
-                <div class="video-detail__tags">
-                    <span class="video-card__lang-tag video-card__lang-tag--static">{{ video.language.name }}</span>
-                    <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>
-                </div>
-
-                <h1>{{ video.title }}</h1>
-                <p class="video-card__meta">Publiée le {{ video.publishedAt|date('d F Y') }} · <strong>{{ video.viewsCount|number_format(0, ',', ' ') }} vues</strong></p>
-                <p class="video-detail__summary">{{ video.summary }}</p>
-
-                {% set learningPoints = video.learningPointsList %}
-                {% if learningPoints is not empty %}
-                    <div class="info-box">
-                        <h2>Ce que vous apprendrez dans ce contenu</h2>
-                        <ul>
-                            {% for point in learningPoints %}
-                                <li>{{ point }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-
-                {% if video.speaker is not null %}
-                    <div class="video-detail__speakers">
-                        <h2>Intervenant</h2>
-                        <ul>
-                            <li>
-                                <strong>{{ video.speaker.fullName }}</strong>
-                                {% if video.speaker.role %}<span class="muted"> — {{ video.speaker.role }}</span>{% endif %}
-                            </li>
-                        </ul>
-                    </div>
-                {% endif %}
-
-                <div class="info-box feedback-box">
-                    <h2>Ce contenu vous a-t-il été utile ?</h2>
-                    <p class="muted">Votre réaction nous aide à améliorer la traduction et la clarté des prochains contenus.</p>
-
-                    <form action="{{ path('app_video_feedback', {slug: video.slug}) }}" method="post" class="feedback-form" data-controller="feedback">
-                        <input type="hidden" name="_token" value="{{ csrf_token('video_feedback_' ~ video.id) }}">
-                        <input type="hidden" name="rating" data-feedback-target="rating">
-
-                        <div class="feedback-form__choices">
-                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="clear">Oui, c’est clair</button>
-                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="unclear">Pas très clair</button>
-                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="not_clear">Non, pas clair</button>
-                        </div>
-
-                        <label class="sr-only" for="feedback-comment">Votre commentaire</label>
-                        <textarea id="feedback-comment" name="comment" rows="3" placeholder="Dites-nous en plus (facultatif) : un mot mal traduit, un point à préciser…"></textarea>
-
-                        <button type="submit" class="btn btn--dark">Envoyer</button>
-                    </form>
-                </div>
             </div>
         </div>
     </section>

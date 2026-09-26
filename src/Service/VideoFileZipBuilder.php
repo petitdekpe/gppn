@@ -3,14 +3,19 @@
 namespace App\Service;
 
 use App\Entity\VideoFile;
-use League\Flysystem\FilesystemOperator;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 class VideoFileZipBuilder
 {
+    /**
+     * Les fichiers sont lus directement dans le répertoire de download.storage
+     * (partage NFS en prod) plutôt que recopiés dans /tmp : chaque vidéo ne
+     * transite qu'une fois sur le réseau et le disque local n'accueille que
+     * l'archive finale.
+     */
     public function __construct(
-        #[Autowire(service: 'download.storage')]
-        private readonly FilesystemOperator $storage,
+        #[Autowire(param: 'app.downloads_dir')]
+        private readonly string $downloadsDir,
     ) {
     }
 
@@ -20,15 +25,16 @@ class VideoFileZipBuilder
      * fichier une fois la réponse envoyée (ex : `BinaryFileResponse::deleteFileAfterSend(true)`).
      *
      * @param VideoFile[] $files
+     * @param string|null $attributionSheet Contenu texte d'une fiche d'attribution
+     *   ajoutée à la racine de l'archive (constructeur de lot de l'espace média).
      */
-    public function build(array $files): string
+    public function build(array $files, ?string $attributionSheet = null): string
     {
         $zipPath = tempnam(sys_get_temp_dir(), 'gppn_zip_') . '.zip';
 
         $zip = new \ZipArchive();
         $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
-        $localCopies = [];
         $usedEntryNames = [];
 
         try {
@@ -38,25 +44,24 @@ class VideoFileZipBuilder
                     continue;
                 }
 
-                $stream = $this->storage->readStream($fileName);
-                $localCopy = tempnam(sys_get_temp_dir(), 'gppn_zip_src_');
-                $localCopies[] = $localCopy;
-
-                $destination = fopen($localCopy, 'wb');
-                stream_copy_to_stream($stream, $destination);
-                fclose($destination);
-                fclose($stream);
+                $sourcePath = $this->downloadsDir . '/' . $fileName;
+                if (!is_file($sourcePath)) {
+                    throw new \RuntimeException(sprintf('Fichier introuvable dans le stockage : "%s".', $fileName));
+                }
 
                 $entryName = $this->uniqueEntryName($this->buildEntryName($file), $usedEntryNames);
 
-                $zip->addFile($localCopy, $entryName);
+                $zip->addFile($sourcePath, $entryName);
+                // Vidéos et images sont déjà compressées : les stocker telles
+                // quelles évite de mobiliser le CPU pour un gain nul.
+                $zip->setCompressionName($entryName, \ZipArchive::CM_STORE);
+            }
+
+            if ($attributionSheet !== null) {
+                $zip->addFromString('fiche-attribution.txt', $attributionSheet);
             }
         } finally {
             $zip->close();
-
-            foreach ($localCopies as $localCopy) {
-                @unlink($localCopy);
-            }
         }
 
         return $zipPath;

@@ -7,3 +7,7 @@ vich_uploader:
             upload_destination: download.storage
             namer:
                 service: Vich\UploaderBundle\Naming\SmartUniqueNamer
+        video_cover:
+            upload_destination: video_cover.storage
+            namer:
+                service: Vich\UploaderBundle\Naming\SmartUniqueNamer

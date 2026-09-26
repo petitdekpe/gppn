@@ -51,6 +51,33 @@ enum VideoFileType: string
         };
     }
 
+    /**
+     * Intitulé orienté « où diffuser ce fichier », utilisé dans la liste de
+     * téléchargement publique (fiche vidéo) à la place du vocabulaire
+     * technique de getLabel() — 1080p et 480p y partagent le même intitulé,
+     * seuls la taille et la durée (affichées à côté) les distinguent encore.
+     * getLabel()/getDescription() restent inchangés pour l'admin, qui a
+     * besoin de savoir précisément quel emplacement remplir.
+     */
+    public function getUsageLabel(): string
+    {
+        return match ($this) {
+            self::MP4_1080P, self::MP4_480P => 'Vidéo TV',
+            self::MP4_VERTICAL => 'Vidéo Mobile',
+            self::AUDIO => 'Audio',
+            self::PDF, self::IMAGE => $this->getLabel(),
+        };
+    }
+
+    /**
+     * PDF et image restent masqués de la liste de téléchargement publique
+     * tant que leur usage concret n'est pas défini avec un intitulé clair.
+     */
+    public function isPubliclyDownloadable(): bool
+    {
+        return !$this->isPdf() && !$this->isImage();
+    }
+
     public function isVideo(): bool
     {
         return in_array($this, [self::MP4_1080P, self::MP4_480P, self::MP4_VERTICAL], true);

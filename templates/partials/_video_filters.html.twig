@@ -1,4 +1,10 @@
-{% set activeFiltersCount = (selectedThematicSlugs is defined ? selectedThematicSlugs|length : 0) + (selectedLanguageSlugs is defined ? selectedLanguageSlugs|length : 0) + (selectedFormatValues is defined ? selectedFormatValues|length : 0) %}
+{% set activeFiltersCount = (selectedThematicSlugs is defined ? selectedThematicSlugs|length : 0) + (selectedLanguageSlugs is defined ? selectedLanguageSlugs|length : 0) + (selectedFormatValues is defined ? selectedFormatValues|length : 0) + (selectedCouncilSessionSlugs is defined ? selectedCouncilSessionSlugs|length : 0) %}
+{% set moreFiltersActive = (selectedFormatValues is defined and selectedFormatValues) or (selectedCouncilSessionSlugs is defined and selectedCouncilSessionSlugs) %}
+
+{% set visibleLanguages = languages is defined ? languages|filter(row => row.videoCount > 0 or (selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs)) : [] %}
+{% set visibleThematics = thematics is defined ? thematics|filter(row => row.videoCount > 0 or (selectedThematicSlugs is defined and row.thematic.slug in selectedThematicSlugs)) : [] %}
+{% set visibleFormats = formats is defined ? formats|filter(format => formatCounts is not defined or (formatCounts[format.value] ?? 0) > 0 or (selectedFormatValues is defined and format.value in selectedFormatValues)) : [] %}
+{% set visibleCouncilSessions = councilSessions is defined ? councilSessions|filter(row => row.videoCount > 0 or (selectedCouncilSessionSlugs is defined and row.councilSession.slug in selectedCouncilSessionSlugs)) : [] %}
 
 <div class="filters-panel" data-controller="filters">
     <button type="button" class="filters-panel__toggle" data-action="filters#toggle" data-filters-target="toggle" aria-expanded="false" aria-controls="filters-panel-body">
@@ -27,46 +33,79 @@
                 <input type="hidden" name="role" value="{{ selectedRole }}">
             {% endif %}
 
-            {% if languages is defined and languages %}
+            {% if visibleLanguages %}
                 <fieldset class="filters-sidebar__group">
                     <legend>Langue</legend>
                     <div class="filters-sidebar__options">
-                        {% for row in languages %}
+                        {% for row in visibleLanguages %}
+                            {% set isChecked = selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs %}
                             <label class="filters-sidebar__option">
-                                <input type="checkbox" name="langue[]" value="{{ row.language.slug }}"{{ selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs ? ' checked' }} onchange="this.form.submit()">
-                                {{ row.language.name }}
+                                <input type="checkbox" name="langue[]" value="{{ row.language.slug }}"{{ isChecked ? ' checked' }} onchange="this.form.submit()">
+                                <span>{{ row.language.name }}</span>
+                                <span class="filters-sidebar__option-count">{{ row.videoCount }}</span>
                             </label>
                         {% endfor %}
                     </div>
                 </fieldset>
             {% endif %}
 
-            {% if thematics is defined and thematics %}
+            {% if visibleThematics %}
                 <fieldset class="filters-sidebar__group">
                     <legend>Thématique</legend>
                     <div class="filters-sidebar__options">
-                        {% for row in thematics %}
+                        {% for row in visibleThematics %}
+                            {% set isChecked = selectedThematicSlugs is defined and row.thematic.slug in selectedThematicSlugs %}
                             <label class="filters-sidebar__option">
-                                <input type="checkbox" name="thematique[]" value="{{ row.thematic.slug }}"{{ selectedThematicSlugs is defined and row.thematic.slug in selectedThematicSlugs ? ' checked' }} onchange="this.form.submit()">
-                                {{ row.thematic.name }}
+                                <input type="checkbox" name="thematique[]" value="{{ row.thematic.slug }}"{{ isChecked ? ' checked' }} onchange="this.form.submit()">
+                                <span>{{ row.thematic.name }}</span>
+                                <span class="filters-sidebar__option-count">{{ row.videoCount }}</span>
                             </label>
                         {% endfor %}
                     </div>
                 </fieldset>
             {% endif %}
 
-            {% if formats is defined and formats %}
-                <fieldset class="filters-sidebar__group">
-                    <legend>Format</legend>
-                    <div class="filters-sidebar__options">
-                        {% for format in formats %}
-                            <label class="filters-sidebar__option">
-                                <input type="checkbox" name="format[]" value="{{ format.value }}"{{ selectedFormatValues is defined and format.value in selectedFormatValues ? ' checked' }} onchange="this.form.submit()">
-                                {{ format.label }}
-                            </label>
-                        {% endfor %}
+            {% if visibleFormats or visibleCouncilSessions %}
+                <details class="filters-sidebar__more"{{ moreFiltersActive ? ' open' }}>
+                    <summary class="filters-sidebar__more-summary">Plus de filtres</summary>
+                    <div class="filters-sidebar__more-body">
+                        {% if visibleFormats %}
+                            <fieldset class="filters-sidebar__group">
+                                <legend>Format</legend>
+                                <div class="filters-sidebar__options">
+                                    {% for format in visibleFormats %}
+                                        {% set isChecked = selectedFormatValues is defined and format.value in selectedFormatValues %}
+                                        <label class="filters-sidebar__option">
+                                            <input type="checkbox" name="format[]" value="{{ format.value }}"{{ isChecked ? ' checked' }} onchange="this.form.submit()">
+                                            <span>{{ format.label }}</span>
+                                            <span class="filters-sidebar__option-count">{{ formatCounts is defined ? (formatCounts[format.value] ?? 0) : '' }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                        {% endif %}
+
+                        {% if visibleCouncilSessions %}
+                            <fieldset class="filters-sidebar__group">
+                                <legend>Date</legend>
+                                <div class="filters-sidebar__options">
+                                    {% for row in visibleCouncilSessions %}
+                                        {% set isChecked = selectedCouncilSessionSlugs is defined and row.councilSession.slug in selectedCouncilSessionSlugs %}
+                                        <label class="filters-sidebar__option">
+                                            <input type="checkbox" name="conseil[]" value="{{ row.councilSession.slug }}"{{ isChecked ? ' checked' }} onchange="this.form.submit()">
+                                            <span>{{ row.councilSession.label ?: 'Conseil du ' ~ row.councilSession.date|date('d/m/Y') }}</span>
+                                            <span class="filters-sidebar__option-count">{{ row.videoCount }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                        {% endif %}
                     </div>
-                </fieldset>
+                </details>
+            {% endif %}
+
+            {% if resultsTotal is defined %}
+                <button type="submit" class="filters-sidebar__submit">Voir {{ resultsTotal }} capsule{{ resultsTotal > 1 ? 's' : '' }}</button>
             {% endif %}
         </form>
     </div>

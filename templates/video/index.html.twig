@@ -23,18 +23,22 @@
                 thematics: thematics,
                 languages: languages,
                 formats: formats,
+                formatCounts: formatCounts,
+                councilSessions: councilSessions,
                 selectedThematicSlugs: selectedThematicSlugs,
                 selectedLanguageSlugs: selectedLanguageSlugs,
                 selectedFormatValues: selectedFormatValues,
+                selectedCouncilSessionSlugs: selectedCouncilSessionSlugs,
                 query: query,
                 selectedRole: selectedRole,
+                resultsTotal: results.total,
             }) }}
         </aside>
 
         <div class="video-layout__main">
             <div class="page-header">
                 <h1>{{ roleLabels[selectedRole] }}</h1>
-                <p>{{ results.total }} contenu{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }}.</p>
+                <p>{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }}.</p>
             </div>
 
             {{ include('partials/_video_grid.html.twig', {

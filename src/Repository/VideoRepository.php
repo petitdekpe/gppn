@@ -7,6 +7,7 @@ use App\Entity\Language;
 use App\Entity\Thematic;
 use App\Entity\Video;
 use App\Enum\CapsuleFormat;
+use App\Enum\VideoFileType;
 use App\Enum\VideoStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -107,13 +108,48 @@ class VideoRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public const FEED_PER_PAGE = 6;
+
+    /**
+     * Fil vertical (bouton flottant « Feed ») : uniquement les contenus ayant
+     * une version 9:16 déposée, du plus récent au plus ancien.
+     *
+     * @return array{videos: Video[], hasMore: bool, page: int}
+     */
+    public function findVerticalFeed(int $page = 1, int $perPage = self::FEED_PER_PAGE): array
+    {
+        $page = max(1, $page);
+
+        $qb = $this->baseQueryBuilder();
+        $qb->andWhere($qb->expr()->exists(
+            'SELECT 1 FROM App\Entity\VideoFile vf WHERE vf.video = v AND vf.type = :verticalType AND vf.fileName IS NOT NULL',
+        ))
+            ->setParameter('verticalType', VideoFileType::MP4_VERTICAL)
+            ->orderBy('v.publishedAt', 'DESC');
+
+        $countQb = clone $qb;
+        $total = (int) $countQb->select('COUNT(DISTINCT v.id)')->getQuery()->getSingleScalarResult();
+
+        $videos = $qb->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'videos' => $videos,
+            'hasMore' => ($page * $perPage) < $total,
+            'page' => $page,
+        ];
+    }
+
     /**
      * @param Thematic[] $thematics
      * @param Language[] $languages
      * @param CapsuleFormat[] $formats
+     * @param CouncilSession[] $councilSessions
      * @return array{videos: Video[], total: int, hasMore: bool, page: int}
      */
-    public function search(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::PER_PAGE, ?string $speakerRole = null): array
+    public function search(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::PER_PAGE, ?string $speakerRole = null, array $councilSessions = []): array
     {
         $page = max(1, $page);
 
@@ -125,6 +161,10 @@ class VideoRepository extends ServiceEntityRepository
 
         if ($languages !== []) {
             $qb->andWhere('l IN (:languages)')->setParameter('languages', $languages);
+        }
+
+        if ($councilSessions !== []) {
+            $qb->andWhere('s.councilSession IN (:councilSessions)')->setParameter('councilSessions', $councilSessions);
         }
 
         if ($formats !== []) {
@@ -174,7 +214,7 @@ class VideoRepository extends ServiceEntityRepository
      *
      * @return int[]
      */
-    private function findVideoIdsBySpeakerRole(string $roleFilter): array
+    public function findVideoIdsBySpeakerRole(string $roleFilter): array
     {
         $qb = $this->createQueryBuilder('v')
             ->select('DISTINCT v.id')
@@ -221,6 +261,29 @@ class VideoRepository extends ServiceEntityRepository
             ->setParameter('thematic', $thematic)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * Nombre de contenus publiés disposant d'au moins un fichier de chaque
+     * format, utilisé pour afficher le nombre de résultats à côté de chaque
+     * case du filtre « Format » sur /videos.
+     *
+     * @return array<string, int> décompte indexé par CapsuleFormat::value
+     */
+    public function countAllByFormat(): array
+    {
+        $counts = [];
+
+        foreach (CapsuleFormat::cases() as $format) {
+            $qb = $this->baseQueryBuilder();
+            $qb->andWhere($qb->expr()->exists(
+                'SELECT 1 FROM App\Entity\VideoFile vf WHERE vf.video = v AND vf.type IN (:fileTypes) AND vf.fileName IS NOT NULL',
+            ))->setParameter('fileTypes', $format->getVideoFileTypes());
+
+            $counts[$format->value] = (int) $qb->select('COUNT(DISTINCT v.id)')->getQuery()->getSingleScalarResult();
+        }
+
+        return $counts;
     }
 
     public function countAll(): int

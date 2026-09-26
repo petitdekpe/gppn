@@ -1,7 +1,14 @@
 flysystem:
     storages:
         download.storage:
-            adapter: 'local'
-            options:
-                directory: '%kernel.project_dir%/public/uploads/downloads'
+            local:
+                directory: '%app.downloads_dir%'
             public_url: '/uploads/downloads'
+        video_cover.storage:
+            local:
+                directory: '%app.covers_dir%'
+            public_url: '/uploads/covers'
+
+# En prod, public/uploads/ est un partage NFS monté depuis le serveur de
+# données : la même configuration locale s'applique, seul l'emplacement
+# physique des fichiers diffère.

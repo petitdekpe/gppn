@@ -1,67 +1,167 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Espace média — Le Gouvernement plus près de nous{% endblock %}
-{% block meta_description %}Ressources pour le réseau média et les partenaires institutionnels : packs de contenus par thématique et par langue, prêts à diffuser.{% endblock %}
+{% block title %}Préparez un lot de capsules à diffuser — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Composez un lot de capsules par sujet, langue et format, puis téléchargez-le en une seule archive prête à diffuser.{% endblock %}
 
 {% block body %}
     <section class="page-header wrap page-header--dark">
         {{ include('partials/_back_link.html.twig', {fallback: path('app_home')}) }}
-        <h1>Espace média &amp; institutions</h1>
-        <p>Ressources destinées au réseau média (Dircom, Maison des médias, médias partenaires) et aux partenaires institutionnels (ministères, préfectures, mairies).</p>
-    </section>
-
-    <section class="section wrap prose">
-        <h2>Comment ça marche</h2>
-        <p>Téléchargez les capsules en pack, par langue ou par thématique. Chaque pack est accompagné d’une fiche de diffusion précisant le format, la durée, la langue et les mentions à respecter lors de la rediffusion.</p>
+        <span class="eyebrow">Espace média &amp; institutions</span>
+        <h1>Préparez un lot de capsules à diffuser</h1>
+        <p>Composez votre lot par sujet, langue et format, puis téléchargez-le en une seule archive. Il s’adresse aussi bien au réseau média (Dircom, Maison des médias, médias partenaires) qu’aux partenaires institutionnels (ministères, préfectures, mairies).</p>
     </section>
 
     <section class="section wrap">
-        <div class="section__header">
-            <h2>Packs par conseil des ministres</h2>
-            <p class="muted">Chaque lot de capsules est rattaché au conseil des ministres dont il est issu. Choisissez un conseil pour sélectionner et télécharger les contenus qui vous intéressent en une seule archive.</p>
-        </div>
-        <div class="pack-list">
-            {% for row in councilSessions %}
-                <div class="pack-row">
-                    <div class="pack-row__label">
-                        <span class="pack-row__swatch" aria-hidden="true"></span>
-                        <div>
-                            <strong>{{ row.councilSession.label ?: 'Conseil des ministres du ' ~ row.councilSession.date|date('d F Y') }}</strong>
-                            <span class="muted">{{ row.videoCount }} contenu{{ row.videoCount > 1 ? 's' : '' }}</span>
-                        </div>
-                    </div>
-                    <a class="btn btn--outline" href="{{ path('app_media_space_council_show', {slug: row.councilSession.slug}) }}">Sélectionner &amp; télécharger</a>
-                </div>
-            {% else %}
-                <p class="empty-state">Aucun conseil des ministres pour le moment.</p>
-            {% endfor %}
-        </div>
-    </section>
+        <div class="lot-builder">
+            <form method="get" action="{{ path('app_media_space') }}" class="lot-builder__steps">
+                <fieldset class="lot-builder__step" data-controller="subject-search">
+                    <legend><span class="lot-builder__step-number">1</span> Choisissez les sujets</legend>
 
-    <section class="section wrap">
-        <div class="section__header">
-            <h2>Packs par thématique</h2>
-        </div>
-        <div class="pack-list">
-            {% for row in thematics %}
-                <div class="pack-row" style="--thematic-color: {{ row.thematic.colorHex }}">
-                    <div class="pack-row__label">
-                        <span class="pack-row__swatch" aria-hidden="true"></span>
-                        <div>
-                            <strong>{{ row.thematic.name }}</strong>
-                            <span class="muted">{{ row.videoCount }} contenu{{ row.videoCount > 1 ? 's' : '' }}</span>
+                    {% if councilSessionRows is not empty %}
+                        <div class="lot-builder__council-filter">
+                            <span class="lot-builder__council-filter-label">Filtrer par conseil des ministres (facultatif)</span>
+                            <div class="filters-sidebar__options">
+                                {% for row in councilSessionRows %}
+                                    <label class="filters-sidebar__option">
+                                        <input type="checkbox" name="conseil[]" value="{{ row.councilSession.id }}"{{ row.councilSession.id in selectedCouncilSessionIds ? ' checked' }} onchange="this.form.submit()">
+                                        <span>{{ row.councilSession.label ?: 'Conseil du ' ~ row.councilSession.date|date('d/m/Y') }}</span>
+                                        <span class="filters-sidebar__option-count">{{ row.videoCount }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
                         </div>
+                    {% endif %}
+
+                    {% if visibleSubjectRows is empty %}
+                        <p class="empty-state">{{ selectedCouncilSessionIds is empty ? 'Aucun sujet publié pour le moment.' : 'Aucun sujet publié pour ce conseil des ministres.' }}</p>
+                    {% else %}
+                        {% if visibleSubjectRows|length > 8 %}
+                            <input
+                                type="search"
+                                class="lot-builder__subject-search-input"
+                                placeholder="Rechercher un sujet…"
+                                aria-label="Rechercher un sujet"
+                                data-subject-search-target="input"
+                                data-action="input->subject-search#filter"
+                            >
+                        {% endif %}
+
+                        <div class="lot-builder__subjects">
+                            {% for row in visibleSubjectRows %}
+                                <label
+                                    class="lot-builder__subject"
+                                    style="--thematic-color: {{ row.subject.thematic.colorHex }}"
+                                    data-subject-search-target="item"
+                                    data-search-text="{{ (row.subject.title ~ ' ' ~ row.subject.thematic.name)|lower }}"
+                                >
+                                    <input type="checkbox" name="sujet[]" value="{{ row.subject.id }}"{{ row.subject.id in selectedSubjectIds ? ' checked' }} onchange="this.form.submit()">
+                                    <span class="lot-builder__subject-swatch" aria-hidden="true"></span>
+                                    <span class="lot-builder__subject-info">
+                                        <strong>{{ row.subject.title }}</strong>
+                                        <span class="muted">{{ row.subject.thematic.name }} · Conseil du {{ row.subject.councilSession.date|date('d/m/Y') }} · {{ row.videoCount }} contenu{{ row.videoCount > 1 ? 's' : '' }}</span>
+                                    </span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <p class="muted lot-builder__hint" data-subject-search-target="empty" hidden>Aucun sujet ne correspond à cette recherche.</p>
+                    {% endif %}
+
+                    {# Un sujet déjà choisi reste dans le lot même si le filtre par conseil masque sa case ci-dessus. #}
+                    {% for id in hiddenSelectedSubjectIds %}<input type="hidden" name="sujet[]" value="{{ id }}">{% endfor %}
+                </fieldset>
+
+                <fieldset class="lot-builder__step">
+                    <legend><span class="lot-builder__step-number">2</span> Choisissez les langues</legend>
+                    {% if selectedSubjectIds is empty %}
+                        <p class="muted">Choisissez d’abord un ou plusieurs sujets.</p>
+                    {% elseif availableLanguages is empty %}
+                        <p class="muted">Aucune langue disponible pour cette sélection.</p>
+                    {% else %}
+                        <div class="filters-sidebar__options">
+                            {% for language in availableLanguages %}
+                                <label class="filters-sidebar__option">
+                                    <input type="checkbox" name="langue[]" value="{{ language.id }}"{{ language.id in selectedLanguageIds ? ' checked' }} onchange="this.form.submit()">
+                                    <span>{{ language.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <p class="muted lot-builder__hint">Aucune langue cochée = toutes les langues disponibles.</p>
+                    {% endif %}
+                </fieldset>
+
+                <fieldset class="lot-builder__step">
+                    <legend><span class="lot-builder__step-number">3</span> Choisissez les formats</legend>
+                    {% if selectedSubjectIds is empty %}
+                        <p class="muted">Choisissez d’abord un ou plusieurs sujets.</p>
+                    {% elseif availableFormats is empty %}
+                        <p class="muted">Aucun format disponible pour cette sélection.</p>
+                    {% else %}
+                        <div class="filters-sidebar__options">
+                            {% for format in availableFormats %}
+                                <label class="filters-sidebar__option">
+                                    <input type="checkbox" name="format[]" value="{{ format.value }}"{{ format.value in selectedFormatValues ? ' checked' }} onchange="this.form.submit()">
+                                    <span>{{ format.label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <p class="muted lot-builder__hint">Aucun format coché = tous les formats disponibles.</p>
+                    {% endif %}
+                </fieldset>
+            </form>
+
+            <aside class="lot-builder__summary">
+                <h2>Votre lot</h2>
+
+                <dl class="lot-builder__summary-list">
+                    <div>
+                        <dt>Sujets</dt>
+                        <dd>{{ selectedSubjectIds|length }}</dd>
                     </div>
-                    <a class="btn btn--outline" href="{{ path('app_thematique_show', {slug: row.thematic.slug}) }}">Voir les contenus</a>
-                </div>
-            {% endfor %}
+                    <div>
+                        <dt>Langues</dt>
+                        <dd>{{ selectedLanguageIds is empty ? 'Toutes' : selectedLanguageIds|length }}</dd>
+                    </div>
+                    <div>
+                        <dt>Formats</dt>
+                        <dd>{{ selectedFormatValues is empty ? 'Tous' : selectedFormatValues|length }}</dd>
+                    </div>
+                    <div>
+                        <dt>Fichiers</dt>
+                        <dd>{{ matchingFiles|length }}</dd>
+                    </div>
+                </dl>
+
+                <p class="lot-builder__summary-total">
+                    <span class="lot-builder__step-number">4</span>
+                    Poids total : <strong>{{ (totalSize / 1048576)|round(1) }} Mo</strong>
+                </p>
+
+                {% if matchingFiles is not empty %}
+                    <form method="post" action="{{ path('app_media_space_download') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrfTokenId) }}">
+                        {% for id in selectedSubjectIds %}<input type="hidden" name="sujet[]" value="{{ id }}">{% endfor %}
+                        {% for id in selectedLanguageIds %}<input type="hidden" name="langue[]" value="{{ id }}">{% endfor %}
+                        {% for value in selectedFormatValues %}<input type="hidden" name="format[]" value="{{ value }}">{% endfor %}
+                        {% for id in selectedCouncilSessionIds %}<input type="hidden" name="conseil[]" value="{{ id }}">{% endfor %}
+
+                        <p class="muted lot-builder__hint">
+                            <span class="lot-builder__step-number">5</span>
+                            Le lot est livré avec sa fiche d’attribution (liste des contenus et mention obligatoire à respecter).
+                        </p>
+
+                        <button type="submit" class="btn btn--primary lot-builder__download">Télécharger le lot (.zip)</button>
+                    </form>
+                {% else %}
+                    <p class="muted">Choisissez au moins un sujet pour composer votre lot.</p>
+                {% endif %}
+            </aside>
         </div>
     </section>
 
     <section class="section wrap cta-grid cta-grid--single">
         <div class="cta-card cta-card--dark">
-            <h3>Besoin d’une accréditation ou d’un pack sur mesure ?</h3>
-            <p>Contactez la Direction de la communication (Dircom) pour obtenir un accès dédié, des fichiers en haute définition ou des formats spécifiques à votre diffusion.</p>
+            <h3>Un besoin que le catalogue ne couvre pas ?</h3>
+            <p>Les capsules publiées sont en libre accès, sans compte ni demande préalable. Contactez la Direction de la communication (Dircom) uniquement pour un format sur mesure, un fichier en très haute définition, une question d’accréditation, ou un besoin non couvert par le catalogue.</p>
             <a class="btn btn--gold" href="{{ path('app_suggestion_new') }}">Nous contacter</a>
         </div>
     </section>

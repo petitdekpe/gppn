@@ -8,7 +8,9 @@
         <meta property="og:title" content="{{ block('title') }}">
         <meta property="og:description" content="{{ block('meta_description') }}">
         <meta property="og:type" content="website">
-        <link rel="icon" href="{{ asset('images/picto-logo-gppn.png') }}">
+        <link rel="icon" href="{{ asset('images/favicon-32.png') }}" sizes="32x32" type="image/png">
+        <link rel="icon" href="{{ asset('images/favicon-16.png') }}" sizes="16x16" type="image/png">
+        <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
         {% block stylesheets %}
         {% endblock %}
 
@@ -67,6 +69,12 @@
 
             {% block body %}{% endblock %}
         </main>
+
+        {% if app.request.attributes.get('_route') != 'app_video_feed' %}
+            <a href="{{ path('app_video_feed') }}" class="feed-fab" aria-label="Ouvrir le fil vertical">
+                <i class="fa-solid fa-play" aria-hidden="true"></i>
+            </a>
+        {% endif %}
 
         <footer class="site-footer">
             <div class="wrap site-footer__grid">

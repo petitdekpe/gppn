@@ -2,6 +2,7 @@
 
 {% block title %}{{ language.id ? 'Modifier' : 'Nouvelle' }} langue — Administration GPPN{% endblock %}
 {% block page_title %}{{ language.id ? 'Modifier la langue' : 'Nouvelle langue' }}{% endblock %}
+{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_language_index'), label: 'Retour aux langues'}) }}{% endblock %}
 
 {% block body %}
     <div class="admin-form-card">
