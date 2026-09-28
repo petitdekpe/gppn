@@ -1,0 +1,13 @@
+when@prod:
+    sentry:
+        # Sans DSN (variable vide), le SDK reste inactif et n'envoie rien.
+        dsn: '%env(SENTRY_DSN)%'
+        options:
+            environment: '%env(SENTRY_ENVIRONMENT)%'
+            # Pas d'adresse IP, cookie ni en-tête d'identification dans les événements.
+            send_default_pii: false
+            # Erreurs attendues qui ne signalent pas un bug.
+            ignore_exceptions:
+                - Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+                - Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
+                - Symfony\Component\Security\Core\Exception\AccessDeniedException
