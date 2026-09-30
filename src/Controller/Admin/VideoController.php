@@ -5,12 +5,16 @@ namespace App\Controller\Admin;
 use App\Entity\Video;
 use App\Entity\VideoFile;
 use App\Enum\VideoFileType;
+use App\Exception\CoverGenerationException;
 use App\Form\Admin\VideoType;
 use App\Repository\CouncilSessionRepository;
 use App\Repository\SubjectRepository;
 use App\Repository\VideoRepository;
+use App\Service\VideoCoverGenerator;
+use App\Service\VideoCoverUrlResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -84,7 +88,7 @@ class VideoController extends AbstractController
     }
 
     #[Route('/{id}/modifier', name: 'admin_video_edit')]
-    public function edit(Video $video, Request $request, EntityManagerInterface $entityManager, CouncilSessionRepository $councilSessionRepository): Response
+    public function edit(Video $video, Request $request, EntityManagerInterface $entityManager, CouncilSessionRepository $councilSessionRepository, VideoCoverGenerator $coverGenerator): Response
     {
         $this->ensureAllFileSlots($video);
         $form = $this->createForm(VideoType::class, $video);
@@ -102,7 +106,34 @@ class VideoController extends AbstractController
             'form' => $form,
             'video' => $video,
             'calendar' => $councilSessionRepository->findCalendarWithSubjectCount(),
+            'coverSource' => $coverGenerator->hasSource($video),
         ]);
+    }
+
+    /**
+     * Bouton « Générer depuis la vidéo TV » du formulaire : image de la
+     * seconde choisie, qui remplace la couverture actuelle. Appelé en fetch
+     * pour ne pas perdre les modifications en cours du formulaire.
+     */
+    #[Route('/{id}/couverture', name: 'admin_video_cover_generate', methods: ['POST'])]
+    public function generateCover(Video $video, Request $request, VideoCoverGenerator $coverGenerator, VideoCoverUrlResolver $coverUrlResolver): JsonResponse
+    {
+        if (!$this->isCsrfTokenValid('cover-video-' . $video->getId(), $request->request->getString('_token'))) {
+            return new JsonResponse(['error' => 'Jeton de sécurité expiré : rechargez la page puis réessayez.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $second = filter_var($request->request->get('second'), \FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        if ($second === false) {
+            return new JsonResponse(['error' => 'Indiquez une seconde : un nombre entier, 0 ou plus.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        try {
+            $at = $coverGenerator->generate($video, $second);
+        } catch (CoverGenerationException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return new JsonResponse(['url' => $coverUrlResolver->resolve($video), 'second' => $at]);
     }
 
     #[Route('/{id}/supprimer', name: 'admin_video_delete', methods: ['POST'])]

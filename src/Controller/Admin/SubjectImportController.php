@@ -265,10 +265,10 @@ class SubjectImportController extends AbstractController
                 $entityManager->flush();
             } catch (MessengerException $e) {
                 // Levée après la validation en base (postFlush) : le fichier est
-                // bien enregistré, seule la conversion WebM n'est pas en file.
-                $logger->error('Import en masse : conversion WebM non mise en file.', ['exception' => $e, 'video' => $video->getId()]);
+                // bien enregistré, seuls les traitements d'arrière-plan (WebM, couverture) ne sont pas en file.
+                $logger->error('Import en masse : traitements d’arrière-plan non mis en file.', ['exception' => $e, 'video' => $video->getId()]);
                 $reference = captureException($e);
-                $warning = 'Fichier enregistré, mais la conversion WebM de lecture n’a pas pu être mise en file (file de messages injoignable : ' . $e->getMessage() . '). À signaler à l’administrateur du serveur (commande app:video:transcode-webm).' . ($reference ? ' Référence Sentry : ' . $reference . '.' : '');
+                $warning = 'Fichier enregistré, mais la conversion WebM et la couverture n’ont pas pu être mises en file (file de messages injoignable : ' . $e->getMessage() . '). À signaler à l’administrateur du serveur (commandes app:video:transcode-webm et app:video:generate-covers).' . ($reference ? ' Référence Sentry : ' . $reference . '.' : '');
             }
         } catch (\Throwable $e) {
             return $this->serverError($e, $logger, $file);

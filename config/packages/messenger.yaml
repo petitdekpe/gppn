@@ -31,6 +31,8 @@ framework:
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
             App\Message\TranscodeToWebm: transcode
+            # Une seconde de travail : pas derrière les encodages WebM de plusieurs minutes.
+            App\Message\GenerateVideoCover: async
 
 when@prod:
     framework:

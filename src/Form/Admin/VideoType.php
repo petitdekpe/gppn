@@ -80,7 +80,7 @@ class VideoType extends AbstractType
             ])
             ->add('coverImageFile', VichImageType::class, [
                 'label' => 'Image de couverture',
-                'help' => 'Affichée dans les cartes, à la une et la fiche détail. Laisser vide pour ne pas en définir.',
+                'help' => 'Affichée dans les cartes, à la une et la fiche détail. Sans image déposée, elle est tirée automatiquement de la vidéo HD 1080p, à 15 s.',
                 'required' => false,
                 'allow_delete' => true,
                 'delete_label' => 'Supprimer cette image',

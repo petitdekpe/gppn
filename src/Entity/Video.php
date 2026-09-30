@@ -80,6 +80,13 @@ class Video
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $coverImageUpdatedAt = null;
 
+    /**
+     * Couverture tirée de la vidéo TV (VideoCoverGenerator) plutôt que
+     * déposée à la main : elle seule peut être remplacée d'office.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $coverGenerated = false;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -266,7 +273,21 @@ class Video
 
         if ($coverImageFile instanceof File) {
             $this->coverImageUpdatedAt = new \DateTimeImmutable();
+            // Image déposée à la main ; le générateur rétablit l'indicateur après cet appel.
+            $this->coverGenerated = false;
         }
+
+        return $this;
+    }
+
+    public function isCoverGenerated(): bool
+    {
+        return $this->coverGenerated;
+    }
+
+    public function setCoverGenerated(bool $coverGenerated): static
+    {
+        $this->coverGenerated = $coverGenerated;
 
         return $this;
     }

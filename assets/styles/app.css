@@ -3488,6 +3488,24 @@ select option.subject-create-option {
     margin: 6px 0;
 }
 
+/* Capture de la couverture depuis la vidéo TV, à la seconde choisie. */
+.admin-cover-generate {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.admin-cover-generate label {
+    margin: 0;
+    font-weight: 500;
+}
+
+.admin-cover-generate input {
+    width: 6em;
+}
+
 .admin-suggestion-message {
     white-space: pre-line;
     max-width: 65ch;
