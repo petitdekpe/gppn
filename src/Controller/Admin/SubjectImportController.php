@@ -12,6 +12,7 @@ use App\Enum\VideoStatus;
 use App\Repository\LanguageRepository;
 use App\Repository\SpeakerRepository;
 use App\Repository\VideoRepository;
+use App\Service\ChunkedUploadStorage;
 use App\Service\VideoSlugger;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -53,6 +54,12 @@ class SubjectImportController extends AbstractController
     ];
 
     private const CREATE_LOCK = 'gppn-video-create';
+    private const MAX_FILE_SIZE = 2 * 1024 ** 3;
+
+    /** Morceaux assez petits pour qu'une coupure coûte peu, assez gros pour limiter le nombre de requêtes. */
+    private const CHUNK_SIZE = 8 * 1024 ** 2;
+
+    private const CSRF_MESSAGE = 'Jeton de sécurité invalide ou expiré (la page est probablement ouverte depuis trop longtemps) : rechargez la page puis relancez l’envoi.';
 
     private const VIDEO_MIME_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'];
     private const AUDIO_MIME_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/x-wav', 'audio/ogg'];
@@ -66,6 +73,9 @@ class SubjectImportController extends AbstractController
             'subject' => $subject,
             'config' => [
                 'uploadUrl' => $this->generateUrl('admin_subject_import_file', ['id' => $subject->getId()]),
+                'statusUrl' => $this->generateUrl('admin_subject_import_status', ['id' => $subject->getId()]),
+                'chunkUrl' => $this->generateUrl('admin_subject_import_chunk', ['id' => $subject->getId()]),
+                'chunkSize' => $this->chunkSize(),
                 'csrfToken' => $this->container->get('security.csrf.token_manager')->getToken($this->csrfTokenId($subject))->getValue(),
                 'formats' => array_keys(self::FORMATS),
                 'speakers' => array_map(fn (Speaker $speaker) => [
@@ -94,6 +104,71 @@ class SubjectImportController extends AbstractController
         ]);
     }
 
+    /**
+     * Octets déjà reçus pour un envoi : 0 pour un nouveau fichier, davantage
+     * pour un envoi interrompu que le navigateur reprend là où il s'est arrêté.
+     */
+    #[Route('/fichier/etat', name: 'admin_subject_import_status', methods: ['GET'])]
+    public function uploadStatus(Subject $subject, Request $request, ChunkedUploadStorage $chunks): JsonResponse
+    {
+        $uploadId = $request->query->getString('upload');
+        if (!ChunkedUploadStorage::isValidId($uploadId)) {
+            return $this->error('Identifiant d’envoi invalide : rechargez la page.', Response::HTTP_BAD_REQUEST);
+        }
+        $chunks->purgeStale();
+
+        return new JsonResponse(['offset' => $chunks->offset($this->chunkKey($subject, $uploadId))]);
+    }
+
+    /**
+     * Un morceau du fichier, en corps brut : le fichier arrive en petites
+     * requêtes qu'une coupure réseau n'oblige pas à tout renvoyer.
+     */
+    #[Route('/fichier/morceau', name: 'admin_subject_import_chunk', methods: ['POST'])]
+    public function uploadChunk(Subject $subject, Request $request, ChunkedUploadStorage $chunks, LoggerInterface $logger): JsonResponse
+    {
+        if (!$this->isCsrfTokenValid($this->csrfTokenId($subject), (string) $request->headers->get('X-CSRF-Token'))) {
+            return $this->error(self::CSRF_MESSAGE, Response::HTTP_FORBIDDEN);
+        }
+
+        $uploadId = $request->query->getString('upload');
+        $offset = $request->query->getInt('offset');
+        $total = $request->query->getInt('total');
+        $length = (int) $request->server->get('CONTENT_LENGTH');
+        if (!ChunkedUploadStorage::isValidId($uploadId) || $offset < 0 || $length <= 0) {
+            return $this->error('Morceau mal formé (identifiant, position ou taille manquant) : rechargez la page.', Response::HTTP_BAD_REQUEST);
+        }
+        if ($total > self::MAX_FILE_SIZE) {
+            return $this->error(sprintf('Fichier trop volumineux (%s) : la limite de l’import est de %s.', $this->formatBytes($total), $this->formatBytes(self::MAX_FILE_SIZE)), Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
+        }
+        if ($offset + $length > $total) {
+            return $this->error('Le morceau dépasse la taille annoncée du fichier : retirez la ligne puis redéposez le fichier.', Response::HTTP_BAD_REQUEST);
+        }
+        $postMax = $this->iniBytes('post_max_size');
+        if ($postMax > 0 && $length > $postMax) {
+            return $this->error(sprintf('Morceau refusé par PHP : %s pour %s autorisés (réglage post_max_size). Rechargez la page pour que la taille des morceaux s’adapte.', $this->formatBytes($length), $this->formatBytes($postMax)), Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
+        }
+
+        try {
+            $result = $chunks->append($this->chunkKey($subject, $uploadId), $offset, $length, $request->getContent(true));
+        } catch (\Throwable $e) {
+            $logger->error('Import en masse : morceau non écrit.', ['exception' => $e]);
+            $reference = captureException($e);
+
+            return new JsonResponse([
+                'error' => 'Le serveur n’a pas pu enregistrer un morceau du fichier : ' . $e->getMessage(),
+                'reference' => $reference ? (string) $reference : null,
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        // Position inattendue : le navigateur se recale sur celle du serveur.
+        return new JsonResponse(['offset' => $result['offset']], $result['accepted'] ? Response::HTTP_OK : Response::HTTP_CONFLICT);
+    }
+
+    /**
+     * Dernière étape : le fichier est complet côté serveur, on le range dans
+     * son contenu (créé au besoin) et on publie ce contenu.
+     */
     #[Route('/fichier', name: 'admin_subject_import_file', methods: ['POST'])]
     public function uploadFile(
         Subject $subject,
@@ -104,28 +179,18 @@ class SubjectImportController extends AbstractController
         VideoSlugger $videoSlugger,
         ValidatorInterface $validator,
         EntityManagerInterface $entityManager,
+        ChunkedUploadStorage $chunks,
         LoggerInterface $logger,
     ): JsonResponse {
-        // Corps dépassant post_max_size : PHP le jette en entier, jeton CSRF
-        // compris. Sans ce test, l'éditeur lirait « session expirée ».
-        $contentLength = (int) $request->server->get('CONTENT_LENGTH');
-        if ($contentLength > 0 && $request->request->count() === 0 && $request->files->count() === 0) {
-            return $this->error(sprintf(
-                'Fichier refusé par PHP : l’envoi pèse %s alors que le serveur accepte au plus %s par requête (réglage post_max_size). Demandez à l’administrateur du serveur de relever post_max_size et upload_max_filesize.',
-                $this->formatBytes($contentLength),
-                $this->formatBytes($this->iniBytes('post_max_size')),
-            ), Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
-        }
-
         if (!$this->isCsrfTokenValid($this->csrfTokenId($subject), $request->request->getString('_token'))) {
-            return $this->error('Jeton de sécurité invalide ou expiré (la page est probablement ouverte depuis trop longtemps) : rechargez la page puis relancez l’envoi.', Response::HTTP_FORBIDDEN);
+            return $this->error(self::CSRF_MESSAGE, Response::HTTP_FORBIDDEN);
         }
 
         $speaker = $speakerRepository->find($request->request->getInt('speaker'));
         $language = $languageRepository->find($request->request->getInt('language'));
         $format = $request->request->getString('format');
         $type = self::FORMATS[$format] ?? null;
-        $file = $request->files->get('file');
+        $uploadId = $request->request->getString('upload');
 
         $missing = array_filter([
             $speaker === null ? sprintf('intervenant introuvable (n° %d)', $request->request->getInt('speaker')) : null,
@@ -135,15 +200,25 @@ class SubjectImportController extends AbstractController
         if ($missing !== []) {
             return $this->error('Envoi refusé : ' . implode(' ; ', $missing) . '. Un élément a peut-être été supprimé entre-temps : rechargez la page.');
         }
-        if (!$file instanceof UploadedFile) {
-            return $this->error('Aucun fichier dans la requête : le navigateur n’a rien transmis. Retirez la ligne puis redéposez le fichier.');
-        }
-        if (!$file->isValid()) {
-            return $this->error('Le fichier n’a pas été reçu en entier : ' . $this->uploadErrorMessage($file->getError()));
+        if (!ChunkedUploadStorage::isValidId($uploadId)) {
+            return $this->error('Identifiant d’envoi invalide : rechargez la page.', Response::HTTP_BAD_REQUEST);
         }
 
+        $key = $this->chunkKey($subject, $uploadId);
+        $received = $chunks->offset($key);
+        $expected = $request->request->getInt('size');
+        if ($received === 0 || $received !== $expected) {
+            return $this->error(sprintf(
+                'Fichier incomplet sur le serveur : %s reçus sur %s. Relancez l’envoi, il reprendra là où il s’est arrêté.',
+                $this->formatBytes($received),
+                $this->formatBytes($expected),
+            ), Response::HTTP_CONFLICT);
+        }
+
+        $file = $chunks->file($key, $request->request->getString('name') ?: 'fichier');
+
         $violations = $validator->validate($file, new Assert\File(
-            maxSize: '2G',
+            maxSize: self::MAX_FILE_SIZE,
             mimeTypes: $type->isAudio() ? self::AUDIO_MIME_TYPES : self::VIDEO_MIME_TYPES,
             maxSizeMessage: 'Fichier trop volumineux ({{ size }} {{ suffix }}) : la limite de l’import est de {{ limit }} {{ suffix }}.',
             mimeTypesMessage: $type->isAudio()
@@ -198,6 +273,8 @@ class SubjectImportController extends AbstractController
         } catch (\Throwable $e) {
             return $this->serverError($e, $logger, $file);
         }
+
+        $chunks->remove($key);
 
         return new JsonResponse([
             'videoId' => $video->getId(),
@@ -269,24 +346,27 @@ class SubjectImportController extends AbstractController
         };
 
         return new JsonResponse([
-            'error' => $message . ' Le fichier n’a pas été enregistré.',
+            'error' => $message . ' Le fichier n’a pas été rangé dans son contenu, mais il reste sur le serveur : « Réessayer les échecs » relancera l’enregistrement sans le renvoyer.',
             'detail' => sprintf('%s : %s', (new \ReflectionClass($e))->getShortName(), $e->getMessage()),
             'reference' => $reference ? (string) $reference : null,
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
-    private function uploadErrorMessage(int $code): string
+    /**
+     * Taille des morceaux, ramenée sous post_max_size si PHP est réglé plus bas
+     * (8 Mo par défaut, soit tout juste la taille visée).
+     */
+    private function chunkSize(): int
     {
-        return match ($code) {
-            \UPLOAD_ERR_INI_SIZE => sprintf('il dépasse la taille maximale acceptée par PHP (%s, réglage upload_max_filesize). Demandez à l’administrateur du serveur de relever cette limite.', $this->formatBytes($this->iniBytes('upload_max_filesize'))),
-            \UPLOAD_ERR_FORM_SIZE => 'il dépasse la taille maximale fixée par le formulaire.',
-            \UPLOAD_ERR_PARTIAL => 'la connexion a été coupée en cours d’envoi. Relancez l’envoi.',
-            \UPLOAD_ERR_NO_FILE => 'aucun fichier transmis. Retirez la ligne puis redéposez le fichier.',
-            \UPLOAD_ERR_NO_TMP_DIR => 'le dossier temporaire de PHP est absent sur le serveur (réglage upload_tmp_dir). À signaler à l’administrateur du serveur.',
-            \UPLOAD_ERR_CANT_WRITE => 'PHP n’a pas pu écrire le fichier dans son dossier temporaire (disque du serveur probablement plein). À signaler à l’administrateur du serveur.',
-            \UPLOAD_ERR_EXTENSION => 'une extension PHP a interrompu l’envoi. À signaler à l’administrateur du serveur.',
-            default => sprintf('erreur d’envoi PHP inconnue (code %d).', $code),
-        };
+        $postMax = $this->iniBytes('post_max_size');
+
+        return $postMax > 0 ? max(256 * 1024, min(self::CHUNK_SIZE, $postMax - 256 * 1024)) : self::CHUNK_SIZE;
+    }
+
+    /** Partiel propre au sujet et à l'utilisateur connecté. */
+    private function chunkKey(Subject $subject, string $uploadId): string
+    {
+        return sprintf('%d-%s-%s', $subject->getId(), substr(hash('sha256', (string) $this->getUser()?->getUserIdentifier()), 0, 12), $uploadId);
     }
 
     private function iniBytes(string $key): int

@@ -4,6 +4,11 @@ import { Controller } from '@hotwired/stimulus';
 // 100 % n'arrive qu'avec la confirmation du serveur.
 const UPLOAD_SHARE = 0.95;
 const PARALLEL_CONTENTS = 2;
+// Un morceau de 8 Mo sur une connexion lente (≈ 0,5 Mbit/s) prend environ 2 minutes.
+const CHUNK_TIMEOUT = 180000;
+// Attentes (en secondes) avant chaque nouvel essai : environ 5 minutes au total.
+const RETRY_DELAYS = [1, 2, 4, 8, 15, 30, 30, 60, 60, 90];
+const RETRYABLE_STATUSES = [0, 408, 429, 500, 502, 503, 504];
 
 const normalize = (value) => String(value ?? '')
     .normalize('NFD')
@@ -25,8 +30,10 @@ const formatSize = (bytes) => (bytes >= 1073741824
  *    orientation et durée lues dans le fichier.
  * 2. Le tableau permet de corriger ; l'envoi reste bloqué tant qu'une ligne
  *    est à compléter, en doublon, ou remplacerait un fichier sans accord.
- * 3. Chaque fichier part dans sa propre requête ; les fichiers d'un même
- *    contenu partent l'un après l'autre (le premier crée le contenu).
+ * 3. Chaque fichier part en morceaux de quelques Mo, renvoyés d'eux-mêmes en
+ *    cas de coupure ; un fichier redéposé après un rechargement reprend là
+ *    où il s'était arrêté. Les fichiers d'un même contenu partent l'un après
+ *    l'autre (le premier crée le contenu).
  */
 export default class extends Controller {
     static targets = ['input', 'dropzone', 'table', 'rows', 'summary', 'start', 'retry', 'report'];
@@ -271,10 +278,46 @@ export default class extends Controller {
         this.start();
     }
 
-    upload(row) {
-        return new Promise((resolve) => {
+    /**
+     * Envoi d'un fichier en trois temps : position déjà reçue par le serveur
+     * (reprise), morceaux un par un, puis enregistrement dans le contenu.
+     */
+    async upload(row) {
+        row.status = 'uploading';
+        row.progress = 0;
+        this.renderRow(row);
+
+        try {
+            const size = row.file.size;
+            const uploadId = this.uploadIdFor(row.file);
+            const status = await this.withRetry(row, () => this.request('GET', `${this.configValue.statusUrl}?upload=${uploadId}`));
+            let offset = Math.min(status.body.offset, size);
+            if (offset > 0) {
+                this.setProgress(row, (offset / size) * UPLOAD_SHARE);
+                this.setStateLabel(row, `Reprise à ${Math.floor((offset / size) * 100)} %…`);
+            }
+
+            while (offset < size) {
+                const end = Math.min(offset + this.configValue.chunkSize, size);
+                const start = offset;
+                const url = `${this.configValue.chunkUrl}?upload=${uploadId}&offset=${start}&total=${size}`;
+                const response = await this.withRetry(row, () => this.request('POST', url, row.file.slice(start, end), {
+                    headers: { 'Content-Type': 'application/octet-stream', 'X-CSRF-Token': this.configValue.csrfToken },
+                    timeout: CHUNK_TIMEOUT,
+                    onProgress: (loaded) => this.setProgress(row, ((start + loaded) / size) * UPLOAD_SHARE),
+                }), (r) => r.xhr.status === 409 && Number.isInteger(r.body?.offset));
+                // 409 : morceau déjà reçu (réponse perdue) ou position décalée, on se recale.
+                offset = response.body.offset;
+                this.setProgress(row, (offset / size) * UPLOAD_SHARE);
+            }
+
+            this.setProgress(row, UPLOAD_SHARE);
+            this.setStateLabel(row, 'Enregistrement…');
             const data = new FormData();
             data.append('_token', this.configValue.csrfToken);
+            data.append('upload', uploadId);
+            data.append('name', row.file.name);
+            data.append('size', String(size));
             data.append('speaker', row.speakerId);
             data.append('language', row.languageId);
             data.append('format', row.format);
@@ -282,48 +325,94 @@ export default class extends Controller {
             if (row.duration) {
                 data.append('duration', String(row.duration));
             }
-            data.append('file', row.file);
+            // Pas de renvoi automatique ici : si la réponse s'est perdue,
+            // le fichier a pu être rangé, et l'éditeur doit le vérifier.
+            const { xhr, body } = await this.request('POST', this.configValue.uploadUrl, data);
+            if (xhr.status >= 200 && xhr.status < 300 && body?.videoId) {
+                this.markDone(row, body);
+            } else if (xhr.status === 0) {
+                this.markFailed(row, { error: 'Connexion coupée pendant l’enregistrement final. Le fichier a pu être rangé malgré tout : vérifiez la liste des contenus avant de relancer l’envoi.' });
+            } else {
+                this.markFailed(row, this.describeFailure(xhr, body, row.file.size, this.configValue.uploadUrl));
+            }
+        } catch (failure) {
+            this.markFailed(row, failure instanceof Error ? { error: `Erreur dans le navigateur : ${failure.message}. Rechargez la page puis relancez l’envoi.` } : failure);
+        }
+    }
 
+    /**
+     * Renvoie la requête tant que l'échec est passager (réseau coupé, délai
+     * dépassé, serveur momentanément indisponible), avec une attente
+     * croissante affichée dans la ligne. Toute autre réponse d'erreur est
+     * définitive et levée comme message d'échec.
+     */
+    async withRetry(row, send, accept = () => false) {
+        for (let attempt = 0; ; attempt++) {
+            const response = await send();
+            const { xhr, body, url } = response;
+            // Une redirection (vers la connexion) répond 200 en HTML : ce n'est pas un succès.
+            const redirected = xhr.responseURL && new URL(xhr.responseURL).pathname !== new URL(url, window.location.href).pathname;
+            if ((xhr.status >= 200 && xhr.status < 300 && body !== null && !redirected) || accept(response)) {
+                return response;
+            }
+
+            if (!RETRYABLE_STATUSES.includes(xhr.status)) {
+                throw this.describeFailure(xhr, body, this.configValue.chunkSize, url);
+            }
+            if (attempt >= RETRY_DELAYS.length) {
+                const failure = this.describeFailure(xhr, body, this.configValue.chunkSize, url);
+                throw {
+                    ...failure,
+                    error: `Envoi abandonné après ${RETRY_DELAYS.length} nouveaux essais. ${failure.error} `
+                        + 'La partie déjà reçue reste sur le serveur : « Réessayer les échecs » reprendra à partir de là.',
+                };
+            }
+
+            await this.waitBeforeRetry(row, RETRY_DELAYS[attempt], attempt + 1, xhr.status);
+        }
+    }
+
+    async waitBeforeRetry(row, seconds, attempt, status) {
+        const reason = status === 0 ? 'Connexion perdue' : `Serveur indisponible (${status})`;
+        for (let left = seconds; left > 0; left--) {
+            this.setStateLabel(row, `${reason} : nouvel essai dans ${left} s (essai ${attempt}/${RETRY_DELAYS.length})`);
+            await new Promise((resolve) => { setTimeout(resolve, 1000); });
+        }
+        // Hors ligne : inutile d'insister, on attend le retour du réseau.
+        if (!navigator.onLine) {
+            this.setStateLabel(row, 'Hors ligne : l’envoi reprendra dès le retour de la connexion');
+            await new Promise((resolve) => { window.addEventListener('online', resolve, { once: true }); });
+        }
+        this.setStateLabel(row, 'Reprise de l’envoi…');
+    }
+
+    /** Requête XHR qui ne rejette jamais : statut 0 pour une coupure ou un délai dépassé. */
+    request(method, url, body = null, { headers = {}, timeout = 0, onProgress = null } = {}) {
+        return new Promise((resolve) => {
             const xhr = new XMLHttpRequest();
-            row.status = 'uploading';
-            this.setProgress(row, 0);
-            this.renderRow(row);
-
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    this.setProgress(row, (e.loaded / e.total) * UPLOAD_SHARE);
-                }
-            });
-            xhr.upload.addEventListener('load', () => {
-                this.setProgress(row, UPLOAD_SHARE);
-                this.setStateLabel(row, 'Enregistrement…');
-            });
-            xhr.addEventListener('load', () => {
-                const body = this.parseJson(xhr.responseText);
-                if (xhr.status >= 200 && xhr.status < 300 && body?.videoId) {
-                    this.markDone(row, body);
-                } else {
-                    this.markFailed(row, this.describeFailure(xhr, body, row));
-                }
-                resolve();
-            });
-            xhr.addEventListener('error', () => {
-                this.markFailed(row, {
-                    error: `Connexion au serveur perdue pendant l’envoi de ${formatSize(row.file.size)}. `
-                        + 'Soit le réseau a été coupé, soit le serveur a fermé la connexion (limite de taille ou de durée du serveur web). '
-                        + 'Relancez l’envoi ; si l’échec se répète sur ce seul fichier, signalez-le avec sa taille.',
-                });
-                resolve();
-            });
-            xhr.addEventListener('abort', () => {
-                this.markFailed(row, { error: 'Envoi annulé par le navigateur (page rechargée ou onglet fermé ?). Relancez l’envoi.' });
-                resolve();
-            });
-
-            xhr.open('POST', this.configValue.uploadUrl);
+            const done = () => resolve({ xhr, url, body: this.parseJson(xhr.responseText) });
+            xhr.open(method, url);
+            xhr.timeout = timeout;
             xhr.setRequestHeader('Accept', 'application/json');
-            xhr.send(data);
+            Object.entries(headers).forEach(([name, value]) => xhr.setRequestHeader(name, value));
+            if (onProgress) {
+                xhr.upload.addEventListener('progress', (e) => onProgress(e.loaded));
+            }
+            ['load', 'error', 'timeout', 'abort'].forEach((type) => xhr.addEventListener(type, done));
+            xhr.send(body);
         });
+    }
+
+    /**
+     * Même fichier (nom, taille, date de modification) = même identifiant :
+     * redéposé après une coupure ou un rechargement, il reprend où il en était.
+     */
+    uploadIdFor(file) {
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < file.name.length; i++) {
+            hash = Math.imul(hash ^ file.name.charCodeAt(i), 0x01000193);
+        }
+        return `f-${file.size.toString(36)}-${file.lastModified.toString(36)}-${(hash >>> 0).toString(36)}`;
     }
 
     markDone(row, body) {
@@ -345,27 +434,28 @@ export default class extends Controller {
      * erreur imprévue) ; le reste vient d'un intermédiaire (serveur web,
      * proxy) ou d'un plantage PHP et se déduit du code HTTP.
      */
-    describeFailure(xhr, body, row) {
+    describeFailure(xhr, body, bytes, url) {
         if (body?.error) {
             return body;
         }
 
         // Session expirée : le pare-feu redirige vers la page de connexion,
         // que la requête suit sans le dire.
-        const target = new URL(this.configValue.uploadUrl, window.location.href).href;
-        if (xhr.responseURL && xhr.responseURL !== target) {
+        const target = new URL(url, window.location.href).pathname;
+        if (xhr.responseURL && new URL(xhr.responseURL).pathname !== target) {
             return { error: 'Vous avez été déconnecté : rouvrez l’administration dans un autre onglet pour vous reconnecter, puis revenez ici et cliquez sur « Réessayer les échecs ».' };
         }
 
-        const size = formatSize(row.file.size);
+        const size = formatSize(bytes);
         const detail = body?.detail && body.detail !== body?.title ? body.detail : this.htmlTitle(xhr.responseText);
         const messages = {
+            0: 'Connexion au serveur perdue (réseau coupé ou délai dépassé).',
             401: 'Vous avez été déconnecté : reconnectez-vous dans un autre onglet, puis réessayez.',
             403: 'Accès refusé : votre compte n’a pas (ou plus) le droit d’importer des fichiers.',
             404: 'Adresse d’envoi introuvable : le sujet a peut-être été supprimé. Rechargez la page.',
             408: 'Le serveur a abandonné la réception, trop lente. Relancez l’envoi, si possible sur une connexion plus stable.',
-            413: `Fichier refusé par le serveur web : ${size} dépasse la taille maximale qu’il accepte (réglage client_max_body_size sous Nginx, LimitRequestBody sous Apache). À signaler à l’administrateur du serveur.`,
-            500: `Erreur interne du serveur pendant l’enregistrement de ce fichier de ${size}. Le fichier n’a probablement pas été enregistré. Causes fréquentes : délai d’exécution ou mémoire de PHP dépassés. Relancez l’envoi ; si l’échec se répète, signalez-le avec le nom du fichier.`,
+            413: `Envoi refusé par le serveur web : ${size} en une requête dépasse la taille maximale qu’il accepte (réglage client_max_body_size sous Nginx, LimitRequestBody sous Apache). À signaler à l’administrateur du serveur.`,
+            500: `Erreur interne du serveur pendant l’enregistrement (${size}). Causes fréquentes : délai d’exécution ou mémoire de PHP dépassés. Relancez l’envoi ; si l’échec se répète, signalez-le avec le nom du fichier.`,
             502: 'Le serveur web n’a pas obtenu de réponse de PHP (PHP arrêté ou planté pendant l’enregistrement). Relancez l’envoi ; si l’échec se répète, signalez-le.',
             503: 'Serveur momentanément indisponible (maintenance ou surcharge). Réessayez dans quelques minutes.',
             504: `Délai dépassé : le serveur a mis trop de temps à enregistrer ce fichier de ${size}. Il a pu être enregistré malgré tout : vérifiez le contenu avant de relancer l’envoi.`,
