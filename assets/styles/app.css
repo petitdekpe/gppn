@@ -2947,6 +2947,15 @@ select option.subject-create-option {
     color: #a12727;
 }
 
+/* Détail technique d'un échec (réponse du serveur, référence Sentry) ou avertissement après envoi. */
+.bulk-import__detail {
+    display: block;
+    margin-top: 3px;
+    color: var(--color-muted);
+    font-size: 0.76rem;
+    overflow-wrap: anywhere;
+}
+
 .bulk-import__row.is-todo td:first-child,
 .bulk-import__row.is-replace td:first-child {
     box-shadow: inset 3px 0 0 var(--color-gold);

@@ -241,6 +241,8 @@ export default class extends Controller {
         queue.forEach((row) => {
             row.status = 'queued';
             row.error = null;
+            row.errorDetail = null;
+            row.conflict = false;
         });
         this.render();
 
@@ -301,12 +303,20 @@ export default class extends Controller {
                 if (xhr.status >= 200 && xhr.status < 300 && body?.videoId) {
                     this.markDone(row, body);
                 } else {
-                    this.markFailed(row, body?.error ?? `Erreur du serveur (${xhr.status}).`);
+                    this.markFailed(row, this.describeFailure(xhr, body, row));
                 }
                 resolve();
             });
             xhr.addEventListener('error', () => {
-                this.markFailed(row, 'Envoi interrompu : vérifiez la connexion.');
+                this.markFailed(row, {
+                    error: `Connexion au serveur perdue pendant l’envoi de ${formatSize(row.file.size)}. `
+                        + 'Soit le réseau a été coupé, soit le serveur a fermé la connexion (limite de taille ou de durée du serveur web). '
+                        + 'Relancez l’envoi ; si l’échec se répète sur ce seul fichier, signalez-le avec sa taille.',
+                });
+                resolve();
+            });
+            xhr.addEventListener('abort', () => {
+                this.markFailed(row, { error: 'Envoi annulé par le navigateur (page rechargée ou onglet fermé ?). Relancez l’envoi.' });
                 resolve();
             });
 
@@ -329,9 +339,54 @@ export default class extends Controller {
         this.render();
     }
 
-    markFailed(row, message) {
+    /**
+     * Message d'échec lisible. Le serveur explique lui-même les erreurs qu'il
+     * sait traiter (`error`, plus `detail` et `reference` Sentry pour une
+     * erreur imprévue) ; le reste vient d'un intermédiaire (serveur web,
+     * proxy) ou d'un plantage PHP et se déduit du code HTTP.
+     */
+    describeFailure(xhr, body, row) {
+        if (body?.error) {
+            return body;
+        }
+
+        // Session expirée : le pare-feu redirige vers la page de connexion,
+        // que la requête suit sans le dire.
+        const target = new URL(this.configValue.uploadUrl, window.location.href).href;
+        if (xhr.responseURL && xhr.responseURL !== target) {
+            return { error: 'Vous avez été déconnecté : rouvrez l’administration dans un autre onglet pour vous reconnecter, puis revenez ici et cliquez sur « Réessayer les échecs ».' };
+        }
+
+        const size = formatSize(row.file.size);
+        const detail = body?.detail && body.detail !== body?.title ? body.detail : this.htmlTitle(xhr.responseText);
+        const messages = {
+            401: 'Vous avez été déconnecté : reconnectez-vous dans un autre onglet, puis réessayez.',
+            403: 'Accès refusé : votre compte n’a pas (ou plus) le droit d’importer des fichiers.',
+            404: 'Adresse d’envoi introuvable : le sujet a peut-être été supprimé. Rechargez la page.',
+            408: 'Le serveur a abandonné la réception, trop lente. Relancez l’envoi, si possible sur une connexion plus stable.',
+            413: `Fichier refusé par le serveur web : ${size} dépasse la taille maximale qu’il accepte (réglage client_max_body_size sous Nginx, LimitRequestBody sous Apache). À signaler à l’administrateur du serveur.`,
+            500: `Erreur interne du serveur pendant l’enregistrement de ce fichier de ${size}. Le fichier n’a probablement pas été enregistré. Causes fréquentes : délai d’exécution ou mémoire de PHP dépassés. Relancez l’envoi ; si l’échec se répète, signalez-le avec le nom du fichier.`,
+            502: 'Le serveur web n’a pas obtenu de réponse de PHP (PHP arrêté ou planté pendant l’enregistrement). Relancez l’envoi ; si l’échec se répète, signalez-le.',
+            503: 'Serveur momentanément indisponible (maintenance ou surcharge). Réessayez dans quelques minutes.',
+            504: `Délai dépassé : le serveur a mis trop de temps à enregistrer ce fichier de ${size}. Il a pu être enregistré malgré tout : vérifiez le contenu avant de relancer l’envoi.`,
+        };
+
+        return {
+            error: messages[xhr.status] ?? `Réponse inattendue du serveur (code HTTP ${xhr.status}).`,
+            detail: detail ? `Réponse du serveur : ${detail}` : null,
+        };
+    }
+
+    htmlTitle(text) {
+        const match = /<title>([^<]*)<\/title>/i.exec(text ?? '');
+        return match ? match[1].trim() : null;
+    }
+
+    markFailed(row, failure) {
         row.status = 'error';
-        row.error = message;
+        row.error = failure.error;
+        row.errorDetail = [failure.detail, failure.reference ? `Référence Sentry : ${failure.reference}` : null].filter(Boolean).join(' · ') || null;
+        row.conflict = Boolean(failure.conflict);
         this.render();
     }
 
@@ -412,17 +467,29 @@ export default class extends Controller {
             </select></td>
             <td class="bulk-import__state">
                 <span class="bulk-import__label" data-role="label">${escapeHtml(state.label)}</span>
-                ${state.kind === 'replace' || (row.replace && !locked) ? `
+                ${row.status === 'error' && row.errorDetail ? `<small class="bulk-import__detail">${escapeHtml(row.errorDetail)}</small>` : ''}
+                ${state.kind === 'replace' || ((row.replace || row.conflict) && !locked) ? `
                     <label class="bulk-import__replace"><input type="checkbox" data-field="replace" data-action="bulk-import#edit"${row.replace ? ' checked' : ''}> Remplacer</label>` : ''}
                 ${row.status === 'uploading' || row.status === 'done' ? `
                     <span class="bulk-import__progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.floor(row.progress * 100)}">
                         <span data-role="bar" style="width: ${Math.floor(row.progress * 100)}%"></span>
                     </span>` : ''}
-                ${row.status === 'done' ? `<a href="${row.result.editUrl}">${row.result.created ? 'Contenu créé' : 'Contenu mis à jour'} →</a>` : ''}
+                ${row.status === 'done' ? `<a href="${row.result.editUrl}">${this.resultLabel(row.result)} →</a>` : ''}
+                ${row.status === 'done' && row.result.warning ? `<small class="bulk-import__detail">${escapeHtml(row.result.warning)}</small>` : ''}
             </td>
             <td>${locked ? '' : `<button type="button" class="bulk-import__remove" data-action="bulk-import#remove" aria-label="Retirer ${escapeHtml(row.file.name)}">✕</button>`}</td>`;
 
         return tr;
+    }
+
+    resultLabel(result) {
+        if (result.created) {
+            return 'Contenu créé et publié';
+        }
+        if (result.published) {
+            return 'Contenu mis à jour et publié';
+        }
+        return result.status === 'Publié' ? 'Contenu mis à jour' : `Contenu mis à jour (reste ${result.status.toLowerCase()})`;
     }
 
     stateFor(row) {
@@ -463,13 +530,17 @@ export default class extends Controller {
         const failed = this.rows.filter((r) => r.status === 'error');
         const created = new Set(done.filter((r) => r.result.created).map((r) => r.result.videoId)).size;
         const touched = new Map(done.map((r) => [r.result.videoId, r.result.editUrl]));
+        const hidden = new Set(done.filter((r) => r.result.status !== 'Publié').map((r) => r.result.videoId)).size;
+        const warnings = done.filter((r) => r.result.warning).length;
 
         this.reportTarget.hidden = false;
-        this.reportTarget.classList.toggle('has-errors', failed.length > 0);
+        this.reportTarget.classList.toggle('has-errors', failed.length > 0 || warnings > 0);
         this.reportTarget.querySelector('[data-role="text"]').textContent = [
             `${done.length} fichier${done.length > 1 ? 's' : ''} envoyé${done.length > 1 ? 's' : ''}`,
-            `${created} contenu${created > 1 ? 's' : ''} créé${created > 1 ? 's' : ''} en brouillon`,
-            `${touched.size} contenu${touched.size > 1 ? 's' : ''} concerné${touched.size > 1 ? 's' : ''}`,
+            `${created} contenu${created > 1 ? 's' : ''} créé${created > 1 ? 's' : ''}`,
+            `${touched.size - hidden} contenu${touched.size - hidden > 1 ? 's' : ''} en ligne`,
+            hidden ? `${hidden} resté${hidden > 1 ? 's' : ''} masqué${hidden > 1 ? 's' : ''}` : null,
+            warnings ? `${warnings} avertissement${warnings > 1 ? 's' : ''} (voir le tableau)` : null,
             failed.length ? `${failed.length} échec${failed.length > 1 ? 's' : ''} (voir le tableau)` : null,
         ].filter(Boolean).join(' · ');
     }
