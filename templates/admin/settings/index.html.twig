@@ -33,6 +33,26 @@
                 {% do form.enabledFormats.setRendered() %}
             </fieldset>
 
+            <fieldset class="admin-settings__group">
+                <legend>{{ form.defaultCover.vars.label }}</legend>
+                <p class="admin-settings__help">{{ form.defaultCover.vars.help }}</p>
+                {% set defaultCoverUrl = default_cover_url() %}
+                {% if defaultCoverUrl %}
+                    <p class="form-help">Image actuelle :</p>
+                    <img class="admin-cover-preview" src="{{ defaultCoverUrl }}" alt="">
+                {% endif %}
+                {{ form_widget(form.defaultCover) }}
+                {{ form_errors(form.defaultCover) }}
+                {% if defaultCoverUrl %}
+                    <label class="admin-check">
+                        {{ form_widget(form.removeDefaultCover) }}
+                        <span>{{ form.removeDefaultCover.vars.label }}</span>
+                    </label>
+                {% else %}
+                    {% do form.removeDefaultCover.setRendered() %}
+                {% endif %}
+            </fieldset>
+
             <div class="admin-form-actions">
                 <button type="submit" class="btn btn--primary">Enregistrer</button>
             </div>

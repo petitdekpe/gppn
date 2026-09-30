@@ -10,12 +10,13 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * Paramètres du site réglables depuis l'admin (page « Paramètres »). Un
  * paramètre jamais enregistré prend sa valeur par défaut : OTP désactivé,
- * tous les types de contenus activés.
+ * tous les types de contenus activés, aucune couverture par défaut.
  */
 class AppSettings
 {
     private const OTP_ENABLED = 'otp_enabled';
     private const ENABLED_FORMATS = 'enabled_formats';
+    private const DEFAULT_COVER = 'default_cover';
 
     /** @var array<string, mixed>|null chargé une seule fois par requête */
     private ?array $values = null;
@@ -64,6 +65,22 @@ class AppSettings
     public function setEnabledFormats(array $formats): void
     {
         $this->set(self::ENABLED_FORMATS, array_values(array_map(static fn (CapsuleFormat $format) => $format->value, $formats)));
+    }
+
+    /**
+     * Nom, dans video_cover.storage, de l'image affichée à la place de la
+     * couverture des contenus qui n'en ont pas (voir VideoCoverUrlResolver).
+     */
+    public function getDefaultCover(): ?string
+    {
+        $value = $this->get(self::DEFAULT_COVER, null);
+
+        return \is_string($value) && $value !== '' ? $value : null;
+    }
+
+    public function setDefaultCover(?string $fileName): void
+    {
+        $this->set(self::DEFAULT_COVER, $fileName);
     }
 
     /**
