@@ -14,7 +14,21 @@
         <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-selected-value="{{ selectedSessionId }}" data-council-calendar-sync-url-value="true">
             {{ include('partials/_council_calendar.html.twig') }}
 
-            <div class="admin-videos-layout__list">
+            <div class="admin-videos-layout__list" data-controller="bulk-select">
+                {{ include('admin/_bulk_bar.html.twig', {
+                    formId: 'bulk-video',
+                    action: path('admin_video_bulk'),
+                    tokenId: 'bulk-video',
+                    actions: [
+                        {value: 'publish', label: 'Publier'},
+                        {value: 'draft', label: 'Passer en brouillon'},
+                        {value: 'hide', label: 'Masquer du site'},
+                        {value: 'feature', label: 'Mettre à la une'},
+                        {value: 'unfeature', label: 'Retirer de la une'},
+                        {value: 'cover', label: 'Générer la couverture (vidéo TV à 15 s)', confirm: 'Remplacer la couverture des %count% contenus sélectionnés par l’image de leur vidéo TV à 15 s, y compris les couvertures déposées à la main ?'},
+                        {value: 'delete', label: 'Supprimer', confirm: 'Supprimer définitivement les %count% contenus sélectionnés et leurs fichiers ?'},
+                    ],
+                }) }}
                 {# Sans JavaScript, seul le conseil sélectionné (par défaut le dernier) est affiché. #}
                 {% for group in sessions %}
                     {% set session = group.session %}
@@ -27,6 +41,7 @@
                             <table class="admin-table admin-table--grouped">
                                 <thead>
                                     <tr>
+                                        {{ include('admin/_bulk_all.html.twig') }}
                                         <th>Intervenant</th>
                                         <th>Langue</th>
                                         <th>Statut</th>
@@ -39,13 +54,14 @@
                                 <tbody>
                                     {% for item in group.subjects %}
                                         <tr class="admin-table__subject">
-                                            <th colspan="7" scope="rowgroup">
+                                            <th colspan="8" scope="rowgroup">
                                                 {{ item.subject.title }}
                                                 <span class="admin-table__thematic" style="color: {{ item.subject.thematic.colorHex }}">{{ item.subject.thematic.name }}</span>
                                             </th>
                                         </tr>
                                         {% for video in item.videos %}
                                             <tr>
+                                                {{ include('admin/_bulk_checkbox.html.twig', {formId: 'bulk-video', id: video.id, label: item.subject.title ~ ' — ' ~ video.language.name}) }}
                                                 <td>
                                                     {% if video.speaker %}
                                                         <strong class="admin-table__speaker" title="{{ video.speaker.fullName }}">{{ video.speaker.sigle ?: video.speaker.fullName }}</strong>

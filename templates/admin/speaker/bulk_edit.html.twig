@@ -1,0 +1,54 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Modifier des intervenants en masse — Administration GPPN{% endblock %}
+{% block page_title %}Modifier {{ speakers|length }} intervenant{{ speakers|length > 1 ? 's' }}{% endblock %}
+{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_speaker_index'), label: 'Retour aux intervenants'}) }}{% endblock %}
+
+{% block body %}
+    {% if errors is not empty %}
+        <div class="flash flash--error"><div>{{ errors|length }} ligne{{ errors|length > 1 ? 's' }} à corriger : rien n’a été enregistré.</div></div>
+    {% endif %}
+    <p class="form-help">Un sigle laissé vide ne sera plus reconnu dans les noms de fichiers de l’import en masse des contenus.</p>
+
+    <form method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk-edit-speaker') }}">
+        <div class="admin-table-wrap">
+            <table class="admin-table admin-table--form">
+                <thead>
+                    <tr>
+                        <th>Nom complet</th>
+                        <th>Sigle</th>
+                        <th>Fonction</th>
+                        <th>Gouvernement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for speaker in speakers %}
+                        {% set name = 'speakers[' ~ speaker.id ~ ']' %}
+                        <tr{{ errors[speaker.id] is defined ? ' class="is-error"' }}>
+                            <td>
+                                <input type="text" name="{{ name }}[fullName]" value="{{ speaker.fullName }}" maxlength="150" required aria-label="Nom complet">
+                                {% if errors[speaker.id] is defined %}<small class="form-error">{{ errors[speaker.id]|capitalize }}.</small>{% endif %}
+                            </td>
+                            <td><input type="text" name="{{ name }}[sigle]" value="{{ speaker.sigle }}" maxlength="20" size="10" aria-label="Sigle de {{ speaker.fullName }}"></td>
+                            <td><input type="text" name="{{ name }}[role]" value="{{ speaker.role }}" maxlength="150" aria-label="Fonction de {{ speaker.fullName }}"></td>
+                            <td>
+                                <select name="{{ name }}[government]" aria-label="Gouvernement de {{ speaker.fullName }}">
+                                    <option value="0">Hors gouvernement</option>
+                                    {% for government in governments %}
+                                        <option value="{{ government.id }}"{{ speaker.government == government ? ' selected' }}>{{ government.label }}{{ government.current ? ' (actuel)' }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-form-actions">
+            <button type="submit" class="btn btn--primary">Enregistrer les {{ speakers|length }} intervenant{{ speakers|length > 1 ? 's' }}</button>
+            <a class="btn btn--outline" href="{{ path('admin_speaker_index') }}">Annuler</a>
+        </div>
+    </form>
+{% endblock %}

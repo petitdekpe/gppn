@@ -5,8 +5,10 @@ namespace App\Controller\Admin;
 use App\Entity\Video;
 use App\Entity\VideoFile;
 use App\Enum\VideoFileType;
+use App\Enum\VideoStatus;
 use App\Exception\CoverGenerationException;
 use App\Form\Admin\VideoType;
+use App\Message\GenerateVideoCover;
 use App\Repository\CouncilSessionRepository;
 use App\Repository\SubjectRepository;
 use App\Repository\VideoRepository;
@@ -17,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -24,6 +27,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_EDITEUR')]
 class VideoController extends AbstractController
 {
+    use BulkActionTrait;
+
     #[Route('', name: 'admin_video_index')]
     public function index(VideoRepository $videoRepository, Request $request): Response
     {
@@ -56,6 +61,70 @@ class VideoController extends AbstractController
             'calendar' => $calendar,
             'selectedSessionId' => $selectedId,
         ]);
+    }
+
+    #[Route('/actions-groupees', name: 'admin_video_bulk', methods: ['POST'])]
+    public function bulk(Request $request, VideoRepository $videoRepository, EntityManagerInterface $entityManager, VideoCoverGenerator $coverGenerator, MessageBusInterface $bus): Response
+    {
+        $ids = $this->bulkIds($request, 'bulk-video');
+        if ($ids === null) {
+            return $this->backToList($request, 'admin_video_index');
+        }
+
+        $action = $request->request->getString('action');
+        $videos = $videoRepository->findBy(['id' => $ids]);
+        $skipped = [];
+
+        switch ($action) {
+            case 'publish':
+            case 'draft':
+            case 'hide':
+                $status = ['publish' => VideoStatus::PUBLIE, 'draft' => VideoStatus::BROUILLON, 'hide' => VideoStatus::MASQUE][$action];
+                foreach ($videos as $video) {
+                    // Première mise en ligne : datée du jour, comme à l'import en masse.
+                    if ($status === VideoStatus::PUBLIE && $video->getStatus() === VideoStatus::BROUILLON) {
+                        $video->setPublishedAt(new \DateTimeImmutable());
+                    }
+                    $video->setStatus($status);
+                }
+                $message = sprintf('%s : statut « %s ».', self::plural(count($videos), 'contenu'), $status->getLabel());
+                break;
+            case 'feature':
+            case 'unfeature':
+                foreach ($videos as $video) {
+                    $video->setFeatured($action === 'feature');
+                }
+                $message = sprintf('%s %s.', self::plural(count($videos), 'contenu'), $action === 'feature' ? 'mis à la une' : (count($videos) > 1 ? 'retirés de la une' : 'retiré de la une'));
+                break;
+            case 'cover':
+                $queued = 0;
+                foreach ($videos as $video) {
+                    if (!$coverGenerator->hasSource($video)) {
+                        $skipped[] = sprintf('%s — %s (pas de vidéo TV)', $video->getTitle(), $video->getLanguage()->getName());
+
+                        continue;
+                    }
+                    $bus->dispatch(new GenerateVideoCover($video->getId(), force: true));
+                    ++$queued;
+                }
+                $message = sprintf('%s en cours de génération (image de la vidéo TV à 15 s) : rechargez la page dans un instant.', self::plural($queued, 'couverture'));
+                break;
+            case 'delete':
+                foreach ($videos as $video) {
+                    $entityManager->remove($video);
+                }
+                $message = self::plural(count($videos), 'contenu supprimé', 'contenus supprimés') . '.';
+                break;
+            default:
+                $this->unknownBulkAction();
+
+                return $this->backToList($request, 'admin_video_index');
+        }
+
+        $entityManager->flush();
+        $this->bulkReport($message, $skipped);
+
+        return $this->backToList($request, 'admin_video_index');
     }
 
     #[Route('/nouveau', name: 'admin_video_new')]

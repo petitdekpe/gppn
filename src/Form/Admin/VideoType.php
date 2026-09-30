@@ -112,13 +112,18 @@ class VideoType extends AbstractType
                 'choice_label' => static fn (Speaker $speaker) => $speaker->getSigle()
                     ? sprintf('%s — %s', $speaker->getSigle(), $speaker->getFullName())
                     : $speaker->getFullName(),
-                // Même distinction que côté public (VideoRepository::findVideoIdsBySpeakerRole).
-                'group_by' => static fn (Speaker $speaker) => $speaker->isMinistreConseiller()
-                    ? 'Ministres conseillers'
-                    : 'Ministres',
+                // Un même ministre peut figurer dans plusieurs gouvernements (reconduction) :
+                // on regroupe par gouvernement, l'actuel en tête.
+                'group_by' => static fn (Speaker $speaker) => $speaker->getGovernment()
+                    ? $speaker->getGovernment()->getLabel() . ($speaker->getGovernment()->isCurrent() ? ' (actuel)' : '')
+                    : 'Hors gouvernement',
                 'query_builder' => static fn (SpeakerRepository $repository) => $repository
                     ->createQueryBuilder('sp')
-                    ->orderBy('sp.fullName', 'ASC'),
+                    ->leftJoin('sp.government', 'g')->addSelect('g')
+                    ->orderBy('CASE WHEN g.id IS NULL THEN 1 ELSE 0 END', 'ASC')
+                    ->addOrderBy('g.current', 'DESC')
+                    ->addOrderBy('g.startedAt', 'DESC')
+                    ->addOrderBy('sp.fullName', 'ASC'),
             ])
             ->addEventListener(FormEvents::SUBMIT, $this->assignSlug(...))
         ;

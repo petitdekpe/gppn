@@ -1,0 +1,34 @@
+{#
+    Barre d'actions groupées d'une liste (voir bulk_select_controller.js).
+    Paramètres :
+    - formId, action (URL), tokenId ;
+    - actions : [{value, label, confirm? (%count% = nombre), param? (clé d'un champ cible)}] ;
+    - params : [{key, label, choices: [{value, label, selected?}]}], envoyés sous le nom « target ».
+    Les cases des lignes s'y rattachent par form="{{ formId }}" (voir _bulk_checkbox.html.twig).
+#}
+<form id="{{ formId }}" method="post" action="{{ action }}" class="admin-bulk-bar"
+      data-bulk-select-target="bar" data-action="submit->bulk-select#submit" hidden>
+    <input type="hidden" name="_token" value="{{ csrf_token(tokenId) }}">
+    <strong class="admin-bulk-bar__count" data-bulk-select-target="count" aria-live="polite"></strong>
+    <label class="sr-only" for="{{ formId }}-action">Action à appliquer</label>
+    <select id="{{ formId }}-action" name="action" data-bulk-select-target="action" data-action="bulk-select#showParams">
+        <option value="">— Choisir une action —</option>
+        {% for item in actions %}
+            <option value="{{ item.value }}"
+                    {%- if item.confirm is defined %} data-confirm="{{ item.confirm }}"{% endif %}
+                    {%- if item.param is defined %} data-param="{{ item.param }}"{% endif %}>{{ item.label }}</option>
+        {% endfor %}
+    </select>
+    {% for param in params|default([]) %}
+        <span class="admin-bulk-bar__param" data-bulk-select-target="param" data-param="{{ param.key }}" hidden>
+            <label for="{{ formId }}-{{ param.key }}">{{ param.label }}</label>
+            <select id="{{ formId }}-{{ param.key }}" name="target" disabled>
+                {% for choice in param.choices %}
+                    <option value="{{ choice.value }}"{{ choice.selected|default(false) ? ' selected' }}>{{ choice.label }}</option>
+                {% endfor %}
+            </select>
+        </span>
+    {% endfor %}
+    <button type="submit" class="btn btn--primary btn--sm">Appliquer</button>
+    <button type="button" class="btn btn--outline btn--sm" data-action="bulk-select#clear">Tout désélectionner</button>
+</form>

@@ -7,35 +7,50 @@
     {% if suggestions is empty %}
         <p class="empty-state">Aucune suggestion pour le moment.</p>
     {% else %}
-        <div class="admin-table-wrap">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Statut</th>
-                        <th>Sujet</th>
-                        <th>De</th>
-                        <th>Reçue le</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for suggestion in suggestions %}
-                        <tr class="{{ suggestion.treated ? 'is-treated' : '' }}">
-                            <td>
-                                <span class="admin-badge {{ suggestion.treated ? 'admin-badge--done' : 'admin-badge--pending' }}">
-                                    {{ suggestion.treated ? 'Traitée' : 'À traiter' }}
-                                </span>
-                            </td>
-                            <td><a href="{{ path('admin_suggestion_show', {id: suggestion.id}) }}">{{ suggestion.subject }}</a></td>
-                            <td>{{ suggestion.fullName ?: 'Anonyme' }}</td>
-                            <td>{{ suggestion.createdAt|date('d/m/Y H:i') }}</td>
-                            <td class="admin-table__actions">
-                                <a class="btn btn--outline btn--sm" href="{{ path('admin_suggestion_show', {id: suggestion.id}) }}">Voir</a>
-                            </td>
+        <div data-controller="bulk-select">
+            {{ include('admin/_bulk_bar.html.twig', {
+                formId: 'bulk-suggestion',
+                action: path('admin_suggestion_bulk'),
+                tokenId: 'bulk-suggestion',
+                actions: [
+                    {value: 'treated', label: 'Marquer comme traitées'},
+                    {value: 'untreated', label: 'Remettre à traiter'},
+                    {value: 'delete', label: 'Supprimer', confirm: 'Supprimer définitivement les %count% suggestions sélectionnées ?'},
+                ],
+            }) }}
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            {{ include('admin/_bulk_all.html.twig') }}
+                            <th>Statut</th>
+                            <th>Sujet</th>
+                            <th>De</th>
+                            <th>Reçue le</th>
+                            <th></th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for suggestion in suggestions %}
+                            <tr class="{{ suggestion.treated ? 'is-treated' : '' }}">
+                                {{ include('admin/_bulk_checkbox.html.twig', {formId: 'bulk-suggestion', id: suggestion.id, label: suggestion.subject}) }}
+                                <td>
+                                    <span class="admin-badge {{ suggestion.treated ? 'admin-badge--done' : 'admin-badge--pending' }}">
+                                        {{ suggestion.treated ? 'Traitée' : 'À traiter' }}
+                                    </span>
+                                </td>
+                                <td><a href="{{ path('admin_suggestion_show', {id: suggestion.id}) }}">{{ suggestion.subject }}</a></td>
+                                <td>{{ suggestion.fullName ?: 'Anonyme' }}</td>
+                                <td>{{ suggestion.createdAt|date('d/m/Y H:i') }}</td>
+                                <td class="admin-table__actions">
+                                    <a class="btn btn--outline btn--sm" href="{{ path('admin_suggestion_show', {id: suggestion.id}) }}">Voir</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     {% endif %}
 {% endblock %}

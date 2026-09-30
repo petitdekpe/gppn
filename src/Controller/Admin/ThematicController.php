@@ -18,6 +18,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_EDITEUR')]
 class ThematicController extends AbstractController
 {
+    use BulkActionTrait;
+
     #[Route('', name: 'admin_thematic_index')]
     public function index(ThematicRepository $thematicRepository, VideoRepository $videoRepository, SubjectRepository $subjectRepository): Response
     {
@@ -34,6 +36,38 @@ class ThematicController extends AbstractController
             'videoCounts' => $videoCounts,
             'subjectCounts' => $subjectCounts,
         ]);
+    }
+
+    #[Route('/actions-groupees', name: 'admin_thematic_bulk', methods: ['POST'])]
+    public function bulk(Request $request, ThematicRepository $thematicRepository, SubjectRepository $subjectRepository, EntityManagerInterface $entityManager): Response
+    {
+        $ids = $this->bulkIds($request, 'bulk-thematic');
+        if ($ids === null) {
+            return $this->redirectToRoute('admin_thematic_index');
+        }
+
+        if ($request->request->getString('action') !== 'delete') {
+            $this->unknownBulkAction();
+
+            return $this->redirectToRoute('admin_thematic_index');
+        }
+
+        $deleted = 0;
+        $skipped = [];
+        foreach ($thematicRepository->findBy(['id' => $ids]) as $thematic) {
+            if ($subjectRepository->count(['thematic' => $thematic]) > 0) {
+                $skipped[] = $thematic->getName() . ' (encore utilisée par des sujets)';
+
+                continue;
+            }
+            $entityManager->remove($thematic);
+            ++$deleted;
+        }
+        $entityManager->flush();
+
+        $this->bulkReport(self::plural($deleted, 'thématique supprimée', 'thématiques supprimées') . '.', $skipped);
+
+        return $this->redirectToRoute('admin_thematic_index');
     }
 
     #[Route('/nouveau', name: 'admin_thematic_new')]

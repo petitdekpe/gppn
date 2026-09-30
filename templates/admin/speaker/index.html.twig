@@ -4,38 +4,108 @@
 {% block page_title %}Intervenants{% endblock %}
 
 {% block body %}
-    <div class="admin-toolbar">
+    <div class="admin-toolbar admin-toolbar--actions">
         <a class="btn btn--primary" href="{{ path('admin_speaker_new') }}">+ Nouvel intervenant</a>
+        <a class="btn btn--outline" href="{{ path('admin_speaker_import') }}"><i class="fa-solid fa-file-import" aria-hidden="true"></i> Importer des intervenants</a>
+        <a class="btn btn--outline" href="{{ path('admin_speaker_government_new') }}">+ Nouveau gouvernement</a>
     </div>
 
-    <div class="admin-table-wrap">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Nom complet</th>
-                    <th>Sigle</th>
-                    <th>Fonction</th>
-                    <th>Contenus</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for speaker in speakers %}
-                    <tr>
-                        <td>{{ speaker.fullName }}</td>
-                        <td>{{ speaker.sigle ?: '—' }}</td>
-                        <td>{{ speaker.role ?: '—' }}</td>
-                        <td>{{ speaker.videos|length }}</td>
-                        <td class="admin-table__actions">
-                            <a class="btn btn--outline btn--sm" href="{{ path('admin_speaker_edit', {id: speaker.id}) }}">Modifier</a>
-                            <form method="post" action="{{ path('admin_speaker_delete', {id: speaker.id}) }}" onsubmit="return confirm('Supprimer cet intervenant ?');">
-                                <input type="hidden" name="_token" value="{{ csrf_token('delete-speaker-' ~ speaker.id) }}">
-                                <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% if groups is empty %}
+        <p class="empty-state">Aucun intervenant pour le moment.</p>
+    {% else %}
+        {% set governmentChoices = governments|map(g => {value: g.id, label: g.label ~ (g.current ? ' (actuel)' : ''), selected: g.current}) %}
+        <div data-controller="bulk-select">
+            {{ include('admin/_bulk_bar.html.twig', {
+                formId: 'bulk-speaker',
+                action: path('admin_speaker_bulk'),
+                tokenId: 'bulk-speaker',
+                actions: [
+                    {value: 'edit', label: 'Modifier en masse'},
+                    {value: 'reappoint', label: 'Reconduire dans un gouvernement…', param: 'government'},
+                    {value: 'move', label: 'Déplacer vers…', param: 'government-or-none'},
+                    {value: 'delete', label: 'Supprimer (intervenants sans contenu)', confirm: 'Supprimer les %count% intervenants sélectionnés ? Ceux qui sont rattachés à des contenus seront conservés.'},
+                ],
+                params: [
+                    {key: 'government', label: 'Gouvernement', choices: governmentChoices},
+                    {key: 'government-or-none', label: 'Vers', choices: governmentChoices|merge([{value: 0, label: 'Hors gouvernement'}])},
+                ],
+            }) }}
+
+            {% for group in groups %}
+                {% set government = group.government %}
+                <section class="admin-speaker-group{{ government and government.current ? ' is-current' }}">
+                    <header class="admin-speaker-group__header">
+                        <div>
+                            <h2>
+                                {{ government ? government.label : 'Hors gouvernement' }}
+                                {% if government and government.current %}<span class="admin-badge admin-badge--done">Gouvernement actuel</span>{% endif %}
+                            </h2>
+                            <p class="admin-table__muted">
+                                {{ group.speakers|length }} intervenant{{ group.speakers|length > 1 ? 's' }}
+                                {%- if government and government.startedAt %} · en fonction depuis le {{ government.startedAt|date('d/m/Y') }}{% endif %}
+                            </p>
+                        </div>
+                        {% if government %}
+                            <div class="admin-speaker-group__actions">
+                                {% if group.speakers is not empty %}
+                                    <a class="btn btn--outline btn--sm" href="{{ path('admin_speaker_bulk_edit', {gouvernement: government.id}) }}">Tout modifier en masse</a>
+                                {% endif %}
+                                <a class="btn btn--outline btn--sm" href="{{ path('admin_speaker_government_edit', {id: government.id}) }}">Modifier le gouvernement</a>
+                                {% if not government.current %}
+                                    <form method="post" action="{{ path('admin_speaker_government_current', {id: government.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('current-government-' ~ government.id) }}">
+                                        <button type="submit" class="btn btn--outline btn--sm">Définir comme actuel</button>
+                                    </form>
+                                {% endif %}
+                                {% if group.speakers is empty %}
+                                    <form method="post" action="{{ path('admin_speaker_government_delete', {id: government.id}) }}" onsubmit="return confirm('Supprimer ce gouvernement ?');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-government-' ~ government.id) }}">
+                                        <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </header>
+
+                    {% if group.speakers is empty %}
+                        <p class="empty-state">Aucun intervenant. Sélectionnez ceux d’un autre gouvernement puis « Reconduire dans un gouvernement… », ou importez-les.</p>
+                    {% else %}
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        {{ include('admin/_bulk_all.html.twig') }}
+                                        <th>Nom complet</th>
+                                        <th>Sigle</th>
+                                        <th>Fonction</th>
+                                        <th>Contenus</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for speaker in group.speakers %}
+                                        {% set count = videoCounts[speaker.id] ?? 0 %}
+                                        <tr>
+                                            {{ include('admin/_bulk_checkbox.html.twig', {formId: 'bulk-speaker', id: speaker.id, label: speaker.fullName}) }}
+                                            <td>{{ speaker.fullName }}</td>
+                                            <td>{{ speaker.sigle ?: '—' }}</td>
+                                            <td class="admin-table__wrap">{{ speaker.role ?: '—' }}</td>
+                                            <td>{{ count }}</td>
+                                            <td class="admin-table__actions">
+                                                <a class="btn btn--outline btn--sm" href="{{ path('admin_speaker_edit', {id: speaker.id}) }}">Modifier</a>
+                                                <form method="post" action="{{ path('admin_speaker_delete', {id: speaker.id}) }}" onsubmit="return confirm('Supprimer cet intervenant ?');">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-speaker-' ~ speaker.id) }}">
+                                                    <button type="submit" class="btn btn--danger btn--sm" {{ count > 0 ? 'disabled title="Rattaché à des contenus"' }}>Supprimer</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </section>
+            {% endfor %}
+        </div>
+    {% endif %}
 {% endblock %}

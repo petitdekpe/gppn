@@ -26,7 +26,7 @@ final class GenerateVideoCoverHandler
 
         // Vérifié ici, pas à l'envoi : une couverture a pu être déposée à la
         // main entre-temps, ou la vidéo TV retirée.
-        if ($video === null || !$this->coverGenerator->hasSource($video) || !$this->coverGenerator->canReplaceAutomatically($video)) {
+        if ($video === null || !$this->coverGenerator->hasSource($video) || (!$message->force && !$this->coverGenerator->canReplaceAutomatically($video))) {
             return;
         }
 

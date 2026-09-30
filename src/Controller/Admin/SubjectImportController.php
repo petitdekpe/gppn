@@ -2,6 +2,7 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\Government;
 use App\Entity\Language;
 use App\Entity\Speaker;
 use App\Entity\Subject;
@@ -9,6 +10,7 @@ use App\Entity\Video;
 use App\Entity\VideoFile;
 use App\Enum\VideoFileType;
 use App\Enum\VideoStatus;
+use App\Repository\GovernmentRepository;
 use App\Repository\LanguageRepository;
 use App\Repository\SpeakerRepository;
 use App\Repository\VideoRepository;
@@ -65,9 +67,12 @@ class SubjectImportController extends AbstractController
     private const AUDIO_MIME_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/x-wav', 'audio/ogg'];
 
     #[Route('', name: 'admin_subject_import')]
-    public function index(Subject $subject, SpeakerRepository $speakerRepository, LanguageRepository $languageRepository, VideoRepository $videoRepository): Response
+    public function index(Subject $subject, SpeakerRepository $speakerRepository, LanguageRepository $languageRepository, VideoRepository $videoRepository, GovernmentRepository $governmentRepository): Response
     {
         $speakers = $speakerRepository->findBy([], ['fullName' => 'ASC']);
+        // Un ministre reconduit a une fiche par gouvernement : à sigle égal,
+        // on retient celle du gouvernement en place à la date du conseil.
+        $inOffice = $governmentRepository->findInOfficeAt($subject->getCouncilSession()->getDate());
 
         return $this->render('admin/subject_import/index.html.twig', [
             'subject' => $subject,
@@ -83,7 +88,13 @@ class SubjectImportController extends AbstractController
                     'sigle' => $speaker->getSigle(),
                     'code' => $speaker->getFileCode(),
                     'name' => $speaker->getFullName(),
+                    'governmentId' => $speaker->getGovernment()?->getId(),
                 ], $speakers),
+                'governments' => array_map(fn (Government $government) => [
+                    'id' => $government->getId(),
+                    'label' => $government->getLabel(),
+                ], $governmentRepository->findOrdered()),
+                'preferredGovernmentId' => $inOffice?->getId(),
                 'languages' => array_map(fn (Language $language) => [
                     'id' => $language->getId(),
                     'name' => $language->getName(),

@@ -6,6 +6,7 @@ use App\Repository\SpeakerRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\String\UnicodeString;
 
 #[ORM\Entity(repositoryClass: SpeakerRepository::class)]
 #[ORM\Table(name: 'speaker')]
@@ -24,6 +25,10 @@ class Speaker
 
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $role = null;
+
+    /** Gouvernement dans lequel l'intervenant a exercé cette fonction (voir Government). */
+    #[ORM\ManyToOne(targetEntity: Government::class, inversedBy: 'speakers')]
+    private ?Government $government = null;
 
     /** @var Collection<int, Video> */
     #[ORM\OneToMany(targetEntity: Video::class, mappedBy: 'speaker')]
@@ -73,6 +78,44 @@ class Speaker
         $this->role = $role;
 
         return $this;
+    }
+
+    public function getGovernment(): ?Government
+    {
+        return $this->government;
+    }
+
+    public function setGovernment(?Government $government): static
+    {
+        $this->government = $government;
+
+        return $this;
+    }
+
+    /**
+     * Reconduction dans un autre gouvernement : nouvelle fiche, même nom,
+     * même fonction et même sigle, à ajuster si le portefeuille a changé.
+     */
+    public function reappointIn(Government $government): self
+    {
+        return (new self())
+            ->setFullName($this->fullName)
+            ->setSigle($this->sigle)
+            ->setRole($this->role)
+            ->setGovernment($government);
+    }
+
+    /**
+     * Clé de comparaison des noms (import, reconduction) : sans accents,
+     * casse, ponctuation ni ordre des mots (« TALON Patrice » = « Patrice Talon »).
+     */
+    public static function nameKey(string $fullName): string
+    {
+        $ascii = strtolower((new UnicodeString($fullName))->ascii()->toString());
+        $words = preg_split('/[^a-z0-9]+/', $ascii, -1, PREG_SPLIT_NO_EMPTY);
+        sort($words);
+
+        return implode(' ', $words);
     }
 
     /**

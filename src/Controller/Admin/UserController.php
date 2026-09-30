@@ -17,12 +17,55 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_SUPER_ADMIN')]
 class UserController extends AbstractController
 {
+    use BulkActionTrait;
+
     #[Route('', name: 'admin_user_index')]
     public function index(UserRepository $userRepository): Response
     {
         return $this->render('admin/user/index.html.twig', [
             'users' => $userRepository->findBy([], ['email' => 'ASC']),
+            'roles' => User::ASSIGNABLE_ROLES,
         ]);
+    }
+
+    /**
+     * Changement de rôle ou suppression de plusieurs comptes. Le compte
+     * connecté est toujours épargné : on ne se retire pas ses propres droits.
+     */
+    #[Route('/actions-groupees', name: 'admin_user_bulk', methods: ['POST'])]
+    public function bulk(Request $request, UserRepository $userRepository, EntityManagerInterface $entityManager): Response
+    {
+        $ids = $this->bulkIds($request, 'bulk-user');
+        if ($ids === null) {
+            return $this->redirectToRoute('admin_user_index');
+        }
+
+        $action = $request->request->getString('action');
+        $role = $request->request->getString('target');
+        if (!in_array($action, ['role', 'delete'], true) || ($action === 'role' && !in_array($role, User::ASSIGNABLE_ROLES, true))) {
+            $this->unknownBulkAction();
+
+            return $this->redirectToRoute('admin_user_index');
+        }
+
+        $done = 0;
+        $skipped = [];
+        foreach ($userRepository->findBy(['id' => $ids]) as $user) {
+            if ($user === $this->getUser()) {
+                $skipped[] = $user->getEmail() . ' (votre propre compte)';
+
+                continue;
+            }
+            $action === 'role' ? $user->setRole($role) : $entityManager->remove($user);
+            ++$done;
+        }
+        $entityManager->flush();
+
+        $this->bulkReport($action === 'role'
+            ? sprintf('%s : rôle « %s » attribué.', self::plural($done, 'compte'), array_flip(User::ASSIGNABLE_ROLES)[$role])
+            : self::plural($done, 'compte supprimé', 'comptes supprimés') . '.', $skipped);
+
+        return $this->redirectToRoute('admin_user_index');
     }
 
     #[Route('/nouveau', name: 'admin_user_new')]

@@ -8,32 +8,55 @@
         <a class="btn btn--primary" href="{{ path('admin_user_new') }}">+ Nouvel utilisateur</a>
     </div>
 
-    <div class="admin-table-wrap">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>E-mail</th>
-                    <th>Rôle</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
+    <div data-controller="bulk-select">
+        {% set roleChoices = [] %}
+        {% for label, role in roles %}
+            {% set roleChoices = roleChoices|merge([{value: role, label: label}]) %}
+        {% endfor %}
+        {{ include('admin/_bulk_bar.html.twig', {
+            formId: 'bulk-user',
+            action: path('admin_user_bulk'),
+            tokenId: 'bulk-user',
+            actions: [
+                {value: 'role', label: 'Changer le rôle', param: 'role'},
+                {value: 'delete', label: 'Supprimer', confirm: 'Supprimer les %count% comptes sélectionnés ? Votre propre compte sera épargné.'},
+            ],
+            params: [{key: 'role', label: 'Nouveau rôle', choices: roleChoices}],
+        }) }}
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
                     <tr>
-                        <td>{{ user.email }}</td>
-                        <td>{{ user.roleLabel ?: '—' }}</td>
-                        <td class="admin-table__actions">
-                            <a class="btn btn--outline btn--sm" href="{{ path('admin_user_edit', {id: user.id}) }}">Modifier</a>
-                            {% if user != app.user %}
-                                <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" onsubmit="return confirm('Supprimer cet utilisateur ?');">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-user-' ~ user.id) }}">
-                                    <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
-                                </form>
-                            {% endif %}
-                        </td>
+                        {{ include('admin/_bulk_all.html.twig') }}
+                        <th>E-mail</th>
+                        <th>Rôle</th>
+                        <th></th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            {% if user != app.user %}
+                                {{ include('admin/_bulk_checkbox.html.twig', {formId: 'bulk-user', id: user.id, label: user.email}) }}
+                            {% else %}
+                                <td class="admin-table__select"></td>
+                            {% endif %}
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.roleLabel ?: '—' }}</td>
+                            <td class="admin-table__actions">
+                                <a class="btn btn--outline btn--sm" href="{{ path('admin_user_edit', {id: user.id}) }}">Modifier</a>
+                                {% if user != app.user %}
+                                    <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" onsubmit="return confirm('Supprimer cet utilisateur ?');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-user-' ~ user.id) }}">
+                                        <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 {% endblock %}

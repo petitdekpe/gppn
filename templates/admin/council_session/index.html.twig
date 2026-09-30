@@ -13,7 +13,18 @@
         <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-selected-value="{{ selectedSessionId }}" data-council-calendar-sync-url-value="true" data-council-calendar-unit-value="sujet">
             {{ include('partials/_council_calendar.html.twig', {newCouncilUrl: path('admin_council_session_new')}) }}
 
-            <div class="admin-videos-layout__list">
+            <div class="admin-videos-layout__list" data-controller="bulk-select">
+                {{ include('admin/_bulk_bar.html.twig', {
+                    formId: 'bulk-subject',
+                    action: path('admin_council_session_subject_bulk'),
+                    tokenId: 'bulk-subject',
+                    actions: [
+                        {value: 'thematic', label: 'Changer de thématique', param: 'thematic'},
+                        {value: 'delete', label: 'Supprimer (sujets sans contenu)', confirm: 'Supprimer les %count% sujets sélectionnés ? Ceux qui ont des contenus seront conservés.'},
+                    ],
+                    params: [{key: 'thematic', label: 'Thématique', choices: thematics|map(t => {value: t.id, label: t.name})}],
+                }) }}
+
                 {# Sans JavaScript, seul le conseil sélectionné (par défaut le dernier) est affiché. #}
                 {% for group in groups %}
                     {% set councilSession = group.session %}
@@ -44,6 +55,7 @@
                                     <table class="admin-table">
                                         <thead>
                                             <tr>
+                                                {{ include('admin/_bulk_all.html.twig') }}
                                                 <th>Sujet</th>
                                                 <th>Thématique</th>
                                                 <th>Contenus</th>
@@ -54,6 +66,7 @@
                                             {% for subject in group.subjects %}
                                                 {% set subjectVideos = videoCounts[subject.id] ?? 0 %}
                                                 <tr>
+                                                    {{ include('admin/_bulk_checkbox.html.twig', {formId: 'bulk-subject', id: subject.id, label: subject.title}) }}
                                                     <td class="admin-table__wrap"><strong>{{ subject.title }}</strong></td>
                                                     <td><span class="admin-table__thematic" style="color: {{ subject.thematic.colorHex }}">{{ subject.thematic.name }}</span></td>
                                                     <td>{{ subjectVideos }}</td>

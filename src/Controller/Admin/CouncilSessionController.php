@@ -8,6 +8,7 @@ use App\Form\Admin\CouncilSessionType;
 use App\Form\Admin\SubjectType;
 use App\Repository\CouncilSessionRepository;
 use App\Repository\SubjectRepository;
+use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
@@ -21,6 +22,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_EDITEUR')]
 class CouncilSessionController extends AbstractController
 {
+    use BulkActionTrait;
+
     /**
      * `?pour=contenu` : parcours lancé depuis « Nouveau contenu » (conseil →
      * sujet → retour au nouveau contenu, sujet pré-sélectionné). Valeur
@@ -31,7 +34,7 @@ class CouncilSessionController extends AbstractController
     public const FLOW_VIDEO = 'contenu';
 
     #[Route('', name: 'admin_council_session_index')]
-    public function index(Request $request, CouncilSessionRepository $councilSessionRepository, VideoRepository $videoRepository, SubjectRepository $subjectRepository): Response
+    public function index(Request $request, CouncilSessionRepository $councilSessionRepository, VideoRepository $videoRepository, SubjectRepository $subjectRepository, ThematicRepository $thematicRepository): Response
     {
         $councilSessions = $councilSessionRepository->findBy([], ['date' => 'DESC']);
 
@@ -77,7 +80,53 @@ class CouncilSessionController extends AbstractController
             'calendar' => $calendar,
             'selectedSessionId' => $selectedId,
             'videoCounts' => $videoCounts,
+            'thematics' => $thematicRepository->findBy([], ['name' => 'ASC']),
         ]);
+    }
+
+    /**
+     * Actions groupées sur les sujets du conseil affiché : changement de
+     * thématique, ou suppression des sujets qui n'ont plus de contenu.
+     */
+    #[Route('/sujets/actions-groupees', name: 'admin_council_session_subject_bulk', methods: ['POST'])]
+    public function bulkSubjects(Request $request, SubjectRepository $subjectRepository, ThematicRepository $thematicRepository, VideoRepository $videoRepository, EntityManagerInterface $entityManager): Response
+    {
+        $ids = $this->bulkIds($request, 'bulk-subject');
+        if ($ids === null) {
+            return $this->backToList($request, 'admin_council_session_index');
+        }
+
+        $action = $request->request->getString('action');
+        $subjects = $subjectRepository->findBy(['id' => $ids]);
+        $skipped = [];
+
+        if ($action === 'thematic' && ($thematic = $thematicRepository->find($request->request->getInt('target'))) !== null) {
+            foreach ($subjects as $subject) {
+                $subject->setThematic($thematic);
+            }
+            $message = sprintf('%s rattaché%s à la thématique « %s ».', self::plural(count($subjects), 'sujet'), count($subjects) > 1 ? 's' : '', $thematic->getName());
+        } elseif ($action === 'delete') {
+            $deleted = 0;
+            foreach ($subjects as $subject) {
+                if ($videoRepository->count(['subject' => $subject]) > 0) {
+                    $skipped[] = $subject->getTitle() . ' (encore rattaché à des contenus)';
+
+                    continue;
+                }
+                $entityManager->remove($subject);
+                ++$deleted;
+            }
+            $message = self::plural($deleted, 'sujet supprimé', 'sujets supprimés') . '.';
+        } else {
+            $this->unknownBulkAction();
+
+            return $this->backToList($request, 'admin_council_session_index');
+        }
+
+        $entityManager->flush();
+        $this->bulkReport($message, $skipped);
+
+        return $this->backToList($request, 'admin_council_session_index');
     }
 
     #[Route('/nouveau', name: 'admin_council_session_new')]

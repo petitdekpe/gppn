@@ -1,0 +1,6 @@
+{# Case de sélection d'une ligne, rattachée au formulaire d'actions groupées (voir _bulk_bar.html.twig). #}
+<td class="admin-table__select">
+    <input type="checkbox" name="ids[]" value="{{ id }}" form="{{ formId }}"
+           data-bulk-select-target="checkbox" data-action="click->bulk-select#toggle"
+           aria-label="Sélectionner {{ label }}">
+</td>

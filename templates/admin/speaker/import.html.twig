@@ -1,0 +1,78 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Importer des intervenants — Administration GPPN{% endblock %}
+{% block page_title %}Importer des intervenants{% endblock %}
+{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_speaker_index'), label: 'Retour aux intervenants'}) }}{% endblock %}
+
+{% block body %}
+    {% set statusLabels = {create: 'Création', update: 'Mise à jour', unchanged: 'Inchangé', error: 'Ignorée'} %}
+
+    <form method="post" enctype="multipart/form-data" class="admin-form-card">
+        <input type="hidden" name="_token" value="{{ csrf_token('import-speaker') }}">
+
+        <p class="form-help">
+            Une ligne par intervenant : <code>Nom complet ; Fonction ; Sigle</code>.
+            Copiez directement les colonnes depuis Excel, ou séparez-les par un point-virgule.
+            Fonction et sigle sont facultatifs ; un sigle absent est deviné à partir de la fonction.
+            Une personne déjà présente dans le gouvernement choisi est mise à jour, pas dupliquée.
+        </p>
+
+        <div class="form-row">
+            <label for="import-government">Gouvernement</label>
+            <select id="import-government" name="government">
+                {% for item in governments %}
+                    <option value="{{ item.id }}"{{ item == government ? ' selected' }}>{{ item.label }}{{ item.current ? ' (actuel)' }}</option>
+                {% endfor %}
+                <option value="0"{{ government is null ? ' selected' }}>Hors gouvernement</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label for="import-lines">Intervenants</label>
+            <textarea id="import-lines" name="lines" rows="10" placeholder="Véronique TOGNIFODÉ ; Ministre de la Famille et de l’Action Sociale ; MFAS&#10;Wilfried Léandre HOUNGBÉDJI ; Porte-parole du Gouvernement">{{ lines }}</textarea>
+        </div>
+        <div class="form-row">
+            <label for="import-file">Ou un fichier CSV</label>
+            <input type="file" id="import-file" name="file" accept=".csv,.txt,text/csv,text/plain">
+            <p class="form-help">Depuis Excel : « Enregistrer sous » → « CSV (séparateur : point-virgule) ». Le fichier remplace le texte collé.</p>
+        </div>
+
+        <div class="admin-form-actions">
+            <button type="submit" name="step" value="preview" class="btn {{ plan is null ? 'btn--primary' : 'btn--outline' }}">Prévisualiser</button>
+            {% if plan is not null and ((counts.create ?? 0) + (counts.update ?? 0)) > 0 %}
+                <button type="submit" name="step" value="confirm" class="btn btn--primary">
+                    Importer : {{ counts.create ?? 0 }} création{{ (counts.create ?? 0) > 1 ? 's' }}, {{ counts.update ?? 0 }} mise{{ (counts.update ?? 0) > 1 ? 's' }} à jour
+                </button>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if plan is not null %}
+        <h2 class="admin-section-title">Aperçu : {{ plan|length }} ligne{{ plan|length > 1 ? 's' }} dans « {{ government ? government.label : 'Hors gouvernement' }} »</h2>
+        <p class="form-help">Rien n’est encore enregistré. Corrigez le texte au besoin puis prévisualisez à nouveau, ou lancez l’import.</p>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Ligne</th>
+                        <th>Nom complet</th>
+                        <th>Fonction</th>
+                        <th>Sigle</th>
+                        <th>Résultat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in plan %}
+                        <tr class="admin-import-row is-{{ row.status }}">
+                            <td>{{ row.line }}</td>
+                            <td>{{ row.fullName ?: '—' }}</td>
+                            <td class="admin-table__wrap">{{ row.role ?: '—' }}</td>
+                            <td>{{ row.sigle ?: '—' }}</td>
+                            <td class="admin-table__wrap"><strong>{{ statusLabels[row.status] }}</strong> · {{ row.message }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

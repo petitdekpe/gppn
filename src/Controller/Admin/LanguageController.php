@@ -17,6 +17,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_EDITEUR')]
 class LanguageController extends AbstractController
 {
+    use BulkActionTrait;
+
     #[Route('', name: 'admin_language_index')]
     public function index(LanguageRepository $languageRepository, VideoRepository $videoRepository): Response
     {
@@ -30,6 +32,38 @@ class LanguageController extends AbstractController
             'languages' => $languages,
             'videoCounts' => $videoCounts,
         ]);
+    }
+
+    #[Route('/actions-groupees', name: 'admin_language_bulk', methods: ['POST'])]
+    public function bulk(Request $request, LanguageRepository $languageRepository, VideoRepository $videoRepository, EntityManagerInterface $entityManager): Response
+    {
+        $ids = $this->bulkIds($request, 'bulk-language');
+        if ($ids === null) {
+            return $this->redirectToRoute('admin_language_index');
+        }
+
+        if ($request->request->getString('action') !== 'delete') {
+            $this->unknownBulkAction();
+
+            return $this->redirectToRoute('admin_language_index');
+        }
+
+        $deleted = 0;
+        $skipped = [];
+        foreach ($languageRepository->findBy(['id' => $ids]) as $language) {
+            if ($videoRepository->count(['language' => $language]) > 0) {
+                $skipped[] = $language->getName() . ' (encore utilisée par des contenus)';
+
+                continue;
+            }
+            $entityManager->remove($language);
+            ++$deleted;
+        }
+        $entityManager->flush();
+
+        $this->bulkReport(self::plural($deleted, 'langue supprimée', 'langues supprimées') . '.', $skipped);
+
+        return $this->redirectToRoute('admin_language_index');
     }
 
     #[Route('/nouveau', name: 'admin_language_new')]

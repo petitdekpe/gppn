@@ -2,8 +2,11 @@
 
 namespace App\Form\Admin;
 
+use App\Entity\Government;
 use App\Entity\Speaker;
+use App\Repository\GovernmentRepository;
 use App\Service\SpeakerSigleGuesser;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -13,8 +16,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class SpeakerType extends AbstractType
 {
-    public function __construct(private readonly SpeakerSigleGuesser $sigleGuesser)
-    {
+    public function __construct(
+        private readonly SpeakerSigleGuesser $sigleGuesser,
+        private readonly GovernmentRepository $governmentRepository,
+    ) {
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -31,6 +36,15 @@ class SpeakerType extends AbstractType
                 'label' => 'Fonction',
                 'required' => false,
                 'help' => 'Ex : Directeur de l’ANIP.',
+            ])
+            ->add('government', EntityType::class, [
+                'class' => Government::class,
+                'label' => 'Gouvernement',
+                'required' => false,
+                'placeholder' => 'Hors gouvernement',
+                'choice_label' => static fn (Government $government) => $government->getLabel() . ($government->isCurrent() ? ' (actuel)' : ''),
+                'choices' => $this->governmentRepository->findOrdered(),
+                'help' => 'Après un remaniement, reconduisez plutôt l’intervenant depuis la liste : sa fiche actuelle reste attachée à ses contenus passés.',
             ])
             ->addEventListener(FormEvents::SUBMIT, $this->guessSigle(...))
         ;

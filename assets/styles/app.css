@@ -4197,3 +4197,156 @@ select option.subject-create-option {
         grid-template-columns: 2fr 1fr;
     }
 }
+/* ---- Sélection multiple et actions groupées (bulk_select_controller.js) ---- */
+.admin-table th.admin-table__select,
+.admin-table td.admin-table__select {
+    width: 1%;
+    padding-right: 0;
+}
+
+.admin-table__select input {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.admin-bulk-bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-gold);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+}
+
+.admin-bulk-bar[hidden],
+.admin-bulk-bar__param[hidden] {
+    display: none;
+}
+
+.admin-bulk-bar__count {
+    margin-right: 4px;
+    font-size: 0.9rem;
+}
+
+.admin-bulk-bar select {
+    max-width: 320px;
+}
+
+.admin-bulk-bar__param {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+}
+
+/* ---- Intervenants par gouvernement ---- */
+.admin-form-card input[type="date"] {
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font: inherit;
+}
+
+.admin-form-card .form-row {
+    margin-bottom: 16px;
+}
+
+.admin-toolbar--actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-speaker-group {
+    margin-bottom: 28px;
+}
+
+.admin-speaker-group__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.admin-speaker-group__header h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 2px;
+    font-size: 1.1rem;
+}
+
+.admin-speaker-group__header p {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.admin-speaker-group__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.admin-speaker-group.is-current .admin-table-wrap {
+    border-color: var(--color-gold);
+}
+
+/* Grille de modification en masse. */
+.admin-table--form td {
+    padding: 6px 8px;
+    vertical-align: top;
+}
+
+.admin-table--form input,
+.admin-table--form select {
+    width: 100%;
+    min-width: 120px;
+    padding: 7px 9px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    background: #fff;
+}
+
+.admin-table--form tr.is-error input[name$="[fullName]"] {
+    border-color: #a12727;
+}
+
+.admin-table--form .form-error {
+    display: block;
+    margin-top: 4px;
+}
+
+/* Aperçu de l'import d'intervenants. */
+.admin-section-title {
+    margin: 28px 0 6px;
+    font-size: 1.1rem;
+}
+
+.admin-import-row.is-create td:last-child strong {
+    color: var(--color-green-dark);
+}
+
+.admin-import-row.is-update td:last-child strong {
+    color: #9a6700;
+}
+
+.admin-import-row.is-unchanged,
+.admin-import-row.is-error {
+    color: var(--color-muted);
+}
+
+.admin-import-row.is-error td:last-child strong {
+    color: #a12727;
+}

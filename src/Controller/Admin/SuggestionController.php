@@ -15,12 +15,45 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_MODERATEUR')]
 class SuggestionController extends AbstractController
 {
+    use BulkActionTrait;
+
     #[Route('', name: 'admin_suggestion_index')]
     public function index(SuggestionRepository $suggestionRepository): Response
     {
         return $this->render('admin/suggestion/index.html.twig', [
             'suggestions' => $suggestionRepository->findBy([], ['treated' => 'ASC', 'createdAt' => 'DESC']),
         ]);
+    }
+
+    // Déclarée avant /{id} : cette route-là capterait « actions-groupees ».
+    #[Route('/actions-groupees', name: 'admin_suggestion_bulk', methods: ['POST'])]
+    public function bulk(Request $request, SuggestionRepository $suggestionRepository, EntityManagerInterface $entityManager): Response
+    {
+        $ids = $this->bulkIds($request, 'bulk-suggestion');
+        if ($ids === null) {
+            return $this->redirectToRoute('admin_suggestion_index');
+        }
+
+        $action = $request->request->getString('action');
+        if (!in_array($action, ['treated', 'untreated', 'delete'], true)) {
+            $this->unknownBulkAction();
+
+            return $this->redirectToRoute('admin_suggestion_index');
+        }
+
+        $suggestions = $suggestionRepository->findBy(['id' => $ids]);
+        foreach ($suggestions as $suggestion) {
+            $action === 'delete' ? $entityManager->remove($suggestion) : $suggestion->setTreated($action === 'treated');
+        }
+        $entityManager->flush();
+
+        $this->bulkReport(match ($action) {
+            'treated' => self::plural(count($suggestions), 'suggestion marquée traitée', 'suggestions marquées traitées'),
+            'untreated' => self::plural(count($suggestions), 'suggestion remise à traiter', 'suggestions remises à traiter'),
+            'delete' => self::plural(count($suggestions), 'suggestion supprimée', 'suggestions supprimées'),
+        } . '.');
+
+        return $this->redirectToRoute('admin_suggestion_index');
     }
 
     #[Route('/{id}', name: 'admin_suggestion_show')]

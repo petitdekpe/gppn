@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { matchFileName } from '../lib/filename_matcher.js';
 
 // Même règle que la barre d'upload du formulaire : les octets couvrent 95 %,
 // 100 % n'arrive qu'avec la confirmation du serveur.
@@ -9,12 +10,6 @@ const CHUNK_TIMEOUT = 180000;
 // Attentes (en secondes) avant chaque nouvel essai : environ 5 minutes au total.
 const RETRY_DELAYS = [1, 2, 4, 8, 15, 30, 30, 60, 60, 90];
 const RETRYABLE_STATUSES = [0, 408, 429, 500, 502, 503, 504];
-
-const normalize = (value) => String(value ?? '')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '');
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -92,52 +87,19 @@ export default class extends Controller {
     }
 
     /**
-     * INTERVENANT-LANGUE-FORMAT : premier segment = sigle, dernier = format,
-     * le reste = langue (un nom de langue composé reste possible).
+     * Intervenant, langue et format devinés dans le nom, sans exiger l'ordre
+     * ni l'orthographe exacte (voir assets/lib/filename_matcher.js). Les
+     * lectures approchées restent signalées « À vérifier » dans le tableau.
      */
     parseName(file) {
-        const base = file.name.replace(/\.[^.]+$/, '');
-        const parts = base.split('-').map((part) => part.trim()).filter(Boolean);
-        const result = { speakerId: null, languageId: null, format: null, notes: [] };
-
-        if (file.type.startsWith('audio/')) {
-            result.format = 'AUDIO';
-        }
-        if (parts.length < 3) {
-            result.notes.push('Nom hors convention');
-            return result;
-        }
-
-        const format = normalize(parts.at(-1));
-        if (this.configValue.formats.includes(format)) {
-            result.format = format;
-        }
-
-        const language = normalize(parts.slice(1, -1).join(''));
-        result.languageId = this.configValue.languages.find((l) => normalize(l.name) === language)?.id ?? null;
-
-        // Code = sigle, précédé de MCC pour un ministre conseiller (MFAS / MCCMFAS).
-        // À défaut, le sigle seul reste accepté : il n'est ambigu que s'il est partagé.
-        const code = normalize(parts[0]);
-        const byCode = this.configValue.speakers.filter((s) => s.code && normalize(s.code) === code);
-        const candidates = byCode.length > 0
-            ? byCode
-            : this.configValue.speakers.filter((s) => s.sigle && normalize(s.sigle) === code);
-        if (candidates.length === 1) {
-            result.speakerId = candidates[0].id;
-        } else if (candidates.length > 1) {
-            // Sigle partagé : on retient l'intervenant déjà présent sur ce sujet, s'il est seul dans ce cas.
-            const onSubject = candidates.filter((s) => this.subjectSpeakerIds.has(s.id));
-            if (onSubject.length === 1) {
-                result.speakerId = onSubject[0].id;
-            } else {
-                result.notes.push(`Sigle ${parts[0]} partagé par plusieurs intervenants`);
-            }
-        } else {
-            result.notes.push(`Sigle ${parts[0]} inconnu`);
-        }
-
-        return result;
+        return matchFileName(file.name, {
+            speakers: this.configValue.speakers,
+            languages: this.configValue.languages,
+            formats: this.configValue.formats,
+            preferredGovernmentId: this.configValue.preferredGovernmentId,
+            subjectSpeakerIds: this.subjectSpeakerIds,
+            isAudio: file.type.startsWith('audio/'),
+        });
     }
 
     /** Lit durée et orientation dans le fichier (sans l'envoyer). */
@@ -152,9 +114,15 @@ export default class extends Controller {
             row.duration = Number.isFinite(media.duration) ? media.duration : null;
             if (media.videoWidth && media.videoHeight) {
                 row.orientation = media.videoHeight > media.videoWidth ? 'portrait' : 'landscape';
+                // Aucun format dans le nom : l'orientation de la vidéo le donne.
+                if (!row.format && row.status === 'pending') {
+                    row.format = row.orientation === 'portrait' ? 'MOBILE' : 'TV';
+                    row.guesses.format = `format déduit de la vidéo, ${row.orientation === 'portrait' ? 'verticale' : 'horizontale'} (${row.format})`;
+                }
             }
             URL.revokeObjectURL(url);
-            this.renderRow(row);
+            // Tout le tableau : un format ajouté peut créer ou lever un doublon.
+            this.render();
         };
         media.onerror = () => URL.revokeObjectURL(url);
         media.src = url;
@@ -170,6 +138,8 @@ export default class extends Controller {
         } else {
             row[field] = event.target.value === '' ? null : (field === 'format' ? event.target.value : Number(event.target.value));
             row.replace = false;
+            // Choisi à la main : plus rien à vérifier sur ce champ.
+            delete row.guesses[field];
         }
         this.render();
     }
@@ -213,9 +183,10 @@ export default class extends Controller {
             return { kind: 'replace', blocked: true, label: `Remplacera « ${existing} »` };
         }
 
-        const warning = this.warningFor(row);
-        return warning
-            ? { kind: 'warning', blocked: false, label: `À vérifier : ${warning}` }
+        // Lectures approchées du nom de fichier : non bloquantes, mais à relire.
+        const warnings = [this.warningFor(row), ...Object.values(row.guesses)].filter(Boolean);
+        return warnings.length > 0
+            ? { kind: 'warning', blocked: false, label: `À vérifier : ${warnings.join(' ; ')}` }
             : { kind: 'ready', blocked: false, label: existing ? `Prêt (remplacera « ${existing} »)` : 'Prêt' };
     }
 
@@ -534,9 +505,6 @@ export default class extends Controller {
         const options = (items, selected, label) => items
             .map((item) => `<option value="${item.value}"${item.value === selected ? ' selected' : ''}>${escapeHtml(label(item))}</option>`)
             .join('');
-        const speakers = this.configValue.speakers
-            .map((s) => ({ ...s, value: s.id }))
-            .sort((a, b) => (a.code ?? '~').localeCompare(b.code ?? '~'));
         const languages = this.configValue.languages.map((l) => ({ ...l, value: l.id }));
         const formats = this.configValue.formats.map((f) => ({ value: f }));
         const disabled = locked ? ' disabled' : '';
@@ -547,7 +515,7 @@ export default class extends Controller {
                 <small>${formatSize(row.file.size)}${row.orientation ? ` · ${row.orientation === 'portrait' ? 'verticale' : 'horizontale'}` : ''}${row.notes.length ? ` · ${escapeHtml(row.notes.join(' · '))}` : ''}</small>
             </td>
             <td><select data-field="speakerId" data-action="bulk-import#edit" aria-label="Intervenant"${disabled}>
-                <option value="">— Choisir —</option>${options(speakers, row.speakerId, (s) => (s.code ? `${s.code} — ${s.name}` : s.name))}
+                <option value="">— Choisir —</option>${this.speakerOptions(row.speakerId)}
             </select></td>
             <td><select data-field="languageId" data-action="bulk-import#edit" aria-label="Langue"${disabled}>
                 <option value="">— Choisir —</option>${options(languages, row.languageId, (l) => l.name)}
@@ -580,6 +548,32 @@ export default class extends Controller {
             return 'Contenu mis à jour et publié';
         }
         return result.status === 'Publié' ? 'Contenu mis à jour' : `Contenu mis à jour (reste ${result.status.toLowerCase()})`;
+    }
+
+    /**
+     * Intervenants groupés par gouvernement : celui en place à la date du
+     * conseil d'abord, puis les autres, puis ceux hors gouvernement.
+     */
+    speakerOptions(selected) {
+        const { governments = [], preferredGovernmentId } = this.configValue;
+        const groups = [
+            ...governments.filter((g) => g.id === preferredGovernmentId),
+            ...governments.filter((g) => g.id !== preferredGovernmentId),
+            { id: null, label: 'Hors gouvernement' },
+        ];
+
+        return groups.map((group) => {
+            const speakers = this.configValue.speakers
+                .filter((s) => (s.governmentId ?? null) === group.id)
+                .sort((a, b) => (a.code ?? '~').localeCompare(b.code ?? '~'));
+            if (speakers.length === 0) {
+                return '';
+            }
+            const label = group.id === preferredGovernmentId ? `${group.label} (en place à la date du conseil)` : group.label;
+            const items = speakers.map((s) => `<option value="${s.id}"${s.id === selected ? ' selected' : ''}>${escapeHtml(s.code ? `${s.code} — ${s.name}` : s.name)}</option>`).join('');
+
+            return `<optgroup label="${escapeHtml(label)}">${items}</optgroup>`;
+        }).join('');
     }
 
     stateFor(row) {
