@@ -9,6 +9,7 @@ use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
 use App\Service\AppSettings;
+use App\Service\SpeakerPeriodCriteria;
 use App\Service\VideoFileZipBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,6 +30,7 @@ class VideoController extends AbstractController
         LanguageRepository $languageRepository,
         CouncilSessionRepository $councilSessionRepository,
         AppSettings $settings,
+        SpeakerPeriodCriteria $speakerPeriodCriteria,
     ): Response {
         $queryParams = $request->query->all();
         $thematicSlugs = isset($queryParams['thematique']) ? array_values((array) $queryParams['thematique']) : [];
@@ -52,7 +54,10 @@ class VideoController extends AbstractController
             $selectedRole = 'tous';
         }
 
-        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole, councilSessions: $selectedCouncilSessions);
+        // Filtres facultatifs, repliés dans la barre latérale.
+        $speakerPeriod = $speakerPeriodCriteria->fromParams($queryParams);
+
+        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole, councilSessions: $selectedCouncilSessions, speakerPeriod: $speakerPeriod);
 
         return $this->render('video/index.html.twig', [
             'results' => $results,
@@ -67,6 +72,9 @@ class VideoController extends AbstractController
             'selectedCouncilSessionSlugs' => $councilSessionSlugs,
             'query' => $query,
             'selectedRole' => $selectedRole,
+            'people' => $speakerPeriodCriteria->people(),
+            'periodShortcuts' => $speakerPeriodCriteria->periodShortcuts(),
+            'speakerPeriod' => $speakerPeriod,
             'routeParams' => array_filter([
                 'thematique' => $thematicSlugs,
                 'langue' => $languageSlugs,
@@ -74,7 +82,7 @@ class VideoController extends AbstractController
                 'conseil' => $councilSessionSlugs,
                 'q' => $query,
                 'role' => $selectedRole !== 'tous' ? $selectedRole : null,
-            ]),
+            ]) + $speakerPeriod->queryParams(),
             'featuredVideos' => $videoRepository->findFeatured(3),
         ]);
     }

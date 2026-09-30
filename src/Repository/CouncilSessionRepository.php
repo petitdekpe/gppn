@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\CouncilSession;
 use App\Entity\Subject;
+use App\Entity\Thematic;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
 use App\Doctrine\Filter\CapsuleFormatFilter;
@@ -36,6 +37,26 @@ class CouncilSessionRepository extends ServiceEntityRepository
             ->leftJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status' . $this->visibleVideoCondition())
             ->groupBy('cs.id')
             ->orderBy('cs.date', 'DESC')
+            ->setParameter('status', VideoStatus::PUBLIE)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Conseils ayant au moins un contenu publié dans une thématique, du plus
+     * récent au plus ancien (filtre de la page thématique).
+     *
+     * @return array<int, array{councilSession: CouncilSession, videoCount: int}>
+     */
+    public function findWithVideoCountForThematic(Thematic $thematic): array
+    {
+        return $this->createQueryBuilder('cs')
+            ->select('cs AS councilSession', 'COUNT(v.id) AS videoCount')
+            ->innerJoin(Subject::class, 's', 'WITH', 's.councilSession = cs AND s.thematic = :thematic')
+            ->innerJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status' . $this->visibleVideoCondition())
+            ->groupBy('cs.id')
+            ->orderBy('cs.date', 'DESC')
+            ->setParameter('thematic', $thematic)
             ->setParameter('status', VideoStatus::PUBLIE)
             ->getQuery()
             ->getResult();

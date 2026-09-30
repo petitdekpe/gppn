@@ -101,11 +101,17 @@
 
                 <div class="site-footer__social">
                     <h4>Suivez-nous</h4>
+                    {# Comptes officiels du Gouvernement et de la Présidence. #}
+                    {% set socialLinks = [
+                        {url: 'https://facebook.com/gouvbenin', label: 'Facebook', icon: 'fa-facebook-f'},
+                        {url: 'https://twitter.com/gouvbenin', label: 'X (Twitter)', icon: 'fa-x-twitter'},
+                        {url: 'https://youtube.com/presidencebenin', label: 'YouTube', icon: 'fa-youtube'},
+                        {url: 'https://flickr.com/presidencebenin', label: 'Flickr', icon: 'fa-flickr'},
+                    ] %}
                     <div class="social-icons">
-                        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-                        <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
-                        <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-                        <a href="#" aria-label="Flickr"><i class="fa-brands fa-flickr"></i></a>
+                        {% for link in socialLinks %}
+                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ link.label }} (nouvel onglet)" title="{{ link.label }}"><i class="fa-brands {{ link.icon }}" aria-hidden="true"></i></a>
+                        {% endfor %}
                     </div>
                 </div>
             </div>

@@ -47,6 +47,16 @@ class SpeakerImporter
             $row = ['line' => $line, 'fullName' => $fullName, 'role' => $role, 'sigle' => $sigle, 'status' => self::ERROR, 'message' => '', 'speaker' => null];
             $key = Speaker::nameKey($fullName);
 
+            // Ministre conseiller dont le sigle arrive avec « MCC » : préfixe
+            // retiré, sans quoi le code de fichier deviendrait MCCMCC…
+            $note = '';
+            $effectiveRole = $role ?? (isset($existing[$key]) ? $existing[$key]->getRole() : null);
+            if ($sigle !== null && str_contains((string) $effectiveRole, 'Conseill') && Speaker::withoutCouncillorPrefix($sigle) !== $sigle) {
+                $sigle = Speaker::withoutCouncillorPrefix($sigle);
+                $row['sigle'] = $sigle;
+                $note = ' Préfixe MCC retiré du sigle : il est ajouté automatiquement aux noms de fichiers.';
+            }
+
             if ($key === '') {
                 $row['message'] = 'Nom complet manquant.';
             } elseif (mb_strlen($fullName) > 150 || mb_strlen((string) $role) > 150) {
@@ -73,6 +83,9 @@ class SpeakerImporter
 
             if ($key !== '') {
                 $seen[$key] ??= $line;
+            }
+            if ($row['status'] !== self::ERROR) {
+                $row['message'] .= $note;
             }
             $plan[] = $row;
         }

@@ -10,6 +10,7 @@ use App\Entity\Video;
 use App\Enum\CapsuleFormat;
 use App\Enum\VideoFileType;
 use App\Enum\VideoStatus;
+use App\Search\SpeakerPeriodFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -69,12 +70,31 @@ class VideoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Liste de l'admin, tous statuts confondus, triée pour être regroupée par
-     * conseil des ministres (le plus récent d'abord), puis sujet, puis langue.
+     * Calendrier de la liste de l'admin : conseils ayant des contenus, du
+     * plus récent au plus ancien, avec leur nombre de contenus.
+     *
+     * @return list<array{id: int, date: \DateTimeInterface|string, count: int}>
+     */
+    public function findAdminCalendar(): array
+    {
+        return array_map(static fn (array $row) => ['id' => (int) $row['id'], 'date' => $row['date'], 'count' => (int) $row['count']], $this->createQueryBuilder('v')
+            ->select('c.id AS id', 'c.date AS date', 'COUNT(v.id) AS count')
+            ->innerJoin('v.subject', 's')
+            ->innerJoin('s.councilSession', 'c')
+            ->groupBy('c.id', 'c.date')
+            ->orderBy('c.date', 'DESC')
+            ->getQuery()
+            ->getArrayResult());
+    }
+
+    /**
+     * Contenus d'un conseil pour la liste de l'admin, tous statuts
+     * confondus, triés par sujet puis langue. Un conseil à la fois : la
+     * liste complète deviendrait trop lourde avec les années.
      *
      * @return Video[]
      */
-    public function findForAdminIndex(): array
+    public function findForAdminIndex(int $councilSessionId): array
     {
         return $this->createQueryBuilder('v')
             ->addSelect('s', 'c', 't', 'l', 'sp')
@@ -83,8 +103,9 @@ class VideoRepository extends ServiceEntityRepository
             ->innerJoin('s.thematic', 't')
             ->innerJoin('v.language', 'l')
             ->leftJoin('v.speaker', 'sp')
-            ->orderBy('c.date', 'DESC')
-            ->addOrderBy('s.title', 'ASC')
+            ->where('c.id = :councilSession')
+            ->setParameter('councilSession', $councilSessionId)
+            ->orderBy('s.title', 'ASC')
             ->addOrderBy('l.name', 'ASC')
             ->addOrderBy('v.id', 'ASC')
             ->getQuery()
@@ -114,6 +135,22 @@ class VideoRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Contenu du hero de l'accueil : le plus récent parmi ceux « à la une »,
+     * à défaut le plus récent tout court, mais toujours avec une cover (sans
+     * elle, le hero n'affiche qu'un aplat de couleur).
+     */
+    public function findHeroVideo(): ?Video
+    {
+        return $this->baseQueryBuilder()
+            ->andWhere('v.coverImageName IS NOT NULL')
+            ->orderBy('v.featured', 'DESC')
+            ->addOrderBy('v.publishedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**
@@ -186,11 +223,12 @@ class VideoRepository extends ServiceEntityRepository
      * @param CouncilSession[] $councilSessions
      * @return array{videos: Video[], total: int, hasMore: bool, page: int}
      */
-    public function search(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::PER_PAGE, ?string $speakerRole = null, array $councilSessions = []): array
+    public function search(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::PER_PAGE, ?string $speakerRole = null, array $councilSessions = [], ?SpeakerPeriodFilter $speakerPeriod = null): array
     {
         $page = max(1, $page);
 
         $qb = $this->baseQueryBuilder();
+        $speakerPeriod?->apply($qb);
 
         if ($thematics !== []) {
             $qb->andWhere('t IN (:thematics)')->setParameter('thematics', $thematics);

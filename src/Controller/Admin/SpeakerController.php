@@ -6,6 +6,7 @@ use App\Entity\Speaker;
 use App\Form\Admin\SpeakerType;
 use App\Repository\GovernmentRepository;
 use App\Repository\SpeakerRepository;
+use App\Service\AdminPaginator;
 use App\Service\SpeakerImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,30 +22,57 @@ class SpeakerController extends AbstractController
 {
     use BulkActionTrait;
 
+    private const PER_PAGE = 50;
+
     /**
-     * Intervenants rangés par gouvernement : l'actuel en tête, puis du plus
-     * récent au plus ancien, et enfin ceux qui n'appartiennent à aucun.
+     * Un onglet par gouvernement (l'actuel par défaut), plus « Hors
+     * gouvernement » et « Tous » ; recherche par nom, sigle ou fonction ;
+     * pagination.
      */
     #[Route('', name: 'admin_speaker_index')]
-    public function index(SpeakerRepository $speakerRepository, GovernmentRepository $governmentRepository): Response
+    public function index(Request $request, SpeakerRepository $speakerRepository, GovernmentRepository $governmentRepository): Response
     {
         $governments = $governmentRepository->findOrdered();
-        $groups = [];
-        foreach ($governments as $government) {
-            $groups[$government->getId()] = ['government' => $government, 'speakers' => []];
-        }
-        $groups[0] = ['government' => null, 'speakers' => []];
+        $counts = array_map('intval', array_column($speakerRepository->createQueryBuilder('s')
+            ->select('COALESCE(IDENTITY(s.government), 0) AS governmentId', 'COUNT(s.id) AS speakerCount')
+            ->groupBy('governmentId')
+            ->getQuery()
+            ->getArrayResult(), 'speakerCount', 'governmentId'));
 
-        foreach ($speakerRepository->findBy([], ['fullName' => 'ASC']) as $speaker) {
-            $groups[$speaker->getGovernment()?->getId() ?? 0]['speakers'][] = $speaker;
+        // Onglet : un gouvernement (id), « hors », « tous » ; par défaut l'actuel.
+        $tab = $request->query->getString('gouvernement');
+        $government = null;
+        if (ctype_digit($tab)) {
+            $government = $governmentRepository->find((int) $tab);
         }
-        if ($groups[0]['speakers'] === []) {
-            unset($groups[0]);
+        if ($government === null && !in_array($tab, ['hors', 'tous'], true)) {
+            $government = $governmentRepository->findCurrent() ?? $governments[0] ?? null;
+            $tab = $government !== null ? (string) $government->getId() : 'tous';
         }
+
+        $qb = $speakerRepository->createQueryBuilder('s')
+            ->leftJoin('s.government', 'g')->addSelect('g');
+        match (true) {
+            $government !== null => $qb->andWhere('s.government = :government')->setParameter('government', $government),
+            $tab === 'hors' => $qb->andWhere('s.government IS NULL'),
+            default => $qb->orderBy('CASE WHEN g.id IS NULL THEN 1 ELSE 0 END', 'ASC')->addOrderBy('g.current', 'DESC')->addOrderBy('g.startedAt', 'DESC'),
+        };
+        $query = trim($request->query->getString('q'));
+        if ($query !== '') {
+            $qb->andWhere('s.fullName LIKE :q OR s.sigle LIKE :q OR s.role LIKE :q')->setParameter('q', '%' . addcslashes($query, '%_') . '%');
+        }
+        $qb->addOrderBy('s.fullName', 'ASC');
+
+        $results = AdminPaginator::paginate($qb, $request->query->getInt('page', 1), self::PER_PAGE);
 
         return $this->render('admin/speaker/index.html.twig', [
-            'groups' => $groups,
             'governments' => $governments,
+            'counts' => $counts,
+            'tab' => $tab,
+            'government' => $government,
+            'query' => $query,
+            'speakers' => $results['items'],
+            'results' => $results,
             'videoCounts' => $this->videoCounts($speakerRepository),
         ]);
     }
@@ -54,7 +82,7 @@ class SpeakerController extends AbstractController
     {
         $ids = $this->bulkIds($request, 'bulk-speaker');
         if ($ids === null) {
-            return $this->redirectToRoute('admin_speaker_index');
+            return $this->backToList($request, 'admin_speaker_index');
         }
 
         $action = $request->request->getString('action');
@@ -71,7 +99,7 @@ class SpeakerController extends AbstractController
                 if ($target === null) {
                     $this->addFlash('error', 'Choisissez le gouvernement dans lequel reconduire ces intervenants.');
 
-                    return $this->redirectToRoute('admin_speaker_index');
+                    return $this->backToList($request, 'admin_speaker_index');
                 }
                 $present = array_flip(array_map(fn (Speaker $s) => Speaker::nameKey($s->getFullName()), $target->getSpeakers()->toArray()));
                 $done = 0;
@@ -111,13 +139,16 @@ class SpeakerController extends AbstractController
             default:
                 $this->unknownBulkAction();
 
-                return $this->redirectToRoute('admin_speaker_index');
+                return $this->backToList($request, 'admin_speaker_index');
         }
 
         $entityManager->flush();
         $this->bulkReport($message, $skipped);
 
-        return $this->redirectToRoute('admin_speaker_index');
+        // Reconduction : on ouvre le gouvernement d'arrivée, où fonctions et sigles sont à relire.
+        return $action === 'reappoint'
+            ? $this->redirectToRoute('admin_speaker_index', ['gouvernement' => $target->getId()])
+            : $this->backToList($request, 'admin_speaker_index');
     }
 
     /**
@@ -167,7 +198,8 @@ class SpeakerController extends AbstractController
                 };
                 // Valeurs saisies conservées dans la grille, même en erreur.
                 $speaker->setFullName($fullName)->setRole($role !== '' ? $role : null)->setSigle($sigle !== '' ? $sigle : null)
-                    ->setGovernment($byId[(int) ($row['government'] ?? 0)] ?? null);
+                    ->setGovernment($byId[(int) ($row['government'] ?? 0)] ?? null)
+                    ->normalizeSigle();
                 if ($error !== null) {
                     $errors[$speaker->getId()] = $error;
                 }

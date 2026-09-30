@@ -79,7 +79,7 @@ class GovernmentController extends AbstractController
             $entityManager->flush();
             $this->addFlash('success', $success);
 
-            return $this->redirectToRoute('admin_speaker_index');
+            return $this->redirectToRoute('admin_speaker_index', ['gouvernement' => $government->getId()]);
         }
 
         return $this->render('admin/speaker/government_form.html.twig', [

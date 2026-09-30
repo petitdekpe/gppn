@@ -8,6 +8,7 @@ use App\Entity\VideoFile;
 use App\Enum\CapsuleFormat;
 use App\Enum\VideoFileType;
 use App\Enum\VideoStatus;
+use App\Search\SpeakerPeriodFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -33,7 +34,7 @@ class VideoFileRepository extends ServiceEntityRepository
      * @param CapsuleFormat[] $formats
      * @return VideoFile[]
      */
-    public function findForLot(array $subjects, array $languages, array $formats): array
+    public function findForLot(array $subjects, array $languages, array $formats, ?SpeakerPeriodFilter $speakerPeriod = null): array
     {
         if ($subjects === []) {
             return [];
@@ -50,6 +51,7 @@ class VideoFileRepository extends ServiceEntityRepository
             ->andWhere('f.fileName IS NOT NULL')
             ->setParameter('subjects', $subjects)
             ->setParameter('status', VideoStatus::PUBLIE);
+        $speakerPeriod?->apply($qb);
 
         if ($languages !== []) {
             $qb->andWhere('l IN (:languages)')->setParameter('languages', $languages);
@@ -81,7 +83,7 @@ class VideoFileRepository extends ServiceEntityRepository
      * @param Language[] $languages
      * @return CapsuleFormat[]
      */
-    public function findAvailableFormatsForSubjects(array $subjects, array $languages): array
+    public function findAvailableFormatsForSubjects(array $subjects, array $languages, ?SpeakerPeriodFilter $speakerPeriod = null): array
     {
         if ($subjects === []) {
             return [];
@@ -95,6 +97,7 @@ class VideoFileRepository extends ServiceEntityRepository
             ->andWhere('f.fileName IS NOT NULL')
             ->setParameter('subjects', $subjects)
             ->setParameter('status', VideoStatus::PUBLIE);
+        $speakerPeriod?->apply($qb);
 
         if ($languages !== []) {
             $qb->innerJoin('v.language', 'l')

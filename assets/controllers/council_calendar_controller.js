@@ -23,6 +23,8 @@ export default class extends Controller {
         sessions: Array,
         selected: Number,
         syncUrl: Boolean,
+        // Seul le conseil affiché est rendu côté serveur : en choisir un autre recharge la page.
+        navigate: Boolean,
         unit: { type: String, default: 'contenu' },
     };
 
@@ -86,6 +88,20 @@ export default class extends Controller {
     // ---- État ----------------------------------------------------------
 
     select(session) {
+        // Listes chargées conseil par conseil : un conseil sans panneau dans
+        // la page s'ouvre en chargeant la sienne.
+        if (this.navigateValue && !this.panelTargets.some((panel) => Number(panel.dataset.sessionId) === session.id)) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('conseil', String(session.id));
+            url.searchParams.delete('page');
+            if (window.Turbo) {
+                window.Turbo.visit(url.toString());
+            } else {
+                window.location.assign(url.toString());
+            }
+
+            return;
+        }
         this.selected = session;
         this.year = session.year;
         this.panelTargets.forEach((panel) => {

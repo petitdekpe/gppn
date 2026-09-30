@@ -9,6 +9,8 @@ use App\Enum\CapsuleFormat;
 use App\Repository\LanguageRepository;
 use App\Repository\SubjectRepository;
 use App\Repository\VideoFileRepository;
+use App\Search\SpeakerPeriodFilter;
+use App\Service\SpeakerPeriodCriteria;
 use App\Service\VideoFileZipBuilder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -27,6 +29,7 @@ class MediaSpaceController extends AbstractController
         SubjectRepository $subjectRepository,
         LanguageRepository $languageRepository,
         VideoFileRepository $videoFileRepository,
+        SpeakerPeriodCriteria $speakerPeriodCriteria,
     ): Response {
         $subjectRows = $subjectRepository->findAllWithVideoCount();
 
@@ -60,14 +63,19 @@ class MediaSpaceController extends AbstractController
                 : array_key_first($subjectRowsBySession);
         }
 
-        $availableLanguages = $languageRepository->findAvailableForSubjects($selectedSubjects);
+        // Raccourci facultatif « Intervenant et période » : sans sujet coché,
+        // il suffit à composer le lot ; avec des sujets cochés, il les restreint.
+        $speakerPeriod = $speakerPeriodCriteria->fromParams($request->query->all());
+        $lotSubjects = $this->lotSubjects($selectedSubjects, $speakerPeriod, $subjectRepository);
+
+        $availableLanguages = $languageRepository->findAvailableForSubjects($lotSubjects, $speakerPeriod);
         $languageIds = array_map('intval', $request->query->all('langue'));
         $selectedLanguages = array_values(array_filter(
             $availableLanguages,
             static fn (Language $language): bool => in_array($language->getId(), $languageIds, true),
         ));
 
-        $availableFormats = $videoFileRepository->findAvailableFormatsForSubjects($selectedSubjects, $selectedLanguages);
+        $availableFormats = $videoFileRepository->findAvailableFormatsForSubjects($lotSubjects, $selectedLanguages, $speakerPeriod);
         $formatValues = array_values(array_filter(array_map(
             static fn (mixed $value): ?string => CapsuleFormat::tryFrom((string) $value)?->value,
             $request->query->all('format'),
@@ -77,7 +85,7 @@ class MediaSpaceController extends AbstractController
             static fn (CapsuleFormat $format): bool => in_array($format->value, $formatValues, true),
         ));
 
-        $matchingFiles = $videoFileRepository->findForLot($selectedSubjects, $selectedLanguages, $selectedFormats);
+        $matchingFiles = $videoFileRepository->findForLot($lotSubjects, $selectedLanguages, $selectedFormats, $speakerPeriod);
 
         return $this->render('media_space/index.html.twig', [
             'subjectRowsBySession' => $subjectRowsBySession,
@@ -91,6 +99,10 @@ class MediaSpaceController extends AbstractController
             'matchingFiles' => $matchingFiles,
             'totalSize' => array_sum(array_map(static fn (VideoFile $file): int => $file->getFileSize() ?? 0, $matchingFiles)),
             'csrfTokenId' => self::CSRF_TOKEN_ID,
+            'speakerPeriod' => $speakerPeriod,
+            'people' => $speakerPeriodCriteria->people(),
+            'periodShortcuts' => $speakerPeriodCriteria->periodShortcuts(),
+            'lotSubjectCount' => count($lotSubjects),
         ]);
     }
 
@@ -101,6 +113,7 @@ class MediaSpaceController extends AbstractController
         LanguageRepository $languageRepository,
         VideoFileRepository $videoFileRepository,
         VideoFileZipBuilder $zipBuilder,
+        SpeakerPeriodCriteria $speakerPeriodCriteria,
     ): Response {
         if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Jeton CSRF invalide.');
@@ -122,17 +135,18 @@ class MediaSpaceController extends AbstractController
         // d'une liste d'identifiants de fichiers : un lot peut représenter
         // plusieurs dizaines de fichiers, et ne fait confiance qu'aux
         // sujets/langues/formats réellement choisis (voir VideoFileRepository::findForLot).
-        $files = $videoFileRepository->findForLot($subjects, $languages, $formats);
+        $speakerPeriod = $speakerPeriodCriteria->fromParams($request->request->all());
+        $files = $videoFileRepository->findForLot($this->lotSubjects($subjects, $speakerPeriod, $subjectRepository), $languages, $formats, $speakerPeriod);
 
         if ($files === []) {
-            $this->addFlash('error', 'Merci de sélectionner au moins un sujet correspondant à un contenu téléchargeable.');
+            $this->addFlash('error', 'Aucun fichier téléchargeable ne correspond à cette sélection : choisissez au moins un sujet, ou un intervenant et une période.');
 
             return $this->redirectToRoute('app_media_space', array_filter([
                 'sujet' => $subjectIds,
                 'langue' => $languageIds,
                 'format' => $formatValues,
                 'conseil' => $councilSessionId ?: null,
-            ]));
+            ]) + $speakerPeriod->queryParams());
         }
 
         $zipPath = $zipBuilder->build($files, $this->buildAttributionSheet($files));
@@ -145,6 +159,23 @@ class MediaSpaceController extends AbstractController
         );
 
         return $response;
+    }
+
+    /**
+     * Sujets du lot : ceux cochés ; à défaut, avec le raccourci « Intervenant
+     * et période », tous ceux où cet intervenant (ou cette période) a des contenus.
+     *
+     * @param Subject[] $selectedSubjects
+     *
+     * @return Subject[]
+     */
+    private function lotSubjects(array $selectedSubjects, SpeakerPeriodFilter $speakerPeriod, SubjectRepository $subjectRepository): array
+    {
+        if ($selectedSubjects !== [] || !$speakerPeriod->isActive()) {
+            return $selectedSubjects;
+        }
+
+        return $subjectRepository->findMatching($speakerPeriod);
     }
 
     /**

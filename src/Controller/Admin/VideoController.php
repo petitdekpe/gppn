@@ -32,28 +32,29 @@ class VideoController extends AbstractController
     #[Route('', name: 'admin_video_index')]
     public function index(VideoRepository $videoRepository, Request $request): Response
     {
+        // Calendrier latéral (mois → conseils), du plus récent au plus ancien.
+        $calendar = array_map(static fn (array $row) => [
+            'id' => $row['id'],
+            'date' => $row['date'] instanceof \DateTimeInterface ? $row['date']->format('Y-m-d') : substr((string) $row['date'], 0, 10),
+            'count' => $row['count'],
+        ], $videoRepository->findAdminCalendar());
+
+        // Conseil affiché : celui demandé (?conseil=, cf. redirectToCouncil) ou le plus récent.
+        // Seul celui-ci est chargé ; le calendrier recharge la page pour un autre.
+        $selectedId = $request->query->getInt('conseil');
+        if (!in_array($selectedId, array_column($calendar, 'id'), true)) {
+            $selectedId = $calendar[0]['id'] ?? null;
+        }
+
         // Conseil des ministres → sujet → contenus (déjà triés par langue).
         $sessions = [];
-        foreach ($videoRepository->findForAdminIndex() as $video) {
+        foreach ($selectedId !== null ? $videoRepository->findForAdminIndex($selectedId) : [] as $video) {
             $subject = $video->getSubject();
             $session = $subject->getCouncilSession();
             $sessions[$session->getId()] ??= ['session' => $session, 'count' => 0, 'subjects' => []];
             $sessions[$session->getId()]['subjects'][$subject->getId()] ??= ['subject' => $subject, 'videos' => []];
             $sessions[$session->getId()]['subjects'][$subject->getId()]['videos'][] = $video;
             ++$sessions[$session->getId()]['count'];
-        }
-
-        // Données du calendrier latéral (mois → conseils), du plus récent au plus ancien.
-        $calendar = array_values(array_map(fn (array $group) => [
-            'id' => $group['session']->getId(),
-            'date' => $group['session']->getDate()->format('Y-m-d'),
-            'count' => $group['count'],
-        ], $sessions));
-
-        // Conseil affiché : celui demandé (?conseil=, cf. redirectToCouncil) ou le plus récent.
-        $selectedId = $request->query->getInt('conseil');
-        if (!isset($sessions[$selectedId])) {
-            $selectedId = array_key_first($sessions);
         }
 
         return $this->render('admin/video/index.html.twig', [

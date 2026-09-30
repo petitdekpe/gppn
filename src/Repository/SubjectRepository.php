@@ -6,6 +6,7 @@ use App\Entity\Subject;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
 use App\Doctrine\Filter\CapsuleFormatFilter;
+use App\Search\SpeakerPeriodFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,6 +41,22 @@ class SubjectRepository extends ServiceEntityRepository
             ->setParameter('status', VideoStatus::PUBLIE)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Sujets ayant au moins un contenu publié qui répond aux filtres
+     * « Intervenant » et « Période » (raccourci de l'espace média).
+     *
+     * @return Subject[]
+     */
+    public function findMatching(SpeakerPeriodFilter $speakerPeriod): array
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->innerJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.status = :status' . $this->visibleVideoCondition())
+            ->setParameter('status', VideoStatus::PUBLIE)
+            ->groupBy('s.id');
+
+        return $speakerPeriod->apply($qb)->getQuery()->getResult();
     }
 
     /**

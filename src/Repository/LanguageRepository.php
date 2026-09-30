@@ -7,6 +7,7 @@ use App\Entity\Subject;
 use App\Entity\Video;
 use App\Enum\VideoStatus;
 use App\Doctrine\Filter\CapsuleFormatFilter;
+use App\Search\SpeakerPeriodFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -44,17 +45,20 @@ class LanguageRepository extends ServiceEntityRepository
      * @param Subject[] $subjects
      * @return Language[]
      */
-    public function findAvailableForSubjects(array $subjects): array
+    public function findAvailableForSubjects(array $subjects, ?SpeakerPeriodFilter $speakerPeriod = null): array
     {
         if ($subjects === []) {
             return [];
         }
 
-        return $this->createQueryBuilder('l')
+        $qb = $this->createQueryBuilder('l')
             ->innerJoin(Video::class, 'v', 'WITH', 'v.language = l AND v.status = :status' . $this->visibleVideoCondition())
             ->andWhere('v.subject IN (:subjects)')
             ->setParameter('subjects', $subjects)
-            ->setParameter('status', VideoStatus::PUBLIE)
+            ->setParameter('status', VideoStatus::PUBLIE);
+        $speakerPeriod?->apply($qb);
+
+        return $qb
             ->groupBy('l.id')
             ->orderBy('l.name', 'ASC')
             ->getQuery()

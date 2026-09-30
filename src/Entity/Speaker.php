@@ -12,6 +12,9 @@ use Symfony\Component\String\UnicodeString;
 #[ORM\Table(name: 'speaker')]
 class Speaker
 {
+    /** Préfixe des codes de fichiers des ministres conseillers (voir getFileCode). */
+    public const COUNCILLOR_PREFIX = 'MCC';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -132,6 +135,7 @@ class Speaker
      * Code de l'intervenant dans les noms de fichiers de l'import en masse
      * (INTERVENANT-LANGUE-FORMAT) : le sigle, précédé de « MCC » pour un
      * ministre conseiller, ce qui distingue les sigles partagés (MFAS / MCCMFAS).
+     * Un sigle saisi avec son préfixe (« MCCMFAS ») ne le reçoit pas deux fois.
      */
     public function getFileCode(): ?string
     {
@@ -139,7 +143,35 @@ class Speaker
             return null;
         }
 
-        return ($this->isMinistreConseiller() ? 'MCC' : '') . $this->sigle;
+        return $this->isMinistreConseiller()
+            ? self::COUNCILLOR_PREFIX . self::withoutCouncillorPrefix($this->sigle)
+            : $this->sigle;
+    }
+
+    /**
+     * Sigle sans le préfixe « MCC » (répété ou non) : c'est getFileCode qui
+     * l'ajoute. Un sigle réduit à « MCC » ou presque est laissé tel quel.
+     */
+    public static function withoutCouncillorPrefix(string $sigle): string
+    {
+        while (str_starts_with(strtoupper($sigle), self::COUNCILLOR_PREFIX) && strlen($sigle) - strlen(self::COUNCILLOR_PREFIX) >= 2) {
+            $sigle = substr($sigle, strlen(self::COUNCILLOR_PREFIX));
+        }
+
+        return $sigle;
+    }
+
+    /**
+     * Sigle à enregistrer : sans préfixe « MCC » pour un ministre conseiller
+     * (formulaire, modification en masse, import).
+     */
+    public function normalizeSigle(): static
+    {
+        if ($this->sigle !== null && $this->isMinistreConseiller()) {
+            $this->sigle = self::withoutCouncillorPrefix($this->sigle);
+        }
+
+        return $this;
     }
 
     /**

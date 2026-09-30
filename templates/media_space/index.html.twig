@@ -14,6 +14,64 @@
     <section class="section wrap">
         <div class="lot-builder">
             <form method="get" action="{{ path('app_media_space') }}" class="lot-builder__steps">
+                {# Raccourci facultatif, replié : toutes les vidéos d'un intervenant et/ou d'une période.
+                   Sans sujet coché, il compose le lot à lui seul ; avec des sujets cochés, il les restreint. #}
+                <details class="lot-builder__step lot-builder__optional"{{ speakerPeriod.isActive ? ' open' }}>
+                    <summary>
+                        <span class="lot-builder__optional-title">Raccourci : toutes les vidéos d’un intervenant ou d’une période</span>
+                        <span class="lot-builder__optional-tag">facultatif</span>
+                        {% if speakerPeriod.isActive %}
+                            <span class="lot-builder__optional-active">
+                                {{ speakerPeriod.hasPerson ? speakerPeriod.personName }}{{ speakerPeriod.hasPerson and speakerPeriod.hasPeriod ? ' · ' }}{{ speakerPeriod.periodLabel }}
+                            </span>
+                        {% endif %}
+                    </summary>
+
+                    <div class="lot-builder__optional-body">
+                        <details class="lot-builder__sub"{{ speakerPeriod.hasPerson ? ' open' }}>
+                            <summary>Intervenant</summary>
+                            <label class="sr-only" for="lot-person">Intervenant</label>
+                            <select id="lot-person" name="intervenant" class="filters-sidebar__select" onchange="this.form.submit()">
+                                <option value="">Tous les intervenants</option>
+                                {% for person in people %}
+                                    <option value="{{ person.slug }}"{{ person.slug == speakerPeriod.person ? ' selected' }}>{{ person.name }}{{ person.role ? ' — ' ~ person.role }} ({{ person.videoCount }})</option>
+                                {% endfor %}
+                            </select>
+                            <p class="muted lot-builder__hint">Toutes ses prises de parole, y compris dans les gouvernements précédents.</p>
+                        </details>
+
+                        <details class="lot-builder__sub"{{ speakerPeriod.hasPeriod ? ' open' }}>
+                            <summary>Période</summary>
+                            <div class="filters-sidebar__dates">
+                                <label>Du <input type="date" name="du" value="{{ speakerPeriod.from ? speakerPeriod.from|date('Y-m-d') }}" onchange="this.form.submit()"></label>
+                                <label>Au <input type="date" name="au" value="{{ speakerPeriod.to ? speakerPeriod.to|date('Y-m-d') }}" onchange="this.form.submit()"></label>
+                            </div>
+                            {% if periodShortcuts is not empty %}
+                                {% set currentPeriod = (speakerPeriod.from ? speakerPeriod.from|date('Y-m-d')) ~ '|' ~ (speakerPeriod.to ? speakerPeriod.to|date('Y-m-d')) %}
+                                <div class="filters-sidebar__shortcuts">
+                                    {% for shortcut in periodShortcuts %}
+                                        <button type="submit" name="periode" value="{{ shortcut.value }}" class="filters-sidebar__shortcut{{ shortcut.value == currentPeriod ? ' is-active' }}">{{ shortcut.label }}</button>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if speakerPeriod.hasPeriod %}
+                                <button type="submit" name="periode" value="clear" class="filters-sidebar__clear">Toutes les dates</button>
+                            {% endif %}
+                            <p class="muted lot-builder__hint">D’après la date du conseil des ministres.</p>
+                        </details>
+
+                        {% if speakerPeriod.isActive %}
+                            <p class="lot-builder__hint">
+                                {% if selectedSubjectIds is empty %}
+                                    <strong>{{ lotSubjectCount }} sujet{{ lotSubjectCount > 1 ? 's' }}</strong> retenu{{ lotSubjectCount > 1 ? 's' }} d’office : passez directement aux langues et aux formats, ou cochez des sujets ci-dessous pour restreindre le lot.
+                                {% else %}
+                                    Le lot est limité aux sujets cochés ci-dessous. Décochez-les pour retenir tous les sujets de ce raccourci.
+                                {% endif %}
+                            </p>
+                        {% endif %}
+                    </div>
+                </details>
+
                 {# Étape 1 : même calendrier que l'admin ; seuls les sujets du conseil choisi sont affichés.
                    Un sujet coché reste dans le lot quand on change de conseil (sa case, masquée, est toujours envoyée). #}
                 <fieldset class="lot-builder__step" data-controller="council-calendar subject-search"
@@ -77,8 +135,8 @@
 
                 <fieldset class="lot-builder__step">
                     <legend><span class="lot-builder__step-number">2</span> Choisissez les langues</legend>
-                    {% if selectedSubjectIds is empty %}
-                        <p class="muted">Choisissez d’abord un ou plusieurs sujets.</p>
+                    {% if lotSubjectCount == 0 %}
+                        <p class="muted">Choisissez d’abord un ou plusieurs sujets, ou utilisez le raccourci intervenant ou période.</p>
                     {% elseif availableLanguages is empty %}
                         <p class="muted">Aucune langue disponible pour cette sélection.</p>
                     {% else %}
@@ -96,8 +154,8 @@
 
                 <fieldset class="lot-builder__step">
                     <legend><span class="lot-builder__step-number">3</span> Choisissez les formats</legend>
-                    {% if selectedSubjectIds is empty %}
-                        <p class="muted">Choisissez d’abord un ou plusieurs sujets.</p>
+                    {% if lotSubjectCount == 0 %}
+                        <p class="muted">Choisissez d’abord un ou plusieurs sujets, ou utilisez le raccourci intervenant ou période.</p>
                     {% elseif availableFormats is empty %}
                         <p class="muted">Aucun format disponible pour cette sélection.</p>
                     {% else %}
@@ -120,8 +178,14 @@
                 <dl class="lot-builder__summary-list">
                     <div>
                         <dt>Sujets</dt>
-                        <dd>{{ selectedSubjectIds|length }}</dd>
+                        <dd>{{ lotSubjectCount }}</dd>
                     </div>
+                    {% if speakerPeriod.isActive %}
+                        <div class="lot-builder__summary-wide">
+                            <dt>Raccourci</dt>
+                            <dd>{{ speakerPeriod.hasPerson ? speakerPeriod.personName }}{{ speakerPeriod.hasPerson and speakerPeriod.hasPeriod ? ', ' }}{{ speakerPeriod.periodLabel }}</dd>
+                        </div>
+                    {% endif %}
                     <div>
                         <dt>Langues</dt>
                         <dd>{{ selectedLanguageIds is empty ? 'Toutes' : selectedLanguageIds|length }}</dd>
@@ -148,6 +212,7 @@
                         {% for id in selectedLanguageIds %}<input type="hidden" name="langue[]" value="{{ id }}">{% endfor %}
                         {% for value in selectedFormatValues %}<input type="hidden" name="format[]" value="{{ value }}">{% endfor %}
                         <input type="hidden" name="conseil" value="{{ selectedSessionId }}">
+                        {% for name, value in speakerPeriod.queryParams %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
 
                         <p class="muted lot-builder__hint">
                             <span class="lot-builder__step-number">5</span>
@@ -157,7 +222,7 @@
                         <button type="submit" class="btn btn--primary lot-builder__download">Télécharger le lot (.zip)</button>
                     </form>
                 {% else %}
-                    <p class="muted">Choisissez au moins un sujet pour composer votre lot.</p>
+                    <p class="muted">Choisissez au moins un sujet, ou un intervenant ou une période, pour composer votre lot.</p>
                 {% endif %}
             </aside>
         </div>

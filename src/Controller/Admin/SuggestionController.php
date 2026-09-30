@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Suggestion;
 use App\Repository\SuggestionRepository;
+use App\Service\AdminPaginator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,11 +18,20 @@ class SuggestionController extends AbstractController
 {
     use BulkActionTrait;
 
+    private const PER_PAGE = 30;
+
     #[Route('', name: 'admin_suggestion_index')]
-    public function index(SuggestionRepository $suggestionRepository): Response
+    public function index(SuggestionRepository $suggestionRepository, Request $request): Response
     {
+        $results = AdminPaginator::paginate(
+            $suggestionRepository->createQueryBuilder('s')->orderBy('s.treated', 'ASC')->addOrderBy('s.createdAt', 'DESC'),
+            $request->query->getInt('page', 1),
+            self::PER_PAGE,
+        );
+
         return $this->render('admin/suggestion/index.html.twig', [
-            'suggestions' => $suggestionRepository->findBy([], ['treated' => 'ASC', 'createdAt' => 'DESC']),
+            'suggestions' => $results['items'],
+            'results' => $results,
         ]);
     }
 
@@ -31,14 +41,14 @@ class SuggestionController extends AbstractController
     {
         $ids = $this->bulkIds($request, 'bulk-suggestion');
         if ($ids === null) {
-            return $this->redirectToRoute('admin_suggestion_index');
+            return $this->backToList($request, 'admin_suggestion_index');
         }
 
         $action = $request->request->getString('action');
         if (!in_array($action, ['treated', 'untreated', 'delete'], true)) {
             $this->unknownBulkAction();
 
-            return $this->redirectToRoute('admin_suggestion_index');
+            return $this->backToList($request, 'admin_suggestion_index');
         }
 
         $suggestions = $suggestionRepository->findBy(['id' => $ids]);
@@ -53,7 +63,7 @@ class SuggestionController extends AbstractController
             'delete' => self::plural(count($suggestions), 'suggestion supprimée', 'suggestions supprimées'),
         } . '.');
 
-        return $this->redirectToRoute('admin_suggestion_index');
+        return $this->backToList($request, 'admin_suggestion_index');
     }
 
     #[Route('/{id}', name: 'admin_suggestion_show')]

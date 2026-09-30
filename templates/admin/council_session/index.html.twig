@@ -10,7 +10,7 @@
         </div>
         <p class="empty-state">Aucun conseil des ministres pour le moment.</p>
     {% else %}
-        <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-selected-value="{{ selectedSessionId }}" data-council-calendar-sync-url-value="true" data-council-calendar-unit-value="sujet">
+        <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-selected-value="{{ selectedSessionId }}" data-council-calendar-sync-url-value="true" data-council-calendar-navigate-value="true" data-council-calendar-unit-value="sujet">
             {{ include('partials/_council_calendar.html.twig', {newCouncilUrl: path('admin_council_session_new')}) }}
 
             <div class="admin-videos-layout__list" data-controller="bulk-select">

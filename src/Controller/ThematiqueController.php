@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Enum\CapsuleFormat;
+use App\Repository\CouncilSessionRepository;
 use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
@@ -29,6 +30,7 @@ class ThematiqueController extends AbstractController
         ThematicRepository $thematicRepository,
         LanguageRepository $languageRepository,
         VideoRepository $videoRepository,
+        CouncilSessionRepository $councilSessionRepository,
         AppSettings $settings,
     ): Response {
         $thematic = $thematicRepository->findOneBy(['slug' => $slug]) ?? throw $this->createNotFoundException('Thématique introuvable.');
@@ -45,7 +47,18 @@ class ThematiqueController extends AbstractController
         $query = $request->query->getString('q') ?: null;
         $page = max(1, $request->query->getInt('page', 1));
 
-        $results = $videoRepository->search([$thematic], $selectedLanguages, $selectedFormats, $query, $page);
+        // Filtre « Conseil des ministres » : tous, ou un seul parmi ceux qui
+        // ont des contenus dans cette thématique.
+        $councilSessions = $councilSessionRepository->findWithVideoCountForThematic($thematic);
+        $councilSlug = $request->query->getString('conseil');
+        $selectedCouncil = null;
+        foreach ($councilSessions as $row) {
+            if ($row['councilSession']->getSlug() === $councilSlug) {
+                $selectedCouncil = $row['councilSession'];
+            }
+        }
+
+        $results = $videoRepository->search([$thematic], $selectedLanguages, $selectedFormats, $query, $page, councilSessions: $selectedCouncil ? [$selectedCouncil] : []);
 
         return $this->render('thematique/show.html.twig', [
             'thematic' => $thematic,
@@ -55,10 +68,13 @@ class ThematiqueController extends AbstractController
             'selectedLanguageSlugs' => $languageSlugs,
             'selectedFormatValues' => array_map(static fn (CapsuleFormat $format) => $format->value, $selectedFormats),
             'query' => $query,
+            'councilOptions' => $councilSessions,
+            'selectedCouncil' => $selectedCouncil,
             'routeParams' => array_filter([
                 'langue' => $languageSlugs,
                 'format' => $formatValues,
                 'q' => $query,
+                'conseil' => $selectedCouncil?->getSlug(),
             ]),
         ]);
     }

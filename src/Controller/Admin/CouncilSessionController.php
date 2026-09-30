@@ -37,42 +37,48 @@ class CouncilSessionController extends AbstractController
     public function index(Request $request, CouncilSessionRepository $councilSessionRepository, VideoRepository $videoRepository, SubjectRepository $subjectRepository, ThematicRepository $thematicRepository): Response
     {
         $councilSessions = $councilSessionRepository->findBy([], ['date' => 'DESC']);
-
-        $subjectsBySession = [];
-        foreach ($subjectRepository->createQueryBuilder('s')
-            ->innerJoin('s.thematic', 't')->addSelect('t')
-            ->orderBy('s.title', 'ASC')
+        $subjectCounts = array_map('intval', array_column($subjectRepository->createQueryBuilder('s')
+            ->select('IDENTITY(s.councilSession) AS sessionId', 'COUNT(s.id) AS subjectCount')
+            ->groupBy('sessionId')
             ->getQuery()
-            ->getResult() as $subject) {
-            $subjectsBySession[$subject->getCouncilSession()->getId()][] = $subject;
+            ->getArrayResult(), 'subjectCount', 'sessionId'));
+
+        // Calendrier latéral : tous les conseils, même sans sujet (count = sujets).
+        $calendar = array_map(fn (CouncilSession $councilSession) => [
+            'id' => $councilSession->getId(),
+            'date' => $councilSession->getDate()->format('Y-m-d'),
+            'count' => $subjectCounts[$councilSession->getId()] ?? 0,
+        ], $councilSessions);
+
+        $selectedId = $request->query->getInt('conseil');
+        if (!in_array($selectedId, array_column($calendar, 'id'), true)) {
+            $selectedId = $calendar[0]['id'] ?? null;
         }
 
-        $videoCounts = array_map('intval', array_column($videoRepository->createQueryBuilder('v')
-            ->select('IDENTITY(v.subject) AS subjectId', 'COUNT(v.id) AS videoCount')
-            ->groupBy('v.subject')
-            ->getQuery()
-            ->getArrayResult(), 'videoCount', 'subjectId'));
-
+        // Seul le conseil affiché est chargé ; le calendrier recharge la page pour un autre.
         $groups = [];
+        $videoCounts = [];
         foreach ($councilSessions as $councilSession) {
-            $subjects = $subjectsBySession[$councilSession->getId()] ?? [];
+            if ($councilSession->getId() !== $selectedId) {
+                continue;
+            }
+            $subjects = $subjectRepository->createQueryBuilder('s')
+                ->innerJoin('s.thematic', 't')->addSelect('t')
+                ->where('s.councilSession = :councilSession')->setParameter('councilSession', $councilSession)
+                ->orderBy('s.title', 'ASC')
+                ->getQuery()
+                ->getResult();
+            $videoCounts = $subjects === [] ? [] : array_map('intval', array_column($videoRepository->createQueryBuilder('v')
+                ->select('IDENTITY(v.subject) AS subjectId', 'COUNT(v.id) AS videoCount')
+                ->where('v.subject IN (:subjects)')->setParameter('subjects', $subjects)
+                ->groupBy('v.subject')
+                ->getQuery()
+                ->getArrayResult(), 'videoCount', 'subjectId'));
             $groups[$councilSession->getId()] = [
                 'session' => $councilSession,
                 'subjects' => $subjects,
-                'videoCount' => array_sum(array_map(fn ($subject) => $videoCounts[$subject->getId()] ?? 0, $subjects)),
+                'videoCount' => array_sum($videoCounts),
             ];
-        }
-
-        // Calendrier latéral : tous les conseils, même sans sujet (count = sujets).
-        $calendar = array_values(array_map(fn (array $group) => [
-            'id' => $group['session']->getId(),
-            'date' => $group['session']->getDate()->format('Y-m-d'),
-            'count' => count($group['subjects']),
-        ], $groups));
-
-        $selectedId = $request->query->getInt('conseil');
-        if (!isset($groups[$selectedId])) {
-            $selectedId = array_key_first($groups);
         }
 
         return $this->render('admin/council_session/index.html.twig', [

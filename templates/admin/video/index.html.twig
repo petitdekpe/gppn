@@ -11,7 +11,7 @@
     {% if sessions is empty %}
         <p class="empty-state">Aucun contenu pour le moment.</p>
     {% else %}
-        <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-selected-value="{{ selectedSessionId }}" data-council-calendar-sync-url-value="true">
+        <div class="admin-videos-layout" data-controller="council-calendar" data-council-calendar-sessions-value="{{ calendar|json_encode }}" data-council-calendar-selected-value="{{ selectedSessionId }}" data-council-calendar-sync-url-value="true" data-council-calendar-navigate-value="true">
             {{ include('partials/_council_calendar.html.twig') }}
 
             <div class="admin-videos-layout__list" data-controller="bulk-select">

@@ -1,4 +1,5 @@
-{% set activeFiltersCount = (selectedThematicSlugs is defined ? selectedThematicSlugs|length : 0) + (selectedLanguageSlugs is defined ? selectedLanguageSlugs|length : 0) + (selectedFormatValues is defined ? selectedFormatValues|length : 0) + (selectedCouncilSessionSlugs is defined ? selectedCouncilSessionSlugs|length : 0) %}
+{% set activeFiltersCount = (selectedThematicSlugs is defined ? selectedThematicSlugs|length : 0) + (selectedLanguageSlugs is defined ? selectedLanguageSlugs|length : 0) + (selectedFormatValues is defined ? selectedFormatValues|length : 0) + (selectedCouncilSessionSlugs is defined ? selectedCouncilSessionSlugs|length : 0)
+    + (speakerPeriod is defined and speakerPeriod.hasPerson ? 1 : 0) + (speakerPeriod is defined and speakerPeriod.hasPeriod ? 1 : 0) %}
 {% set moreFiltersActive = (selectedFormatValues is defined and selectedFormatValues) or (selectedCouncilSessionSlugs is defined and selectedCouncilSessionSlugs) %}
 
 {% set visibleLanguages = languages is defined ? languages|filter(row => row.videoCount > 0 or (selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs)) : [] %}
@@ -20,7 +21,7 @@
         <div class="filters-panel__head">
             <span class="filters-panel__title">Filtres</span>
             {% if activeFiltersCount > 0 %}
-                <a class="filters-panel__reset" href="{{ path('app_video_index', {role: selectedRole is defined and selectedRole != 'tous' ? selectedRole : null}) }}">Réinitialiser</a>
+                <a class="filters-panel__reset" href="{{ resetUrl ?? path('app_video_index', {role: selectedRole is defined and selectedRole != 'tous' ? selectedRole : null}) }}">Réinitialiser</a>
             {% endif %}
         </div>
 
@@ -28,6 +29,11 @@
             {% if query %}
                 <input type="hidden" name="q" value="{{ query }}">
             {% endif %}
+
+            {# Choix faits hors de la barre (ex. conseil des ministres de la page thématique). #}
+            {% for name, value in hiddenParams ?? {} %}
+                <input type="hidden" name="{{ name }}" value="{{ value }}">
+            {% endfor %}
 
             {% if selectedRole is defined and selectedRole and selectedRole != 'tous' %}
                 <input type="hidden" name="role" value="{{ selectedRole }}">
@@ -63,6 +69,60 @@
                         {% endfor %}
                     </div>
                 </fieldset>
+            {% endif %}
+
+            {# Filtres facultatifs, repliés tant qu'ils ne servent pas. #}
+            {% if people is defined and people is not empty %}
+                <details class="filters-sidebar__more"{{ speakerPeriod.hasPerson ? ' open' }}>
+                    <summary class="filters-sidebar__more-summary">
+                        Intervenant <span class="filters-sidebar__optional">facultatif</span>
+                        {% if speakerPeriod.hasPerson %}<span class="filters-sidebar__active">{{ speakerPeriod.personName }}</span>{% endif %}
+                    </summary>
+                    <div class="filters-sidebar__more-body">
+                        <label class="sr-only" for="filter-person">Intervenant</label>
+                        <select id="filter-person" name="intervenant" class="filters-sidebar__select" onchange="this.form.submit()">
+                            <option value="">Tous les intervenants</option>
+                            {% for group, label in {ministre: 'Ministres', conseiller: 'Ministres conseillers'} %}
+                                {% set members = people|filter(p => p.councillor == (group == 'conseiller')) %}
+                                {% if members is not empty %}
+                                    <optgroup label="{{ label }}">
+                                        {% for person in members %}
+                                            <option value="{{ person.slug }}"{{ person.slug == speakerPeriod.person ? ' selected' }}>{{ person.name }} ({{ person.videoCount }})</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <p class="filters-sidebar__hint">Toutes ses prises de parole, y compris dans les gouvernements précédents.</p>
+                    </div>
+                </details>
+            {% endif %}
+
+            {% if speakerPeriod is defined %}
+                <details class="filters-sidebar__more"{{ speakerPeriod.hasPeriod ? ' open' }}>
+                    <summary class="filters-sidebar__more-summary">
+                        Période <span class="filters-sidebar__optional">facultatif</span>
+                        {% if speakerPeriod.hasPeriod %}<span class="filters-sidebar__active">{{ speakerPeriod.periodLabel }}</span>{% endif %}
+                    </summary>
+                    <div class="filters-sidebar__more-body">
+                        <div class="filters-sidebar__dates">
+                            <label>Du <input type="date" name="du" value="{{ speakerPeriod.from ? speakerPeriod.from|date('Y-m-d') }}" onchange="this.form.submit()"></label>
+                            <label>Au <input type="date" name="au" value="{{ speakerPeriod.to ? speakerPeriod.to|date('Y-m-d') }}" onchange="this.form.submit()"></label>
+                        </div>
+                        {% if periodShortcuts is defined and periodShortcuts is not empty %}
+                            <div class="filters-sidebar__shortcuts">
+                                {% set currentPeriod = (speakerPeriod.from ? speakerPeriod.from|date('Y-m-d')) ~ '|' ~ (speakerPeriod.to ? speakerPeriod.to|date('Y-m-d')) %}
+                                {% for shortcut in periodShortcuts %}
+                                    <button type="submit" name="periode" value="{{ shortcut.value }}" class="filters-sidebar__shortcut{{ shortcut.value == currentPeriod ? ' is-active' }}">{{ shortcut.label }}</button>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if speakerPeriod.hasPeriod %}
+                            <button type="submit" name="periode" value="clear" class="filters-sidebar__clear">Toutes les dates</button>
+                        {% endif %}
+                        <p class="filters-sidebar__hint">D’après la date du conseil des ministres.</p>
+                    </div>
+                </details>
             {% endif %}
 
             {% if visibleFormats or visibleCouncilSessions %}

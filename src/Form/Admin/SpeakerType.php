@@ -30,7 +30,7 @@ class SpeakerType extends AbstractType
                 'label' => 'Sigle',
                 'required' => false,
                 'empty_data' => null,
-                'help' => 'Ex : MTCA pour Ministère du Tourisme, de la Culture et des Arts. Deviné automatiquement à partir de la fonction si laissé vide.',
+                'help' => 'Ex : MTCA pour Ministère du Tourisme, de la Culture et des Arts. Deviné automatiquement à partir de la fonction si laissé vide. Pour un ministre conseiller, saisir le sigle seul : le préfixe MCC des noms de fichiers est ajouté automatiquement.',
             ])
             ->add('role', TextType::class, [
                 'label' => 'Fonction',
@@ -51,17 +51,20 @@ class SpeakerType extends AbstractType
     }
 
     /**
-     * Ne complète que si le sigle a été laissé vide : ne doit jamais écraser
-     * une valeur saisie ou corrigée à la main.
+     * Ne devine que si le sigle a été laissé vide : ne doit jamais écraser
+     * une valeur saisie ou corrigée à la main (hormis le préfixe MCC retiré).
      */
     private function guessSigle(FormEvent $event): void
     {
         $speaker = $event->getData();
-        if (!$speaker instanceof Speaker || $speaker->getSigle() !== null) {
+        if (!$speaker instanceof Speaker) {
             return;
         }
-
-        $speaker->setSigle($this->sigleGuesser->guess($speaker->getRole()));
+        if ($speaker->getSigle() === null) {
+            $speaker->setSigle($this->sigleGuesser->guess($speaker->getRole()));
+        }
+        // « MCCMFAS » saisi pour un ministre conseiller : MCC est ajouté par le code de fichier.
+        $speaker->normalizeSigle();
     }
 
     public function configureOptions(OptionsResolver $resolver): void

@@ -39,21 +39,20 @@ class HomeController extends AbstractController
         usort($activeThematics, $byVideoCount);
         $shownThematics = $activeThematics ?: $thematics;
 
-        $featuredVideos = $videoRepository->findFeatured(2);
-        if (\count($featuredVideos) < 2) {
-            foreach ($videoRepository->findLatest(4) as $video) {
-                if (\count($featuredVideos) >= 2) {
-                    break;
-                }
-                if (!\in_array($video, $featuredVideos, true)) {
-                    $featuredVideos[] = $video;
-                }
+        $heroVideo = $videoRepository->findHeroVideo();
+
+        // « À la une » : un autre contenu que le hero, les mis en avant d'abord.
+        $spotlightVideo = null;
+        foreach ([...$videoRepository->findFeatured(2), ...$videoRepository->findLatest(2)] as $video) {
+            if ($video !== $heroVideo) {
+                $spotlightVideo = $video;
+                break;
             }
         }
 
         return $this->render('home/index.html.twig', [
-            'heroVideo' => $featuredVideos[0] ?? null,
-            'spotlightVideo' => $featuredVideos[1] ?? ($featuredVideos[0] ?? null),
+            'heroVideo' => $heroVideo,
+            'spotlightVideo' => $spotlightVideo ?? $heroVideo,
             'latestVideos' => $videoRepository->findLatest(6),
             // Toutes : le gabarit en montre 8, les autres derrière « Voir plus ».
             'languages' => $activeLanguages ?: $languages,

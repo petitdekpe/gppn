@@ -4,11 +4,13 @@
 {% block meta_description %}Tous les contenus du Gouvernement sur la thématique {{ thematic.name }}, dans vos langues nationales.{% endblock %}
 
 {% block body %}
+    {% set councilLabel = selectedCouncil ? (selectedCouncil.label ?: 'Conseil des ministres du ' ~ selectedCouncil.date|date('d/m/Y')) : null %}
+
     <section class="page-header wrap page-header--tinted" style="--thematic-color: {{ thematic.colorHex }}">
         {{ include('partials/_back_link.html.twig', {fallback: path('app_thematique_index')}) }}
         <span class="eyebrow">Thématique</span>
         <h1>{{ thematic.name }}</h1>
-        <p>{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} sur cette thématique.</p>
+        <p>{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} sur cette thématique{{ councilLabel ? ' · ' ~ councilLabel }}.</p>
     </section>
 
     <section class="section wrap video-layout">
@@ -20,10 +22,34 @@
                 selectedLanguageSlugs: selectedLanguageSlugs,
                 selectedFormatValues: selectedFormatValues,
                 query: query,
+                hiddenParams: selectedCouncil ? {conseil: selectedCouncil.slug} : {},
+                resetUrl: path('app_thematique_show', {slug: thematic.slug}),
             }) }}
         </aside>
 
         <div class="video-layout__main">
+            {% if councilOptions|length > 1 or selectedCouncil %}
+                {# Tous les conseils, ou un seul : garde les autres filtres (langues, formats, recherche). #}
+                <form method="get" action="{{ path('app_thematique_show', {slug: thematic.slug}) }}" class="council-filter">
+                    {% for name, value in routeParams|filter((v, k) => k != 'conseil') %}
+                        {% for item in value is iterable ? value : [value] %}
+                            <input type="hidden" name="{{ name }}{{ value is iterable ? '[]' }}" value="{{ item }}">
+                        {% endfor %}
+                    {% endfor %}
+                    <label for="council-filter">Conseil des ministres</label>
+                    <select id="council-filter" name="conseil" onchange="this.form.submit()">
+                        <option value="">Tous les conseils ({{ councilOptions|reduce((sum, row) => sum + row.videoCount, 0) }})</option>
+                        {% for row in councilOptions %}
+                            {% set council = row.councilSession %}
+                            <option value="{{ council.slug }}"{{ council == selectedCouncil ? ' selected' }}>
+                                {{ council.label ?: 'Conseil du ' ~ council.date|date('d/m/Y') }} ({{ row.videoCount }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <noscript><button type="submit" class="btn btn--outline btn--sm">Afficher</button></noscript>
+                </form>
+            {% endif %}
+
             {{ include('partials/_video_grid.html.twig', {
                 results: results,
                 route: 'app_thematique_show',

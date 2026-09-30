@@ -4350,3 +4350,263 @@ select option.subject-create-option {
 .admin-import-row.is-error td:last-child strong {
     color: #a12727;
 }
+
+/* ---- Onglets et recherche des listes paginées (intervenants) ---- */
+.admin-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.admin-tabs__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    margin-bottom: -1px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    color: var(--color-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.admin-tabs__tab:hover {
+    color: var(--color-navy);
+}
+
+.admin-tabs__tab.is-active {
+    color: var(--color-navy);
+    background: var(--color-bg);
+    border-color: var(--color-border);
+    border-bottom-color: var(--color-bg);
+}
+
+.admin-tabs__count {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--color-cream);
+    font-size: 0.75rem;
+}
+
+.admin-tabs__badge {
+    color: var(--color-green-dark);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.admin-search {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.admin-search input[type="search"] {
+    flex: 1 1 240px;
+    max-width: 360px;
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font: inherit;
+}
+
+/* ---- Filtres facultatifs « Intervenant » et « Période » (volets repliés) ---- */
+.filters-sidebar__optional {
+    margin-left: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--color-muted);
+}
+
+.filters-sidebar__active {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--color-green-dark);
+}
+
+.filters-sidebar__select,
+.filters-sidebar__dates input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: 0.9rem;
+    background: var(--color-bg);
+}
+
+.filters-sidebar__dates {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.filters-sidebar__dates label {
+    display: grid;
+    gap: 4px;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+}
+
+.filters-sidebar__shortcuts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.filters-sidebar__shortcut,
+.filters-sidebar__clear {
+    padding: 5px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg);
+    font: inherit;
+    font-size: 0.8rem;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.filters-sidebar__shortcut.is-active {
+    border-color: var(--color-green);
+    background: var(--color-green);
+    color: #fff;
+}
+
+.filters-sidebar__clear {
+    justify-self: start;
+    border-style: dashed;
+}
+
+.filters-sidebar__hint {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--color-muted);
+}
+
+/* ---- Espace média : raccourci facultatif « intervenant ou période » (volets repliés) ---- */
+.lot-builder__optional {
+    border-style: dashed;
+    background: var(--color-cream);
+}
+
+.lot-builder__optional > summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 700;
+    color: var(--color-navy);
+}
+
+.lot-builder__optional > summary::-webkit-details-marker,
+.lot-builder__sub > summary::-webkit-details-marker {
+    display: none;
+}
+
+.lot-builder__optional > summary::before,
+.lot-builder__sub > summary::before {
+    content: '+';
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid var(--color-navy);
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.lot-builder__optional[open] > summary::before,
+.lot-builder__sub[open] > summary::before {
+    content: '–';
+}
+
+.lot-builder__optional-tag {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--color-bg);
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--color-muted);
+}
+
+.lot-builder__optional-active {
+    flex-basis: 100%;
+    padding-left: 32px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--color-green-dark);
+}
+
+.lot-builder__optional-body {
+    display: grid;
+    gap: 12px;
+    padding-top: 16px;
+}
+
+.lot-builder__sub {
+    display: grid;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+}
+
+.lot-builder__sub > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.lot-builder__summary-wide {
+    grid-column: 1 / -1;
+}
+
+.lot-builder__summary-wide dd {
+    font-size: 0.95rem;
+}
+
+/* ---- Page thématique : filtre « Conseil des ministres » ---- */
+.council-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-bottom: 20px;
+}
+
+.council-filter label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-navy);
+}
+
+.council-filter select {
+    flex: 1 1 260px;
+    max-width: 420px;
+    padding: 9px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    font: inherit;
+    font-size: 0.92rem;
+}
