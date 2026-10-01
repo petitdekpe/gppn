@@ -59,6 +59,21 @@ class VideoFile
     #[ORM\Column(length: 20, nullable: true, enumType: WebmStatus::class)]
     private ?WebmStatus $webmStatus = null;
 
+    /**
+     * Vidéo illisible, confirmée par ffmpeg après un échec de lecture remonté
+     * par un navigateur (voir VideoFileChecker) : le fichier est masqué du
+     * site public jusqu'à son remplacement.
+     */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $defectiveAt = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $defectReason = null;
+
+    /** Dernière vérification ffmpeg : limite les vérifications répétées. */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $checkedAt = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -105,6 +120,10 @@ class VideoFile
 
         if ($file instanceof File) {
             $this->updatedAt = new \DateTimeImmutable();
+            // Nouveau fichier : l'ancien diagnostic ne vaut plus.
+            $this->defectiveAt = null;
+            $this->defectReason = null;
+            $this->checkedAt = null;
         }
 
         return $this;
@@ -209,5 +228,48 @@ class VideoFile
     public function hasPlayableWebm(): bool
     {
         return $this->webmStatus === WebmStatus::READY && $this->webmFileName !== null;
+    }
+
+    public function isDefective(): bool
+    {
+        return $this->defectiveAt !== null;
+    }
+
+    public function getDefectiveAt(): ?\DateTimeImmutable
+    {
+        return $this->defectiveAt;
+    }
+
+    public function getDefectReason(): ?string
+    {
+        return $this->defectReason;
+    }
+
+    public function markDefective(string $reason): static
+    {
+        $this->defectiveAt ??= new \DateTimeImmutable();
+        $this->defectReason = mb_substr($reason, 0, 255);
+
+        return $this;
+    }
+
+    public function clearDefect(): static
+    {
+        $this->defectiveAt = null;
+        $this->defectReason = null;
+
+        return $this;
+    }
+
+    public function getCheckedAt(): ?\DateTimeImmutable
+    {
+        return $this->checkedAt;
+    }
+
+    public function setCheckedAt(?\DateTimeImmutable $checkedAt): static
+    {
+        $this->checkedAt = $checkedAt;
+
+        return $this;
     }
 }

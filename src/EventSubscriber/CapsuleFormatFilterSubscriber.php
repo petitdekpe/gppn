@@ -11,7 +11,8 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Active le filtre des types de contenus sur le site public uniquement :
- * l'admin doit pouvoir gérer tous les fichiers, même d'un type désactivé.
+ * l'admin doit pouvoir gérer tous les fichiers, même d'un type désactivé
+ * ou défectueux.
  */
 final class CapsuleFormatFilterSubscriber implements EventSubscriberInterface
 {
@@ -33,13 +34,9 @@ final class CapsuleFormatFilterSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $disabledTypes = $this->settings->getDisabledFileTypes();
-        if ($disabledTypes === []) {
-            return;
-        }
-
+        // Toujours actif : il masque aussi les fichiers défectueux.
         /** @var CapsuleFormatFilter $filter */
         $filter = $this->entityManager->getFilters()->enable(CapsuleFormatFilter::NAME);
-        $filter->setDisabledTypes($disabledTypes);
+        $filter->setDisabledTypes($this->settings->getDisabledFileTypes());
     }
 }

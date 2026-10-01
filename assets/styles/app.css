@@ -787,6 +787,30 @@ button {
     color: var(--color-navy);
 }
 
+/* Partage depuis la carte : réservé au mobile (écran étroit ou tactile). */
+.video-card__share {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    min-height: 32px;
+    padding: 4px 12px;
+    border: 1px solid var(--color-navy);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-navy);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+@media (max-width: 639px), (hover: none) and (pointer: coarse) {
+    .video-card__share {
+        display: inline-flex;
+    }
+}
+
 .video-card__badge--format {
     background: var(--thematic-color, var(--color-navy));
     color: #fff;
@@ -3680,6 +3704,16 @@ select option.subject-create-option {
     background: #fdf5e6;
     color: #7a5310;
     font-size: 0.82rem;
+}
+
+.admin-file-defect {
+    margin: 8px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: #fdecec;
+    color: #a12727;
+    font-size: 0.82rem;
+    font-weight: 600;
 }
 
 .admin-login__back {

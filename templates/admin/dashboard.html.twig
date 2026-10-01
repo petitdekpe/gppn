@@ -180,6 +180,14 @@
                             {% if fileCoverage.withoutCover %}<li>{{ fileCoverage.withoutCover }} contenu(s) publié(s) sans image de couverture</li>{% endif %}
                         </ul>
                     {% endif %}
+                    {% if fileCoverage.defectiveFiles %}
+                        <h3>Vidéos défectueuses, masquées du site</h3>
+                        <ul class="admin-alerts">
+                            {% for file in fileCoverage.defectiveFiles %}
+                                <li><a href="{{ path('admin_video_edit', {id: file.videoId}) }}">{{ file.title }}</a> · {{ file.type }} : {{ file.reason }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                 </section>
             </div>
         </details>

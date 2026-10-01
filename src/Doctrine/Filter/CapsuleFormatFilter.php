@@ -9,7 +9,8 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Query\Filter\SQLFilter;
 
 /**
- * Masque les fichiers des types de contenus désactivés dans les Paramètres.
+ * Masque les fichiers des types de contenus désactivés dans les Paramètres,
+ * ainsi que les fichiers défectueux (VideoFile::isDefective()).
  * Activé uniquement sur le site public (voir CapsuleFormatFilterSubscriber) :
  * Doctrine l'applique à toute lecture de video_file, y compris le chargement
  * de Video::$files et les sous-requêtes EXISTS, si bien que le lecteur, les
@@ -50,14 +51,20 @@ final class CapsuleFormatFilter extends SQLFilter
 
     public function addFilterConstraint(ClassMetadata $targetEntity, string $targetTableAlias): string
     {
-        if ($targetEntity->getName() !== VideoFile::class || $this->disabledTypes === []) {
+        if ($targetEntity->getName() !== VideoFile::class) {
             return '';
+        }
+
+        // Fichier illisible (voir VideoFile::$defectiveAt) : masqué comme un type désactivé.
+        $constraint = sprintf('%s.%s IS NULL', $targetTableAlias, $targetEntity->getColumnName('defectiveAt'));
+        if ($this->disabledTypes === []) {
+            return $constraint;
         }
 
         // Valeurs issues de l'enum, jamais d'une saisie : on peut les quoter directement.
         $connection = $this->getConnection();
         $values = implode(', ', array_map(static fn (VideoFileType $type) => $connection->quote($type->value), $this->disabledTypes));
 
-        return sprintf('%s.type NOT IN (%s)', $targetTableAlias, $values);
+        return sprintf('%s AND %s.type NOT IN (%s)', $constraint, $targetTableAlias, $values);
     }
 }

@@ -4,12 +4,15 @@ namespace App\Controller;
 
 use App\Entity\VideoFeedback;
 use App\Enum\CapsuleFormat;
+use App\Message\CheckVideoFile;
 use App\Repository\CouncilSessionRepository;
 use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
+use App\Repository\VideoFileRepository;
 use App\Repository\VideoRepository;
 use App\Service\AppSettings;
 use App\Service\SpeakerPeriodCriteria;
+use App\Service\VideoFileChecker;
 use App\Service\VideoFileZipBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,6 +21,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 class VideoController extends AbstractController
@@ -110,6 +114,24 @@ class VideoController extends AbstractController
             'hasMore' => $results['hasMore'],
             'nextPage' => $results['page'] + 1,
         ]);
+    }
+
+    /**
+     * Échec de lecture remonté par le navigateur (voir assets/playback_report.js).
+     * Ne masque rien par lui-même : il met en file une vérification ffmpeg,
+     * au plus une par fichier toutes les 10 minutes.
+     */
+    #[Route('/videos/fichiers/{id}/echec-lecture', name: 'app_video_file_playback_error', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function playbackError(int $id, VideoFileRepository $videoFileRepository, VideoFileChecker $checker, EntityManagerInterface $entityManager, MessageBusInterface $bus): Response
+    {
+        $file = $videoFileRepository->find($id);
+        if ($file !== null && $checker->supports($file) && ($file->getCheckedAt() === null || $file->getCheckedAt() < new \DateTimeImmutable('-10 minutes'))) {
+            $file->setCheckedAt(new \DateTimeImmutable());
+            $entityManager->flush();
+            $bus->dispatch(new CheckVideoFile($file->getId()));
+        }
+
+        return new Response(null, Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/videos/{slug}', name: 'app_video_show')]

@@ -86,6 +86,9 @@
                                 {% if videoFile.webmStatus %}
                                     <p class="form-help">Version de lecture WebM : {{ videoFile.webmStatus.label }}{% if videoFile.hasPlayableWebm and videoFile.webmFileSize %} ({{ (videoFile.webmFileSize / 1048576)|round(1) }} Mo){% endif %}</p>
                                 {% endif %}
+                                {% if videoFile.defective %}
+                                    <p class="admin-file-defect">Fichier défectueux, masqué du site depuis le {{ videoFile.defectiveAt|date('d/m/Y à H:i') }} : {{ videoFile.defectReason }}. Remplacez-le pour le remettre en ligne.</p>
+                                {% endif %}
                             {% endif %}
                         </div>
                     {% endfor %}

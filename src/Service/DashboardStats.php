@@ -179,7 +179,7 @@ class DashboardStats
      * Nombre de contenus publiés proposant chaque type de fichier, plus ceux
      * sans aucun fichier ou sans image de couverture.
      *
-     * @return array{published: int, types: list<array{label: string, count: int, percent: int}>, withoutFiles: int, withoutCover: int}
+     * @return array{published: int, types: list<array{label: string, count: int, percent: int}>, withoutFiles: int, withoutCover: int, defectiveFiles: list<array{videoId: int, title: string, type: string, reason: ?string}>}
      */
     public function fileCoverage(): array
     {
@@ -214,6 +214,21 @@ class DashboardStats
                 'SELECT COUNT(*) FROM video WHERE status = ? AND cover_image_name IS NULL',
                 [VideoStatus::PUBLIE->value],
             ),
+            // Masquées du site jusqu'à leur remplacement (voir VideoFileChecker).
+            'defectiveFiles' => array_map(static fn (array $row) => [
+                'videoId' => (int) $row['video_id'],
+                'title' => $row['title'] . ' (' . $row['language'] . ')',
+                'type' => VideoFileType::from($row['type'])->getLabel(),
+                'reason' => $row['defect_reason'],
+            ], $this->connection->fetchAllAssociative(
+                'SELECT f.video_id, f.type, f.defect_reason, s.title, l.name AS language
+                 FROM video_file f
+                 JOIN video v ON v.id = f.video_id
+                 JOIN subject s ON s.id = v.subject_id
+                 JOIN language l ON l.id = v.language_id
+                 WHERE f.defective_at IS NOT NULL AND f.file_name IS NOT NULL
+                 ORDER BY f.defective_at DESC',
+            )),
         ];
     }
 
