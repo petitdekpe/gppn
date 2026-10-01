@@ -97,12 +97,14 @@ class VideoRepository extends ServiceEntityRepository
     public function findForAdminIndex(int $councilSessionId): array
     {
         return $this->createQueryBuilder('v')
-            ->addSelect('s', 'c', 't', 'l', 'sp')
+            ->addSelect('s', 'c', 't', 'l', 'sp', 'f')
             ->innerJoin('v.subject', 's')
             ->innerJoin('s.councilSession', 'c')
             ->innerJoin('s.thematic', 't')
             ->innerJoin('v.language', 'l')
             ->leftJoin('v.speaker', 'sp')
+            // Fichiers chargés d'un coup : colonne des formats disponibles.
+            ->leftJoin('v.files', 'f')
             ->where('c.id = :councilSession')
             ->setParameter('councilSession', $councilSessionId)
             ->orderBy('s.title', 'ASC')

@@ -4644,3 +4644,27 @@ select option.subject-create-option {
     font: inherit;
     font-size: 0.92rem;
 }
+
+/* ---- Liste des contenus : formats disponibles et actions en icônes ---- */
+.admin-formats {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-formats__icon {
+    font-size: 1rem;
+    color: var(--color-border);
+}
+
+.admin-formats__icon.is-available {
+    color: var(--color-green-dark);
+}
+
+.btn--icon {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+}

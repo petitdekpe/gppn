@@ -411,6 +411,33 @@ class Video
     }
 
     /**
+     * Formats de diffusion réellement déposés, pour la liste de l'admin :
+     * TV (1080p, à défaut la version allégée 480p), Mobile (vertical), Audio.
+     * Un emplacement vide (sans fichier) compte comme absent.
+     *
+     * @return array{tv: ?VideoFile, mobile: ?VideoFile, audio: ?VideoFile}
+     */
+    public function getDistributionFiles(): array
+    {
+        $uploaded = function (VideoFileType ...$types): ?VideoFile {
+            foreach ($types as $type) {
+                $file = $this->getVideoFileByType($type);
+                if ($file?->getFileName() !== null) {
+                    return $file;
+                }
+            }
+
+            return null;
+        };
+
+        return [
+            'tv' => $uploaded(VideoFileType::MP4_1080P, VideoFileType::MP4_480P),
+            'mobile' => $uploaded(VideoFileType::MP4_VERTICAL),
+            'audio' => $uploaded(VideoFileType::AUDIO),
+        ];
+    }
+
+    /**
      * Fichier utilisé par le fil vertical (bouton flottant « Feed ») : un
      * contenu sans version 9:16 déposée n'y apparaît simplement pas, cf.
      * VideoRepository::findVerticalFeed().

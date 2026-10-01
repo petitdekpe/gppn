@@ -4,6 +4,13 @@
 {% block page_title %}Contenus{% endblock %}
 
 {% block body %}
+    {# Colonne « Formats » : clés de Video::getDistributionFiles(). #}
+    {% set formatIcons = {
+        tv: {label: 'TV', icon: 'fa-tv'},
+        mobile: {label: 'Mobile', icon: 'fa-mobile-screen-button'},
+        audio: {label: 'Audio', icon: 'fa-headphones'},
+    } %}
+
     <div class="admin-toolbar">
         <a class="btn btn--primary" href="{{ path('admin_video_new') }}">+ Nouveau contenu</a>
     </div>
@@ -44,6 +51,7 @@
                                         {{ include('admin/_bulk_all.html.twig') }}
                                         <th>Intervenant</th>
                                         <th>Langue</th>
+                                        <th>Formats</th>
                                         <th>Statut</th>
                                         <th>Publiée le</th>
                                         <th>Vues</th>
@@ -54,7 +62,7 @@
                                 <tbody>
                                     {% for item in group.subjects %}
                                         <tr class="admin-table__subject">
-                                            <th colspan="8" scope="rowgroup">
+                                            <th colspan="9" scope="rowgroup">
                                                 {{ item.subject.title }}
                                                 <span class="admin-table__thematic" style="color: {{ item.subject.thematic.colorHex }}">{{ item.subject.thematic.name }}</span>
                                             </th>
@@ -70,15 +78,31 @@
                                                     {% endif %}
                                                 </td>
                                                 <td><a href="{{ path('app_video_show', {slug: video.slug}) }}" target="_blank" rel="noopener">{{ video.language.name }}</a></td>
+                                                <td>
+                                                    {# Formats de diffusion déposés : allumés si présents, estompés sinon. #}
+                                                    <span class="admin-formats">
+                                                        {% for key, file in video.distributionFiles %}
+                                                            {% set format = formatIcons[key] %}
+                                                            {% set title = file ? format.label ~ ' : ' ~ (file.originalName ?? file.fileName) : format.label ~ ' : absent' %}
+                                                            <i class="fa-solid {{ format.icon }} admin-formats__icon{{ file ? ' is-available' }}" title="{{ title }}" aria-hidden="true"></i>
+                                                            <span class="sr-only">{{ title }}.</span>
+                                                        {% endfor %}
+                                                    </span>
+                                                </td>
                                                 <td>{{ video.status.label }}</td>
                                                 <td>{{ video.publishedAt|date('d/m/Y') }}</td>
                                                 <td>{{ video.viewsCount|number_format(0, ',', ' ') }}</td>
                                                 <td>{{ video.featured ? 'Oui' : 'Non' }}</td>
                                                 <td class="admin-table__actions">
-                                                    <a class="btn btn--outline btn--sm" href="{{ path('admin_video_edit', {id: video.id}) }}">Modifier</a>
+                                                    {% set videoName = item.subject.title ~ ' — ' ~ video.language.name %}
+                                                    <a class="btn btn--outline btn--sm btn--icon" href="{{ path('admin_video_edit', {id: video.id}) }}" title="Modifier" aria-label="Modifier {{ videoName }}">
+                                                        <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                                    </a>
                                                     <form method="post" action="{{ path('admin_video_delete', {id: video.id}) }}" onsubmit="return confirm('Supprimer ce contenu ?');">
                                                         <input type="hidden" name="_token" value="{{ csrf_token('delete-video-' ~ video.id) }}">
-                                                        <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
+                                                        <button type="submit" class="btn btn--danger btn--sm btn--icon" title="Supprimer" aria-label="Supprimer {{ videoName }}">
+                                                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                                        </button>
                                                     </form>
                                                 </td>
                                             </tr>
