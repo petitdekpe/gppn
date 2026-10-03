@@ -2,7 +2,8 @@
     Bouton « Partager » (voir share_controller.js) : feuille de partage du
     téléphone sur mobile, menu des réseaux et copie du lien sur ordinateur.
     Paramètres : video (contenu partagé), ou shareLink + shareTitle (ex. lien d'un kit) ;
-    variant (card | spotlight | detail | kit) ; shareLabel (texte du bouton, « Partager » par défaut).
+    variant (card | spotlight | detail | kit) ; shareLabel (texte du bouton, « Partager » par défaut) ;
+    shareIconOnly (bouton rond, icône seule : le texte n'apparaît que pour « Lien copié »).
     Noms préfixés : include transmet aussi les variables de la page appelante.
 #}
 {% set shareUrl = shareLink ?? url('app_video_show', {slug: video.slug}) %}
@@ -10,9 +11,9 @@
 {% set shareText = shareTitle ~ ' — Le Gouvernement plus près de nous' %}
 <div class="share share--{{ variant|default('card') }}" data-controller="share"
      data-share-url-value="{{ shareUrl }}" data-share-title-value="{{ shareTitle }}">
-    <button type="button" class="share__toggle" data-action="share#share" data-share-target="toggle"
-            aria-haspopup="true" aria-expanded="false" aria-label="{{ shareLabel ?? 'Partager' }} « {{ shareTitle }} »">
-        <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> <span data-share-target="label">{{ shareLabel ?? 'Partager' }}</span>
+    <button type="button" class="share__toggle{{ shareIconOnly ?? false ? ' share__toggle--icon' }}" data-action="share#share" data-share-target="toggle"
+            aria-haspopup="true" aria-expanded="false" aria-label="{{ shareLabel ?? 'Partager' }} « {{ shareTitle }} »"{% if shareIconOnly ?? false %} title="{{ shareLabel ?? 'Partager' }}"{% endif %}>
+        <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> <span data-share-target="label"{% if shareIconOnly ?? false %} class="sr-only"{% endif %}>{{ shareLabel ?? 'Partager' }}</span>
     </button>
     <div class="share__menu" popover data-share-target="menu" aria-label="Partager">
         <a href="https://wa.me/?text={{ (shareText ~ ' ' ~ shareUrl)|url_encode }}" target="_blank" rel="noopener noreferrer" data-action="share#close">

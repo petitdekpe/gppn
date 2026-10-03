@@ -126,14 +126,26 @@ export default class extends Controller {
     }
 }
 
-/** Volets (« + N autres », « Plus de filtres »…) ouverts par le visiteur : ils le restent. */
+/**
+ * Volets (« + N autres », « Plus de filtres »…) ouverts par le visiteur : ils le restent.
+ * Rapprochés par classe puis par rang : un « + N autres » qui disparaît ne décale pas les autres volets.
+ */
 function keepOpenState(current, fresh) {
-    const before = current.querySelectorAll('details');
-    const after = fresh.querySelectorAll('details');
-    before.forEach((details, index) => {
-        if (details.open && after[index]) {
-            after[index].open = true;
-        }
+    const byKind = (root) => {
+        const groups = new Map();
+        root.querySelectorAll('details').forEach((details) => {
+            groups.set(details.className, [...(groups.get(details.className) ?? []), details]);
+        });
+        return groups;
+    };
+    const after = byKind(fresh);
+    byKind(current).forEach((list, kind) => {
+        list.forEach((details, index) => {
+            const match = after.get(kind)?.[index];
+            if (details.open && match) {
+                match.open = true;
+            }
+        });
     });
 }
 

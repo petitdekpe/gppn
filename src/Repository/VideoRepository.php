@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Doctrine\Filter\CapsuleFormatFilter;
 use App\Entity\CouncilSession;
 use App\Entity\Language;
+use App\Entity\Subject;
 use App\Entity\Thematic;
 use App\Entity\Video;
 use App\Enum\CapsuleFormat;
@@ -20,6 +21,8 @@ use Doctrine\Persistence\ManagerRegistry;
 class VideoRepository extends ServiceEntityRepository
 {
     public const PER_PAGE = 12;
+    /** Page Contenus : sujets par page, chacun avec tous ses contenus (une langue par contenu). */
+    public const SUBJECTS_PER_PAGE = 6;
 
     public function __construct(ManagerRegistry $registry)
     {
@@ -316,6 +319,83 @@ class VideoRepository extends ServiceEntityRepository
     {
         $page = max(1, $page);
 
+        $qb = $this->searchQueryBuilder($thematics, $languages, $formats, $query, $speakerRole, $councilSessions, $speakerPeriod, $querySpeakerIds);
+        $qb->orderBy('v.publishedAt', 'DESC');
+
+        $countQb = clone $qb;
+        $total = (int) $countQb->select('COUNT(DISTINCT v.id)')->getQuery()->getSingleScalarResult();
+
+        $videos = $qb->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'videos' => $videos,
+            'total' => $total,
+            'hasMore' => ($page * $perPage) < $total,
+            'page' => $page,
+            'perPage' => $perPage,
+        ];
+    }
+
+    /**
+     * Mêmes filtres que search(), résultats regroupés par sujet (page Contenus) :
+     * la pagination compte les sujets, qui ne sont jamais coupés entre deux pages.
+     * Sujets du plus récemment publié au plus ancien, contenus d'un sujet par langue.
+     *
+     * @return array{groups: list<array{subject: Subject, videos: Video[]}>, total: int, videoTotal: int, hasMore: bool, page: int, perPage: int}
+     */
+    public function searchBySubject(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::SUBJECTS_PER_PAGE, ?string $speakerRole = null, array $councilSessions = [], ?SpeakerPeriodFilter $speakerPeriod = null, array $querySpeakerIds = []): array
+    {
+        $page = max(1, $page);
+        $qb = $this->searchQueryBuilder($thematics, $languages, $formats, $query, $speakerRole, $councilSessions, $speakerPeriod, $querySpeakerIds);
+
+        $counts = (clone $qb)->select('COUNT(DISTINCT s.id) AS subjects, COUNT(DISTINCT v.id) AS videos')->getQuery()->getSingleResult();
+        $total = (int) $counts['subjects'];
+
+        $subjectIds = array_column((clone $qb)
+            ->select('s.id AS id, MAX(v.publishedAt) AS HIDDEN latest')
+            ->groupBy('s.id')
+            ->orderBy('latest', 'DESC')
+            ->addOrderBy('s.id', 'DESC')
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getScalarResult(), 'id');
+
+        $groups = array_fill_keys($subjectIds, null);
+        if ($subjectIds !== []) {
+            $videos = $qb->andWhere('s.id IN (:pageSubjects)')
+                ->setParameter('pageSubjects', $subjectIds)
+                ->orderBy('l.name', 'ASC')
+                ->addOrderBy('v.id', 'ASC')
+                ->getQuery()
+                ->getResult();
+            foreach ($videos as $video) {
+                $subject = $video->getSubject();
+                $groups[$subject->getId()] ??= ['subject' => $subject, 'videos' => []];
+                $groups[$subject->getId()]['videos'][] = $video;
+            }
+        }
+
+        return [
+            'groups' => array_values(array_filter($groups)),
+            'total' => $total,
+            'videoTotal' => (int) $counts['videos'],
+            'hasMore' => ($page * $perPage) < $total,
+            'page' => $page,
+            'perPage' => $perPage,
+        ];
+    }
+
+    /**
+     * Contenus publiés répondant aux filtres des listes (Contenus, Langue, Thématique).
+     *
+     * @param list<int> $querySpeakerIds voir search()
+     */
+    private function searchQueryBuilder(array $thematics, array $languages, array $formats, ?string $query, ?string $speakerRole, array $councilSessions, ?SpeakerPeriodFilter $speakerPeriod, array $querySpeakerIds): \Doctrine\ORM\QueryBuilder
+    {
         $qb = $this->baseQueryBuilder();
         $speakerPeriod?->apply($qb);
 
@@ -357,23 +437,7 @@ class VideoRepository extends ServiceEntityRepository
             $qb->andWhere('v.id IN (:speakerVideoIds)')->setParameter('speakerVideoIds', $videoIds ?: [0]);
         }
 
-        $qb->orderBy('v.publishedAt', 'DESC');
-
-        $countQb = clone $qb;
-        $total = (int) $countQb->select('COUNT(DISTINCT v.id)')->getQuery()->getSingleScalarResult();
-
-        $videos = $qb->setFirstResult(($page - 1) * $perPage)
-            ->setMaxResults($perPage)
-            ->getQuery()
-            ->getResult();
-
-        return [
-            'videos' => $videos,
-            'total' => $total,
-            'hasMore' => ($page * $perPage) < $total,
-            'page' => $page,
-            'perPage' => $perPage,
-        ];
+        return $qb;
     }
 
     /**

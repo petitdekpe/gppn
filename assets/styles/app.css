@@ -821,6 +821,41 @@ button {
     color: #fff;
 }
 
+/* Bouton rond, icône seule (cartes de la page Contenus) ; s'élargit pour « Lien copié ». */
+.share__toggle--icon {
+    justify-content: center;
+    min-width: 32px;
+    padding: 4px 8px;
+}
+
+/* Télécharger + Partager à droite des badges de la carte. */
+.video-card__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.video-card__actions .share--card {
+    margin-left: 0;
+}
+
+.video-card__icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-navy);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-size: 0.78rem;
+}
+
+.video-card__icon-btn:hover {
+    background: var(--color-navy);
+    color: #fff;
+}
+
 .share--spotlight .share__toggle,
 .share--detail .share__toggle {
     min-height: 36px;
@@ -1283,6 +1318,10 @@ button {
         gap: 8px;
     }
 
+    .filters-panel .filters-sidebar__fold {
+        margin-top: 0;
+    }
+
     .filters-panel .filters-sidebar__option {
         position: relative;
         display: inline-flex;
@@ -1335,8 +1374,9 @@ button {
     }
 }
 
-/* Page Contenus : filtres en haut, contenus en dessous. Intervenants et Langue
-   restent visibles (pastilles du mobile), le reste sous « + Plus de filtres ». */
+/* Page Contenus : filtres en haut, contenus en dessous. Conseil des ministres et
+   Langue restent visibles l'un sous l'autre (pastilles du mobile), le reste sous
+   « + Plus de filtres ». */
 
 .filters-panel--top .filters-panel__body {
     display: block;
@@ -1362,6 +1402,10 @@ button {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
+    }
+
+    .filters-panel--top .filters-sidebar__fold {
+        margin-top: 0;
     }
 
     .filters-panel--top .filters-sidebar__option {
@@ -1410,18 +1454,6 @@ button {
 @media (min-width: 860px) {
     .video-layout--stacked .video-layout__main .video-grid {
         grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-/* Grand écran : Intervenants et Langue côte à côte, « Plus de filtres » en dessous. */
-@media (min-width: 1000px) {
-    .filters-panel--top .filters-sidebar {
-        grid-template-columns: auto minmax(0, 1fr);
-        column-gap: 40px;
-    }
-
-    .filters-panel--top .filters-sidebar__extra {
-        grid-column: 1 / -1;
     }
 }
 
@@ -4886,6 +4918,35 @@ select option.subject-create-option {
     color: var(--color-green-dark);
 }
 
+/* ---- Page Contenus : un bloc par sujet ---------------------------------- */
+.subject-group {
+    margin-bottom: 36px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.subject-group__header {
+    margin-bottom: 14px;
+    padding-left: 12px;
+    border-left: 4px solid var(--thematic-color, var(--color-navy));
+}
+
+.subject-group__header h2 {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+}
+
+.subject-group__meta {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+}
+
+.subject-group__thematic {
+    font-weight: 700;
+    color: var(--thematic-color, var(--color-navy));
+}
+
 .speaker-council {
     margin-bottom: 36px;
     padding-bottom: 24px;
@@ -5286,6 +5347,15 @@ select option.subject-create-option {
 .filters-sidebar__fold[open] > summary {
     margin-bottom: 4px;
     color: var(--color-muted);
+}
+
+/* En pastilles (mobile, page Contenus) : « + N » sur la ligne des libellés ; ouvert, les autres choix passent dessous. */
+.filters-sidebar__options > .filters-sidebar__fold {
+    align-self: center;
+}
+
+.filters-sidebar__options > .filters-sidebar__fold[open] {
+    flex-basis: 100%;
 }
 
 /* Pendant la mise à jour : résultats estompés, filtres toujours utilisables. */

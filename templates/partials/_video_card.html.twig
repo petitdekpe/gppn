@@ -35,7 +35,21 @@
             {% for format in video.availableFormats %}
                 <span class="video-card__badge video-card__badge--format">{{ format.label }}</span>
             {% endfor %}
-            {{ include('partials/_share.html.twig', {video: video, variant: 'card'}) }}
+            {# cardIconActions (page Contenus) : Télécharger et Partager en boutons ronds, icône seule. #}
+            {% if cardIconActions ?? false %}
+                <span class="video-card__actions">
+                    {% set cardDownload = preferred_download(video) %}
+                    {% if cardDownload %}
+                        <a class="video-card__icon-btn {{ download_class(cardDownload) }}" href="{{ video_file_url(cardDownload) }}" download="{{ cardDownload.originalName ?? cardDownload.fileName }}"
+                           title="Télécharger" aria-label="Télécharger « {{ video.title }} » ({{ video.language.name }})">
+                            <i class="fa-solid fa-download" aria-hidden="true"></i>
+                        </a>
+                    {% endif %}
+                    {{ include('partials/_share.html.twig', {video: video, variant: 'card', shareIconOnly: true}) }}
+                </span>
+            {% else %}
+                {{ include('partials/_share.html.twig', {video: video, variant: 'card'}) }}
+            {% endif %}
         </div>
     </div>
 </article>

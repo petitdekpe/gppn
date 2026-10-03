@@ -92,11 +92,17 @@ export default class extends Controller {
         menu.style.left = `${Math.min(Math.max(8, button.left), window.innerWidth - menu.offsetWidth - 8)}px`;
     }
 
+    /** Message passager à la place du texte ; un bouton icône seule l'affiche le temps du message. */
     flash(message) {
-        const initial = this.labelTarget.dataset.initial ?? this.labelTarget.textContent;
-        this.labelTarget.dataset.initial = initial;
-        this.labelTarget.textContent = message;
+        const label = this.labelTarget;
+        label.dataset.initial ??= label.textContent;
+        label.dataset.hidden ??= String(label.classList.contains('sr-only'));
+        label.textContent = message;
+        label.classList.remove('sr-only');
         clearTimeout(this.timer);
-        this.timer = setTimeout(() => { this.labelTarget.textContent = initial; }, 2000);
+        this.timer = setTimeout(() => {
+            label.textContent = label.dataset.initial;
+            label.classList.toggle('sr-only', label.dataset.hidden === 'true');
+        }, 2000);
     }
 }

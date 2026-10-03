@@ -65,7 +65,7 @@ class VideoController extends AbstractController
         // et le lien vers sa page en tête des résultats.
         $matchedPeople = $query !== null ? $speakerPeriodCriteria->searchPeople($query, 3) : [];
 
-        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole, councilSessions: $selectedCouncilSessions, speakerPeriod: $speakerPeriod, querySpeakerIds: array_merge([], ...array_column($matchedPeople, 'speakerIds')));
+        $results = $videoRepository->searchBySubject($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole, councilSessions: $selectedCouncilSessions, speakerPeriod: $speakerPeriod, querySpeakerIds: array_merge([], ...array_column($matchedPeople, 'speakerIds')));
 
         // Filtres retenus (format « Audio » écarté pour le public), repris dans la pagination.
         $routeParams = array_filter([
