@@ -4,59 +4,91 @@
 {% block page_title %}Utilisateurs{% endblock %}
 
 {% block body %}
-    <div class="admin-toolbar">
+    <div class="admin-toolbar admin-toolbar--actions">
         <a class="btn btn--primary" href="{{ path('admin_user_new') }}">+ Nouvel utilisateur</a>
+        {% if tab == 'medias' and counts.medias > 0 %}
+            <a class="btn btn--outline" href="{{ path('admin_user_export_media') }}"><i class="fa-solid fa-file-csv" aria-hidden="true"></i> Exporter les médias (CSV)</a>
+        {% endif %}
     </div>
 
-    <div data-controller="bulk-select">
-        {% set roleChoices = [] %}
-        {% for label, role in roles %}
-            {% set roleChoices = roleChoices|merge([{value: role, label: label}]) %}
-        {% endfor %}
-        {{ include('admin/_bulk_bar.html.twig', {
-            formId: 'bulk-user',
-            action: path('admin_user_bulk'),
-            tokenId: 'bulk-user',
-            actions: [
-                {value: 'role', label: 'Changer le rôle', param: 'role'},
-                {value: 'delete', label: 'Supprimer', confirm: 'Supprimer les %count% comptes sélectionnés ? Votre propre compte sera épargné.'},
-            ],
-            params: [{key: 'role', label: 'Nouveau rôle', choices: roleChoices}],
-        }) }}
+    {# Équipe du back-office ; médias inscrits depuis l'espace presse, avec leurs coordonnées. #}
+    <nav class="admin-tabs" aria-label="Type de comptes">
+        <a href="{{ path('admin_user_index') }}" class="admin-tabs__tab{{ tab == 'equipe' ? ' is-active' }}"{{ tab == 'equipe' ? ' aria-current="page"' }}>Équipe <span class="admin-tabs__count">{{ counts.equipe }}</span></a>
+        <a href="{{ path('admin_user_index', {type: 'medias'}) }}" class="admin-tabs__tab{{ tab == 'medias' ? ' is-active' }}"{{ tab == 'medias' ? ' aria-current="page"' }}>Médias (espace presse) <span class="admin-tabs__count">{{ counts.medias }}</span></a>
+    </nav>
 
-        <div class="admin-table-wrap">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        {{ include('admin/_bulk_all.html.twig') }}
-                        <th>E-mail</th>
-                        <th>Rôle</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
+    {% if users is empty %}
+        <p class="empty-state">{{ tab == 'medias' ? 'Aucun média inscrit pour le moment.' : 'Aucun utilisateur.' }}</p>
+    {% else %}
+        <div data-controller="bulk-select">
+            {% set roleChoices = [] %}
+            {% for label, role in roles %}
+                {% set roleChoices = roleChoices|merge([{value: role, label: label}]) %}
+            {% endfor %}
+            {{ include('admin/_bulk_bar.html.twig', {
+                formId: 'bulk-user',
+                action: path('admin_user_bulk'),
+                tokenId: 'bulk-user',
+                actions: [
+                    {value: 'role', label: 'Changer le rôle', param: 'role'},
+                    {value: 'delete', label: 'Supprimer', confirm: 'Supprimer les %count% comptes sélectionnés ? Votre propre compte sera épargné.'},
+                ],
+                params: [{key: 'role', label: 'Nouveau rôle', choices: roleChoices}],
+            }) }}
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
                         <tr>
-                            {% if user != app.user %}
-                                {{ include('admin/_bulk_checkbox.html.twig', {formId: 'bulk-user', id: user.id, label: user.email}) }}
+                            {{ include('admin/_bulk_all.html.twig') }}
+                            {% if tab == 'medias' %}
+                                <th>Nom</th>
+                                <th>Média</th>
+                                <th>Type</th>
+                                <th>E-mail</th>
+                                <th>Téléphone</th>
+                                <th>Inscription</th>
                             {% else %}
-                                <td class="admin-table__select"></td>
+                                <th>E-mail</th>
+                                <th>Rôle</th>
                             {% endif %}
-                            <td>{{ user.email }}</td>
-                            <td>{{ user.roleLabel ?: '—' }}</td>
-                            <td class="admin-table__actions">
-                                <a class="btn btn--outline btn--sm" href="{{ path('admin_user_edit', {id: user.id}) }}">Modifier</a>
-                                {% if user != app.user %}
-                                    <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" onsubmit="return confirm('Supprimer cet utilisateur ?');">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-user-' ~ user.id) }}">
-                                        <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
-                                    </form>
-                                {% endif %}
-                            </td>
+                            <th></th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                {% if user != app.user %}
+                                    {{ include('admin/_bulk_checkbox.html.twig', {formId: 'bulk-user', id: user.id, label: user.email}) }}
+                                {% else %}
+                                    <td class="admin-table__select"></td>
+                                {% endif %}
+                                {% if tab == 'medias' %}
+                                    <td>{{ user.fullName ?: '—' }}</td>
+                                    <td class="admin-table__wrap">{{ user.organization ?: '—' }}</td>
+                                    <td>{{ user.mediaTypeLabel ?: '—' }}</td>
+                                    <td><a href="mailto:{{ user.email }}">{{ user.email }}</a></td>
+                                    <td>{% if user.phone %}<a href="tel:{{ user.phone|replace({' ': '', '.': ''}) }}">{{ user.phone }}</a>{% else %}—{% endif %}</td>
+                                    <td>{{ user.registeredAt ? user.registeredAt|date('d/m/Y') : '—' }}</td>
+                                {% else %}
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.roleLabel ?: '—' }}</td>
+                                {% endif %}
+                                <td class="admin-table__actions">
+                                    <a class="btn btn--outline btn--sm" href="{{ path('admin_user_edit', {id: user.id}) }}">Modifier</a>
+                                    {% if user != app.user %}
+                                        <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" onsubmit="return confirm('Supprimer cet utilisateur ?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete-user-' ~ user.id) }}">
+                                            <button type="submit" class="btn btn--danger btn--sm">Supprimer</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+        {{ include('partials/_pagination.html.twig', {results: results, route: 'admin_user_index', route_params: tab == 'medias' ? {type: 'medias'} : {}, label: 'Pagination des utilisateurs'}) }}
+    {% endif %}
 {% endblock %}

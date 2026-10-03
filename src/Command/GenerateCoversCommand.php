@@ -13,7 +13,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:video:generate-covers',
-    description: 'Tire de leur vidéo TV la couverture des contenus qui n’en ont pas.',
+    description: 'Tire de leur vidéo (TV, à défaut Mobile) la couverture des contenus qui n’en ont pas.',
 )]
 final class GenerateCoversCommand extends Command
 {
@@ -54,7 +54,7 @@ final class GenerateCoversCommand extends Command
             $this->entityManager->clear();
         }
 
-        $io->success(sprintf('%d couverture(s) générée(s) ; %d contenu(s) sans vidéo TV laissé(s) de côté.', $generated, $withoutSource));
+        $io->success(sprintf('%d couverture(s) générée(s) ; %d contenu(s) sans vidéo TV ni Mobile laissé(s) de côté.', $generated, $withoutSource));
         if ($failures !== []) {
             $io->warning(sprintf('%d échec(s) :', count($failures)));
             $io->listing($failures);

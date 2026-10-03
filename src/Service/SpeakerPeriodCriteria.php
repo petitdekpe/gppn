@@ -66,7 +66,7 @@ class SpeakerPeriodCriteria
      * Nom et fonction affichés : ceux de la fiche la plus récente
      * (gouvernement actuel d'abord).
      *
-     * @return list<array{slug: string, name: string, role: ?string, councillor: bool, speakerIds: list<int>, videoCount: int}>
+     * @return list<array{slug: string, name: string, role: ?string, councillor: bool, codes: list<string>, speakerIds: list<int>, videoCount: int}>
      */
     public function people(): array
     {
@@ -94,10 +94,12 @@ class SpeakerPeriodCriteria
             usort($speakers, fn (Speaker $a, Speaker $b) => $this->recency($b) <=> $this->recency($a));
             $latest = $speakers[0];
             $people[] = [
-                'slug' => str_replace(' ', '-', $key),
+                'slug' => Speaker::slugForName($latest->getFullName()),
                 'name' => $latest->getFullName(),
                 'role' => $latest->getRole(),
                 'councillor' => $latest->isMinistreConseiller(),
+                // Sigles et codes de fichier de toutes ses fiches : recherche « MFAS », « MCCMFAS ».
+                'codes' => array_values(array_unique(array_filter(array_merge(...array_map(static fn (Speaker $s) => [$s->getSigle(), $s->getFileCode()], $speakers))))),
                 'speakerIds' => array_map(static fn (Speaker $s) => $s->getId(), $speakers),
                 'videoCount' => array_sum(array_map(static fn (Speaker $s) => $counts[$s->getId()] ?? 0, $speakers)),
             ];
@@ -105,6 +107,59 @@ class SpeakerPeriodCriteria
         usort($people, static fn (array $a, array $b) => strcmp(Speaker::nameKey($a['name']), Speaker::nameKey($b['name'])));
 
         return $this->people = $people;
+    }
+
+    /**
+     * Personne d'après son identifiant d'adresse (page intervenant).
+     *
+     * @return array{slug: string, name: string, role: ?string, councillor: bool, speakerIds: list<int>, videoCount: int}|null
+     */
+    public function person(string $slug): ?array
+    {
+        foreach ($this->people() as $person) {
+            if ($person['slug'] === $slug) {
+                return $person;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Personnes qui correspondent à un texte recherché : chaque mot tapé
+     * commence un mot du nom (ordre, accents et casse indifférents :
+     * « tognifode vero » trouve Véronique TOGNIFODÉ), ou le texte est un de
+     * ses sigles. Les plus fournies d'abord.
+     *
+     * @return list<array{slug: string, name: string, role: ?string, councillor: bool, codes: list<string>, speakerIds: list<int>, videoCount: int}>
+     */
+    public function searchPeople(string $text, int $limit = 5): array
+    {
+        $words = array_filter(explode(' ', Speaker::nameKey($text)), static fn (string $word) => \strlen($word) >= 2);
+        $code = strtoupper(preg_replace('/[^a-z0-9]/i', '', $text));
+        if ($words === [] && \strlen($code) < 2) {
+            return [];
+        }
+
+        $matches = array_filter($this->people(), static function (array $person) use ($words, $code): bool {
+            if (\in_array($code, array_map('strtoupper', $person['codes']), true)) {
+                return true;
+            }
+            if ($words === []) {
+                return false;
+            }
+            $nameWords = explode(' ', Speaker::nameKey($person['name']));
+            foreach ($words as $word) {
+                if (array_filter($nameWords, static fn (string $nameWord) => str_starts_with($nameWord, $word)) === []) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+        usort($matches, static fn (array $a, array $b) => $b['videoCount'] <=> $a['videoCount']);
+
+        return \array_slice($matches, 0, $limit);
     }
 
     /**

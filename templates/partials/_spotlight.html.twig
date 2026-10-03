@@ -38,18 +38,12 @@
                         </h3>
                         <p>{{ spotlight.summary }}</p>
                         <div class="spotlight__actions">
-                            {% if previewFile %}
-                                <a class="btn btn--dark" href="{{ video_file_url(previewFile) }}" download="{{ previewFile.originalName ?? previewFile.fileName }}">Télécharger</a>
+                            {# Version Mobile en priorité (masqué sur téléphone s'il n'y en a pas). #}
+                            {% set spotlightDownload = preferred_download(spotlight) %}
+                            {% if spotlightDownload %}
+                                <a class="btn btn--dark {{ download_class(spotlightDownload) }}" href="{{ video_file_url(spotlightDownload) }}" download="{{ spotlightDownload.originalName ?? spotlightDownload.fileName }}">Télécharger</a>
                             {% endif %}
-                            <span class="share-divider" aria-hidden="true"></span>
-                            <a class="share-copy" href="#" title="Copier le lien"><i class="fa-solid fa-link" aria-hidden="true"></i> Copier le lien</a>
-                            <span class="share-icons">
-                                <a href="#" title="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
-                                <a href="#" title="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
-                                <a href="#" title="X"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
-                                <a href="#" title="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
-                                <a href="#" title="LinkedIn"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
-                            </span>
+                            {{ include('partials/_share.html.twig', {video: spotlight, variant: 'spotlight'}) }}
                         </div>
                     </div>
                 </div>

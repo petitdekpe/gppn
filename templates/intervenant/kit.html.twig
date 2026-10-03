@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% set councilLabel = council.label ?: 'Conseil des ministres du ' ~ council.date|date('d/m/Y') %}
+
+{% block title %}{{ formatInfo.label }} — {{ person.name }} — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}{{ formatInfo.label }} : les prises de parole de {{ person.name }} ({{ councilLabel }}), prêtes à diffuser.{% endblock %}
+
+{% block body %}
+    {# Page ouverte par un lien transmis (télévision, radio, groupe WhatsApp) : lien signé ;
+       téléchargement après connexion ou inscription dans l'espace presse. #}
+    <section class="page-header wrap">
+        <span class="eyebrow"><i class="fa-solid fa-box-archive" aria-hidden="true"></i> {{ formatInfo.label }}</span>
+        <h1>{{ person.name }}</h1>
+        <p>{{ councilLabel }}{% if person.role %} · {{ person.role }}{% endif %}</p>
+    </section>
+
+    <section class="section wrap kit-page">
+        {% if items is empty %}
+            <p class="empty-state">Ce kit ne contient plus aucun fichier.</p>
+        {% else %}
+            {# Presse et médias : connexion ou inscription avant tout téléchargement (e-mail et téléphone recueillis). #}
+            {% if not canDownload %}
+                {{ include('partials/_press_gate.html.twig', {pressGateMessage: 'Ce kit est destiné à la presse et aux médias : connectez-vous ou inscrivez-vous (une minute) pour le télécharger.'}) }}
+            {% endif %}
+            <div class="kit-page__summary">
+                {% if canDownload %}
+                    <a class="btn btn--dark kit-page__zip" href="{{ zipUrl }}" data-turbo="false">
+                        <i class="fa-solid fa-download" aria-hidden="true"></i> Tout télécharger (.zip)
+                    </a>
+                {% endif %}
+                <p class="muted">
+                    {% for part, count in counts %}
+                        <i class="fa-solid {{ parts[part].icon }}" aria-hidden="true"></i> {{ parts[part].label }} : {{ count }}{{ not loop.last ? ' · ' }}
+                    {% endfor %}
+                    {% if counts|length > 1 %}<br>Dans l’archive, les fichiers sont rangés par dossier : {{ counts|keys|map(p => parts[p].label)|join(', ') }}.{% endif %}
+                </p>
+            </div>
+
+            <ul class="speaker-council__videos">
+                {% for item in items %}
+                    <li class="speaker-video">
+                        <span class="speaker-video__info">
+                            <strong>{{ item.video.title }}</strong>
+                            <span class="muted">{{ item.video.language.name }}{{ item.video.durationSeconds > 0 ? ' · ' ~ item.video.durationLabel }}</span>
+                        </span>
+                        <span class="speaker-video__files">
+                            {% for part, file in canDownload ? item.files : [] %}
+                                <a class="btn btn--outline btn--sm" href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" title="{{ parts[part].label }}{% if file.fileSize %} · {{ (file.fileSize / 1048576)|round(1) }} Mo{% endif %}">
+                                    <i class="fa-solid {{ parts[part].icon }}" aria-hidden="true"></i> {{ parts[part].label }}
+                                </a>
+                            {% else %}
+                                <span class="muted">{{ item.files|keys|map(p => parts[p].label)|join(' · ') }}</span>
+                            {% endfor %}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <p class="download-panel__mention">Mention obligatoire à la diffusion : « Le Gouvernement Plus Près de Nous - République du Bénin. »</p>
+    </section>
+{% endblock %}

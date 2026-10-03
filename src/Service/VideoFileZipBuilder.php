@@ -27,8 +27,10 @@ class VideoFileZipBuilder
      * @param VideoFile[] $files
      * @param string|null $attributionSheet Contenu texte d'une fiche d'attribution
      *   ajoutée à la racine de l'archive (constructeur de lot de l'espace média).
+     * @param (\Closure(VideoFile): ?string)|null $folderFor dossier de chaque
+     *   fichier dans l'archive (ex. « TV », « Radio », « Mobile » pour un kit)
      */
-    public function build(array $files, ?string $attributionSheet = null): string
+    public function build(array $files, ?string $attributionSheet = null, ?\Closure $folderFor = null): string
     {
         $zipPath = tempnam(sys_get_temp_dir(), 'gppn_zip_') . '.zip';
 
@@ -49,7 +51,8 @@ class VideoFileZipBuilder
                     throw new \RuntimeException(sprintf('Fichier introuvable dans le stockage : "%s".', $fileName));
                 }
 
-                $entryName = $this->uniqueEntryName($this->buildEntryName($file), $usedEntryNames);
+                $folder = $folderFor !== null ? $folderFor($file) : null;
+                $entryName = $this->uniqueEntryName(($folder !== null ? $folder . '/' : '') . $this->buildEntryName($file), $usedEntryNames);
 
                 $zip->addFile($sourcePath, $entryName);
                 // Vidéos et images sont déjà compressées : les stocker telles
@@ -65,6 +68,39 @@ class VideoFileZipBuilder
         }
 
         return $zipPath;
+    }
+
+    /**
+     * Fiche d'attribution jointe aux lots (espace média) et aux kits
+     * (page intervenant) : liste des contenus et mention obligatoire.
+     *
+     * @param VideoFile[] $files
+     */
+    public function attributionSheet(array $files, ?string $title = null): string
+    {
+        $lines = [
+            'LE GOUVERNEMENT PLUS PRÈS DE NOUS — FICHE D’ATTRIBUTION',
+            ...($title !== null ? [$title] : []),
+            'Lot généré le ' . (new \DateTimeImmutable())->format('d/m/Y à H:i'),
+            '',
+            'Contenu de ce lot :',
+        ];
+
+        foreach ($files as $file) {
+            $video = $file->getVideo();
+            $lines[] = sprintf(
+                '- %s | %s | %s | %s',
+                $video->getTitle(),
+                $video->getThematic()->getName(),
+                $video->getLanguage()->getName(),
+                $file->getType()->getLabel(),
+            );
+        }
+
+        $lines[] = '';
+        $lines[] = 'Mention obligatoire à la diffusion : « Le Gouvernement Plus Près de Nous - République du Bénin. »';
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -93,7 +129,9 @@ class VideoFileZipBuilder
 
         while (isset($usedEntryNames[$entryName])) {
             $extension = pathinfo($base, PATHINFO_EXTENSION);
-            $baseName = pathinfo($base, PATHINFO_FILENAME);
+            // Dossier conservé (kits rangés en TV/, Radio/, Mobile/).
+            $directory = str_contains($base, '/') ? substr($base, 0, strrpos($base, '/') + 1) : '';
+            $baseName = $directory . pathinfo($base, PATHINFO_FILENAME);
             $entryName = $extension !== '' ? sprintf('%s-%d.%s', $baseName, $suffix, $extension) : sprintf('%s-%d', $baseName, $suffix);
             ++$suffix;
         }

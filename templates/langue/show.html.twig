@@ -8,7 +8,7 @@
         {{ include('partials/_back_link.html.twig', {fallback: path('app_video_index')}) }}
         <span class="eyebrow">Langue nationale</span>
         <h1>{{ language.name }}</h1>
-        <p>{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }} en {{ language.name }}.</p>
+        <p data-live-region="results-count">{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }} en {{ language.name }}.</p>
     </section>
 
     <section class="section wrap video-layout">
@@ -20,10 +20,11 @@
                 selectedThematicSlugs: selectedThematicSlugs,
                 selectedFormatValues: selectedFormatValues,
                 query: query,
+                resetUrl: path('app_langue_show', {slug: language.slug}),
             }) }}
         </aside>
 
-        <div class="video-layout__main">
+        <div class="video-layout__main" data-live-region="results">
             {{ include('partials/_video_grid.html.twig', {
                 results: results,
                 route: 'app_langue_show',

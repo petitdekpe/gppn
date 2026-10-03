@@ -4,17 +4,24 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
+#[UniqueEntity(fields: ['email'], message: 'Un compte existe déjà avec cette adresse e-mail : connectez-vous.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     public const ROLE_SUPER_ADMIN = 'ROLE_SUPER_ADMIN';
     public const ROLE_EDITEUR = 'ROLE_EDITEUR';
     public const ROLE_MODERATEUR = 'ROLE_MODERATEUR';
     public const ROLE_LECTEUR_PRESSE = 'ROLE_LECTEUR_PRESSE';
+    /**
+     * Compte presse ou média inscrit depuis le site (espace presse) :
+     * téléchargements groupés (archives, lots, kits), sans accès au back-office.
+     */
+    public const ROLE_MEDIA = 'ROLE_MEDIA';
 
     /**
      * Rôles assignables depuis le back-office, du plus au moins étendu.
@@ -27,6 +34,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         'Éditeur' => self::ROLE_EDITEUR,
         'Modérateur' => self::ROLE_MODERATEUR,
         'Lecteur presse' => self::ROLE_LECTEUR_PRESSE,
+        'Média (espace presse)' => self::ROLE_MEDIA,
+    ];
+
+    /** Types de média proposés à l'inscription. */
+    public const MEDIA_TYPES = [
+        'Télévision' => 'television',
+        'Radio' => 'radio',
+        'Presse écrite' => 'presse',
+        'Média en ligne' => 'web',
+        'Groupe WhatsApp ou communautaire' => 'communautaire',
+        'Institution' => 'institution',
+        'Autre' => 'autre',
     ];
 
     #[ORM\Id]
@@ -43,6 +62,88 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column]
     private string $password = '';
+
+    // Coordonnées recueillies à l'inscription dans l'espace presse.
+
+    #[ORM\Column(length: 150, nullable: true)]
+    private ?string $fullName = null;
+
+    #[ORM\Column(length: 150, nullable: true)]
+    private ?string $organization = null;
+
+    #[ORM\Column(length: 30, nullable: true)]
+    private ?string $mediaType = null;
+
+    #[ORM\Column(length: 30, nullable: true)]
+    private ?string $phone = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $registeredAt = null;
+
+    public function getFullName(): ?string
+    {
+        return $this->fullName;
+    }
+
+    public function setFullName(?string $fullName): static
+    {
+        $this->fullName = $fullName;
+
+        return $this;
+    }
+
+    public function getOrganization(): ?string
+    {
+        return $this->organization;
+    }
+
+    public function setOrganization(?string $organization): static
+    {
+        $this->organization = $organization;
+
+        return $this;
+    }
+
+    public function getMediaType(): ?string
+    {
+        return $this->mediaType;
+    }
+
+    public function setMediaType(?string $mediaType): static
+    {
+        $this->mediaType = $mediaType;
+
+        return $this;
+    }
+
+    public function getMediaTypeLabel(): ?string
+    {
+        return $this->mediaType !== null ? (array_flip(self::MEDIA_TYPES)[$this->mediaType] ?? $this->mediaType) : null;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function setPhone(?string $phone): static
+    {
+        $this->phone = $phone;
+
+        return $this;
+    }
+
+    public function getRegisteredAt(): ?\DateTimeImmutable
+    {
+        return $this->registeredAt;
+    }
+
+    public function setRegisteredAt(?\DateTimeImmutable $registeredAt): static
+    {
+        $this->registeredAt = $registeredAt;
+
+        return $this;
+    }
 
     public function getId(): ?int
     {

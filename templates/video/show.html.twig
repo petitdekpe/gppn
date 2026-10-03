@@ -17,7 +17,8 @@
         {% set playbackUrl = playbackFile ? video_file_url(playbackFile) : null %}
         {% set playbackCategory = playbackFile ? playbackFile.type.category.value : null %}
         {% set coverImageUrl = video_cover_url(video) %}
-        {% set availableFiles = video.files|filter(f => f.fileName is not null and f.type.isPubliclyDownloadable) %}
+        {# Fichier par fichier pour tous, Mobile en tête (voir MediaAccess). #}
+        {% set availableFiles = downloadable_files(video) %}
         <div class="video-detail__content">
             <div class="video-detail__layout">
                 <div class="video-detail__primary">
@@ -76,7 +77,10 @@
                         </div>
 
                         <h1>{{ video.title }}</h1>
-                        <p class="video-card__meta">Publiée le {{ video.publishedAt|date('d F Y') }} · <strong>{{ video.viewsCount|number_format(0, ',', ' ') }} vues</strong></p>
+                        <div class="video-detail__meta-row">
+                            <p class="video-card__meta">Publiée le {{ video.publishedAt|date('d F Y') }} · <strong>{{ video.viewsCount|number_format(0, ',', ' ') }} vues</strong></p>
+                            {{ include('partials/_share.html.twig', {video: video, variant: 'detail'}) }}
+                        </div>
                         <p class="video-detail__summary">{{ video.summary }}</p>
 
                         {% set learningPoints = video.learningPointsList %}
@@ -96,8 +100,9 @@
                                 <h2>Intervenant</h2>
                                 <ul>
                                     <li>
-                                        <strong>{{ video.speaker.fullName }}</strong>
+                                        <a href="{{ path('app_intervenant_show', {person: video.speaker.personSlug}) }}"><strong>{{ video.speaker.fullName }}</strong></a>
                                         {% if video.speaker.role %}<span class="muted"> — {{ video.speaker.role }}</span>{% endif %}
+                                        <br><a class="video-detail__speaker-link" href="{{ path('app_intervenant_show', {person: video.speaker.personSlug}) }}">Toutes ses vidéos et ses kits à partager →</a>
                                     </li>
                                 </ul>
                             </div>
@@ -130,12 +135,17 @@
 
                 <aside class="download-panel" id="telecharger">
                     <h2>Télécharger</h2>
-                    <p class="muted">Libre de droits pour rediffusion.<br>Aucun compte requis.</p>
+                    {% if is_media() %}
+                        <p class="muted">Espace presse : toutes les versions, une par une.<br>Libre de droits pour rediffusion.</p>
+                    {% else %}
+                        <p class="muted">Libre de droits pour rediffusion, sans compte.</p>
+                    {% endif %}
 
                     {% if availableFiles is not empty %}
+                        {# Mobile en tête ; TV et radio masquées sur téléphone (classe .download--desktop). #}
                         <ul class="download-list">
                             {% for file in availableFiles %}
-                                <li>
+                                <li class="{{ download_class(file) }}">
                                     <span class="download-list__badge">{{ file.type.badge }}</span>
                                     <span class="download-list__info">
                                         <strong>{{ file.type.usageLabel }}</strong>
@@ -146,9 +156,8 @@
                                 </li>
                             {% endfor %}
                         </ul>
-
-                        {% if availableFiles|length > 1 %}
-                            <a href="{{ path('app_video_download_all', {slug: video.slug}) }}" class="btn btn--dark download-panel__all">Tout télécharger (.zip)</a>
+                        {% if availableFiles|filter(f => download_class(f) == 'download--desktop') is not empty %}
+                            <p class="download-panel__phone-hint muted">Versions TV et radio : à télécharger depuis un ordinateur.</p>
                         {% endif %}
                     {% else %}
                         <p class="muted">Aucun fichier disponible pour le moment.</p>

@@ -32,9 +32,10 @@ class VideoFileRepository extends ServiceEntityRepository
      * @param Subject[] $subjects
      * @param Language[] $languages
      * @param CapsuleFormat[] $formats
+     * @param VideoFileType[]|null $allowedTypes types ouverts au visiteur (versions TV et radio réservées aux médias) ; null = tous
      * @return VideoFile[]
      */
-    public function findForLot(array $subjects, array $languages, array $formats, ?SpeakerPeriodFilter $speakerPeriod = null): array
+    public function findForLot(array $subjects, array $languages, array $formats, ?SpeakerPeriodFilter $speakerPeriod = null, ?array $allowedTypes = null): array
     {
         if ($subjects === []) {
             return [];
@@ -52,6 +53,9 @@ class VideoFileRepository extends ServiceEntityRepository
             ->setParameter('subjects', $subjects)
             ->setParameter('status', VideoStatus::PUBLIE);
         $speakerPeriod?->apply($qb);
+        if ($allowedTypes !== null) {
+            $qb->andWhere('f.type IN (:allowedTypes)')->setParameter('allowedTypes', $allowedTypes);
+        }
 
         if ($languages !== []) {
             $qb->andWhere('l IN (:languages)')->setParameter('languages', $languages);
@@ -81,9 +85,10 @@ class VideoFileRepository extends ServiceEntityRepository
      *
      * @param Subject[] $subjects
      * @param Language[] $languages
+     * @param VideoFileType[]|null $allowedTypes types ouverts au visiteur ; null = tous
      * @return CapsuleFormat[]
      */
-    public function findAvailableFormatsForSubjects(array $subjects, array $languages, ?SpeakerPeriodFilter $speakerPeriod = null): array
+    public function findAvailableFormatsForSubjects(array $subjects, array $languages, ?SpeakerPeriodFilter $speakerPeriod = null, ?array $allowedTypes = null): array
     {
         if ($subjects === []) {
             return [];
@@ -98,6 +103,9 @@ class VideoFileRepository extends ServiceEntityRepository
             ->setParameter('subjects', $subjects)
             ->setParameter('status', VideoStatus::PUBLIE);
         $speakerPeriod?->apply($qb);
+        if ($allowedTypes !== null) {
+            $qb->andWhere('f.type IN (:allowedTypes)')->setParameter('allowedTypes', $allowedTypes);
+        }
 
         if ($languages !== []) {
             $qb->innerJoin('v.language', 'l')

@@ -1,0 +1,15 @@
+{# Filtres actifs au-dessus des résultats : chaque étiquette retire son filtre, « Tout effacer » les retire tous. #}
+{% if activeFilters is not empty %}
+    <ul class="active-filters" aria-label="Filtres actifs">
+        {% for filter in activeFilters %}
+            <li>
+                <a class="active-filters__chip" href="{{ filter.url }}" data-live-link aria-label="Retirer le filtre {{ filter.label }}">
+                    {{ filter.label }} <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </a>
+            </li>
+        {% endfor %}
+        {% if activeFilters|length > 1 %}
+            <li><a class="active-filters__clear" href="{{ resetUrl }}" data-live-link>Tout effacer</a></li>
+        {% endif %}
+    </ul>
+{% endif %}

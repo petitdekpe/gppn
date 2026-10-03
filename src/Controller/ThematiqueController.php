@@ -8,6 +8,7 @@ use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
 use App\Service\AppSettings;
+use App\Service\MediaAccess;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,17 +33,19 @@ class ThematiqueController extends AbstractController
         VideoRepository $videoRepository,
         CouncilSessionRepository $councilSessionRepository,
         AppSettings $settings,
+        MediaAccess $mediaAccess,
     ): Response {
-        $thematic = $thematicRepository->findOneBy(['slug' => $slug]) ?? throw $this->createNotFoundException('Thématique introuvable.');
+        $thematic =$thematicRepository->findOneBy(['slug' => $slug]) ?? throw $this->createNotFoundException('Thématique introuvable.');
 
         $queryParams = $request->query->all();
         $languageSlugs = isset($queryParams['langue']) ? array_values((array) $queryParams['langue']) : [];
         $formatValues = isset($queryParams['format']) ? array_values((array) $queryParams['format']) : [];
         $selectedLanguages = $languageSlugs ? $languageRepository->findBy(['slug' => $languageSlugs]) : [];
-        $selectedFormats = array_filter(array_map(
+        // Recherche par format « Audio » (radio) réservée aux médias.
+        $selectedFormats = $mediaAccess->filterFormats(array_filter(array_map(
             static fn (mixed $value): ?CapsuleFormat => CapsuleFormat::tryFrom((string) $value),
             $formatValues,
-        ));
+        )));
 
         $query = $request->query->getString('q') ?: null;
         $page = max(1, $request->query->getInt('page', 1));
@@ -64,7 +67,7 @@ class ThematiqueController extends AbstractController
             'thematic' => $thematic,
             'results' => $results,
             'languages' => $languageRepository->findAllWithVideoCount(),
-            'formats' => $settings->getEnabledFormats(),
+            'formats' => $mediaAccess->filterFormats($settings->getEnabledFormats()),
             'selectedLanguageSlugs' => $languageSlugs,
             'selectedFormatValues' => array_map(static fn (CapsuleFormat $format) => $format->value, $selectedFormats),
             'query' => $query,

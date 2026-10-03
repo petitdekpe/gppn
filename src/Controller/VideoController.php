@@ -11,16 +11,14 @@ use App\Repository\ThematicRepository;
 use App\Repository\VideoFileRepository;
 use App\Repository\VideoRepository;
 use App\Service\AppSettings;
+use App\Service\MediaAccess;
 use App\Service\SpeakerPeriodCriteria;
 use App\Service\VideoFileChecker;
-use App\Service\VideoFileZipBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -35,6 +33,7 @@ class VideoController extends AbstractController
         CouncilSessionRepository $councilSessionRepository,
         AppSettings $settings,
         SpeakerPeriodCriteria $speakerPeriodCriteria,
+        MediaAccess $mediaAccess,
     ): Response {
         $queryParams = $request->query->all();
         $thematicSlugs = isset($queryParams['thematique']) ? array_values((array) $queryParams['thematique']) : [];
@@ -45,10 +44,11 @@ class VideoController extends AbstractController
         $selectedThematics = $thematicSlugs ? $thematicRepository->findBy(['slug' => $thematicSlugs]) : [];
         $selectedLanguages = $languageSlugs ? $languageRepository->findBy(['slug' => $languageSlugs]) : [];
         $selectedCouncilSessions = $councilSessionSlugs ? $councilSessionRepository->findBy(['slug' => $councilSessionSlugs]) : [];
-        $selectedFormats = array_filter(array_map(
+        // Recherche par format « Audio » (radio) réservée aux médias.
+        $selectedFormats = $mediaAccess->filterFormats(array_filter(array_map(
             static fn (mixed $value): ?CapsuleFormat => CapsuleFormat::tryFrom((string) $value),
             $formatValues,
-        ));
+        )));
 
         $query = $request->query->getString('q') ?: null;
         $page = max(1, $request->query->getInt('page', 1));
@@ -61,13 +61,67 @@ class VideoController extends AbstractController
         // Filtres facultatifs, repliés dans la barre latérale.
         $speakerPeriod = $speakerPeriodCriteria->fromParams($queryParams);
 
-        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole, councilSessions: $selectedCouncilSessions, speakerPeriod: $speakerPeriod);
+        // Texte recherché qui désigne un intervenant (nom, sigle) : ses contenus,
+        // et le lien vers sa page en tête des résultats.
+        $matchedPeople = $query !== null ? $speakerPeriodCriteria->searchPeople($query, 3) : [];
+
+        $results = $videoRepository->search($selectedThematics, $selectedLanguages, $selectedFormats, $query, $page, speakerRole: $selectedRole, councilSessions: $selectedCouncilSessions, speakerPeriod: $speakerPeriod, querySpeakerIds: array_merge([], ...array_column($matchedPeople, 'speakerIds')));
+
+        // Filtres retenus (format « Audio » écarté pour le public), repris dans la pagination.
+        $routeParams = array_filter([
+            'thematique' => $thematicSlugs,
+            'langue' => $languageSlugs,
+            'format' => array_map(static fn (CapsuleFormat $format) => $format->value, $selectedFormats),
+            'conseil' => $councilSessionSlugs,
+            'q' => $query,
+            'role' => $selectedRole !== 'tous' ? $selectedRole : null,
+        ]) + $speakerPeriod->queryParams();
+
+        // Étiquettes des filtres actifs, au-dessus des résultats : chacune retire son filtre d'un clic.
+        $without = function (string $key, ?string $value = null) use ($routeParams): string {
+            $params = $routeParams;
+            if ($value === null) {
+                unset($params[$key]);
+            } else {
+                $params[$key] = array_values(array_diff((array) ($params[$key] ?? []), [$value]));
+            }
+            if ($key === 'du') {
+                unset($params['au']); // une période se retire d'un bloc
+            }
+
+            return $this->generateUrl('app_video_index', array_filter($params));
+        };
+        $activeFilters = [];
+        if ($selectedRole !== 'tous') {
+            $activeFilters[] = ['label' => $selectedRole === 'conseiller' ? 'Ministres conseillers' : 'Ministres', 'url' => $without('role')];
+        }
+        foreach ($selectedThematics as $thematic) {
+            $activeFilters[] = ['label' => $thematic->getName(), 'url' => $without('thematique', $thematic->getSlug())];
+        }
+        foreach ($selectedLanguages as $language) {
+            $activeFilters[] = ['label' => $language->getName(), 'url' => $without('langue', $language->getSlug())];
+        }
+        foreach ($selectedFormats as $format) {
+            $activeFilters[] = ['label' => $format->getLabel(), 'url' => $without('format', $format->value)];
+        }
+        foreach ($selectedCouncilSessions as $councilSession) {
+            $activeFilters[] = ['label' => $councilSession->getLabel() ?: 'Conseil du ' . $councilSession->getDate()->format('d/m/Y'), 'url' => $without('conseil', $councilSession->getSlug())];
+        }
+        if ($speakerPeriod->hasPerson()) {
+            $activeFilters[] = ['label' => $speakerPeriod->personName, 'url' => $without('intervenant')];
+        }
+        if ($speakerPeriod->hasPeriod()) {
+            $activeFilters[] = ['label' => ucfirst($speakerPeriod->periodLabel()), 'url' => $without('du')];
+        }
+        if ($query !== null) {
+            $activeFilters[] = ['label' => '« ' . $query . ' »', 'url' => $without('q')];
+        }
 
         return $this->render('video/index.html.twig', [
             'results' => $results,
             'thematics' => $thematicRepository->findAllWithVideoCount(),
             'languages' => $languageRepository->findAllWithVideoCount(),
-            'formats' => $settings->getEnabledFormats(),
+            'formats' => $mediaAccess->filterFormats($settings->getEnabledFormats()),
             'formatCounts' => $videoRepository->countAllByFormat(),
             'councilSessions' => $councilSessionRepository->findAllWithVideoCount(),
             'selectedThematicSlugs' => $thematicSlugs,
@@ -79,14 +133,10 @@ class VideoController extends AbstractController
             'people' => $speakerPeriodCriteria->people(),
             'periodShortcuts' => $speakerPeriodCriteria->periodShortcuts(),
             'speakerPeriod' => $speakerPeriod,
-            'routeParams' => array_filter([
-                'thematique' => $thematicSlugs,
-                'langue' => $languageSlugs,
-                'format' => $formatValues,
-                'conseil' => $councilSessionSlugs,
-                'q' => $query,
-                'role' => $selectedRole !== 'tous' ? $selectedRole : null,
-            ]) + $speakerPeriod->queryParams(),
+            'routeParams' => $routeParams,
+            'activeFilters' => $activeFilters,
+            'matchedPeople' => $matchedPeople,
+            'resetUrl' => $this->generateUrl('app_video_index'),
             'featuredVideos' => $videoRepository->findFeatured(3),
         ]);
     }
@@ -146,32 +196,6 @@ class VideoController extends AbstractController
             'video' => $video,
             'relatedVideos' => $videoRepository->findRelated($video, 8),
         ]);
-    }
-
-    #[Route('/videos/{slug}/telecharger-tout', name: 'app_video_download_all')]
-    public function downloadAll(string $slug, VideoRepository $videoRepository, VideoFileZipBuilder $zipBuilder): Response
-    {
-        $video = $videoRepository->findOneBySlug($slug) ?? throw $this->createNotFoundException('Contenu introuvable.');
-
-        $availableFiles = array_values(array_filter(
-            iterator_to_array($video->getFiles()),
-            static fn ($file) => $file->getFileName() !== null && $file->getType()->isPubliclyDownloadable(),
-        ));
-
-        if ($availableFiles === []) {
-            throw $this->createNotFoundException('Aucun fichier disponible pour ce contenu.');
-        }
-
-        $zipPath = $zipBuilder->build($availableFiles);
-
-        $response = new BinaryFileResponse($zipPath);
-        $response->deleteFileAfterSend(true);
-        $response->setContentDisposition(
-            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-            sprintf('%s.zip', $video->getSlug()),
-        );
-
-        return $response;
     }
 
     #[Route('/videos/{slug}/avis', name: 'app_video_feedback', methods: ['POST'])]

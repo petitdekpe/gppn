@@ -12,11 +12,13 @@
     </section>
 
     <section class="section wrap">
-        <div class="lot-builder">
-            <form method="get" action="{{ path('app_media_space') }}" class="lot-builder__steps">
+        {# Chaque choix met à jour langues, formats et récapitulatif sans recharger la page (lot_builder_controller.js). #}
+        <div class="lot-builder" data-controller="lot-builder">
+            <form method="get" action="{{ path('app_media_space') }}" class="lot-builder__steps"
+                  data-lot-builder-target="form" data-action="change->lot-builder#refresh submit->lot-builder#submit">
                 {# Raccourci facultatif, replié : toutes les vidéos d'un intervenant et/ou d'une période.
                    Sans sujet coché, il compose le lot à lui seul ; avec des sujets cochés, il les restreint. #}
-                <details class="lot-builder__step lot-builder__optional"{{ speakerPeriod.isActive ? ' open' }}>
+                <details class="lot-builder__step lot-builder__optional"{{ speakerPeriod.isActive ? ' open' }} data-lot-builder-target="region" data-region="shortcut">
                     <summary>
                         <span class="lot-builder__optional-title">Raccourci : toutes les vidéos d’un intervenant ou d’une période</span>
                         <span class="lot-builder__optional-tag">facultatif</span>
@@ -31,7 +33,7 @@
                         <details class="lot-builder__sub"{{ speakerPeriod.hasPerson ? ' open' }}>
                             <summary>Intervenant</summary>
                             <label class="sr-only" for="lot-person">Intervenant</label>
-                            <select id="lot-person" name="intervenant" class="filters-sidebar__select" onchange="this.form.submit()">
+                            <select id="lot-person" name="intervenant" class="filters-sidebar__select">
                                 <option value="">Tous les intervenants</option>
                                 {% for person in people %}
                                     <option value="{{ person.slug }}"{{ person.slug == speakerPeriod.person ? ' selected' }}>{{ person.name }}{{ person.role ? ' — ' ~ person.role }} ({{ person.videoCount }})</option>
@@ -43,8 +45,8 @@
                         <details class="lot-builder__sub"{{ speakerPeriod.hasPeriod ? ' open' }}>
                             <summary>Période</summary>
                             <div class="filters-sidebar__dates">
-                                <label>Du <input type="date" name="du" value="{{ speakerPeriod.from ? speakerPeriod.from|date('Y-m-d') }}" onchange="this.form.submit()"></label>
-                                <label>Au <input type="date" name="au" value="{{ speakerPeriod.to ? speakerPeriod.to|date('Y-m-d') }}" onchange="this.form.submit()"></label>
+                                <label>Du <input type="date" name="du" value="{{ speakerPeriod.from ? speakerPeriod.from|date('Y-m-d') }}"></label>
+                                <label>Au <input type="date" name="au" value="{{ speakerPeriod.to ? speakerPeriod.to|date('Y-m-d') }}"></label>
                             </div>
                             {% if periodShortcuts is not empty %}
                                 {% set currentPeriod = (speakerPeriod.from ? speakerPeriod.from|date('Y-m-d')) ~ '|' ~ (speakerPeriod.to ? speakerPeriod.to|date('Y-m-d')) %}
@@ -115,7 +117,7 @@
                                                     data-subject-search-target="item"
                                                     data-search-text="{{ (row.subject.title ~ ' ' ~ row.subject.thematic.name)|lower }}"
                                                 >
-                                                    <input type="checkbox" name="sujet[]" value="{{ row.subject.id }}"{{ row.subject.id in selectedSubjectIds ? ' checked' }} onchange="this.form.submit()">
+                                                    <input type="checkbox" name="sujet[]" value="{{ row.subject.id }}"{{ row.subject.id in selectedSubjectIds ? ' checked' }}>
                                                     <span class="lot-builder__subject-swatch" aria-hidden="true"></span>
                                                     <span class="lot-builder__subject-info">
                                                         <strong>{{ row.subject.title }}</strong>
@@ -133,7 +135,7 @@
                     {% endif %}
                 </fieldset>
 
-                <fieldset class="lot-builder__step">
+                <fieldset class="lot-builder__step" data-lot-builder-target="region" data-region="languages">
                     <legend><span class="lot-builder__step-number">2</span> Choisissez les langues</legend>
                     {% if lotSubjectCount == 0 %}
                         <p class="muted">Choisissez d’abord un ou plusieurs sujets, ou utilisez le raccourci intervenant ou période.</p>
@@ -143,7 +145,7 @@
                         <div class="filters-sidebar__options">
                             {% for language in availableLanguages %}
                                 <label class="filters-sidebar__option">
-                                    <input type="checkbox" name="langue[]" value="{{ language.id }}"{{ language.id in selectedLanguageIds ? ' checked' }} onchange="this.form.submit()">
+                                    <input type="checkbox" name="langue[]" value="{{ language.id }}"{{ language.id in selectedLanguageIds ? ' checked' }}>
                                     <span>{{ language.name }}</span>
                                 </label>
                             {% endfor %}
@@ -152,7 +154,7 @@
                     {% endif %}
                 </fieldset>
 
-                <fieldset class="lot-builder__step">
+                <fieldset class="lot-builder__step" data-lot-builder-target="region" data-region="formats">
                     <legend><span class="lot-builder__step-number">3</span> Choisissez les formats</legend>
                     {% if lotSubjectCount == 0 %}
                         <p class="muted">Choisissez d’abord un ou plusieurs sujets, ou utilisez le raccourci intervenant ou période.</p>
@@ -162,7 +164,7 @@
                         <div class="filters-sidebar__options">
                             {% for format in availableFormats %}
                                 <label class="filters-sidebar__option">
-                                    <input type="checkbox" name="format[]" value="{{ format.value }}"{{ format.value in selectedFormatValues ? ' checked' }} onchange="this.form.submit()">
+                                    <input type="checkbox" name="format[]" value="{{ format.value }}"{{ format.value in selectedFormatValues ? ' checked' }}>
                                     <span>{{ format.label }}</span>
                                 </label>
                             {% endfor %}
@@ -170,9 +172,12 @@
                         <p class="muted lot-builder__hint">Aucun format coché = tous les formats disponibles.</p>
                     {% endif %}
                 </fieldset>
+
+                {# Sans JavaScript, les choix sont envoyés avec ce bouton. #}
+                <noscript><button type="submit" class="btn btn--dark">Mettre à jour le lot</button></noscript>
             </form>
 
-            <aside class="lot-builder__summary">
+            <aside class="lot-builder__summary" data-lot-builder-target="region" data-region="summary">
                 <h2>Votre lot</h2>
 
                 <dl class="lot-builder__summary-list">
@@ -205,8 +210,12 @@
                     Poids total : <strong>{{ (totalSize / 1048576)|round(1) }} Mo</strong>
                 </p>
 
-                {% if matchingFiles is not empty %}
-                    <form method="post" action="{{ path('app_media_space_download') }}">
+                {% if matchingFiles is not empty and not canDownload %}
+                    {# Le lot se compose librement ; le télécharger demande un compte presse. #}
+                    {{ include('partials/_press_gate.html.twig', {pressGateMessage: 'Presse et médias : connectez-vous ou inscrivez-vous pour télécharger ce lot. Vos choix sont conservés.'}) }}
+                {% elseif matchingFiles is not empty %}
+                    {# Hors Turbo : la réponse est une archive, pas une page (sinon le clic reste sans effet). #}
+                    <form method="post" action="{{ path('app_media_space_download') }}" data-turbo="false">
                         <input type="hidden" name="_token" value="{{ csrf_token(csrfTokenId) }}">
                         {% for id in selectedSubjectIds %}<input type="hidden" name="sujet[]" value="{{ id }}">{% endfor %}
                         {% for id in selectedLanguageIds %}<input type="hidden" name="langue[]" value="{{ id }}">{% endfor %}
@@ -231,7 +240,7 @@
     <section class="section wrap cta-grid cta-grid--single">
         <div class="cta-card cta-card--dark">
             <h3>Un besoin que le catalogue ne couvre pas ?</h3>
-            <p>Les capsules publiées sont en libre accès, sans compte ni demande préalable. Contactez la Direction de la communication (Dircom) uniquement pour un format sur mesure, un fichier en très haute définition, une question d’accréditation, ou un besoin non couvert par le catalogue.</p>
+            <p>Chaque fichier se télécharge librement depuis sa fiche ; les lots complets sont réservés à la presse et aux médias inscrits (inscription gratuite). Contactez la Direction de la communication (Dircom) pour un format sur mesure, un fichier en très haute définition, une question d’accréditation, ou un besoin non couvert par le catalogue.</p>
             <a class="btn btn--gold" href="{{ path('app_suggestion_new') }}">Nous contacter</a>
         </div>
     </section>

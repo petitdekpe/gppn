@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Lien de kit invalide — Le Gouvernement plus près de nous{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        <h1>Ce lien de kit n’est pas valide</h1>
+        <p>Il a peut-être été recopié en partie ou modifié. Demandez à la personne qui vous l’a envoyé de vous le transmettre à nouveau, en entier.</p>
+        <p><a class="btn btn--dark" href="{{ path('app_intervenant_index') }}">Voir les ministres</a></p>
+    </section>
+{% endblock %}

@@ -13,8 +13,10 @@ security:
     # Lecteur presse : accès en lecture au back-office (tableau de bord).
     # Éditeur / Modérateur : accès lecture + leur périmètre métier.
     # Super-admin : cumule Éditeur + Modérateur, seul à gérer les comptes utilisateurs.
+    # Média (espace presse, inscrit depuis le site) : téléchargements groupés
+    # (archives, lots, kits), sans ROLE_ADMIN donc sans accès au back-office.
     role_hierarchy:
-        ROLE_LECTEUR_PRESSE: [ROLE_ADMIN]
+        ROLE_LECTEUR_PRESSE: [ROLE_ADMIN, ROLE_MEDIA]
         ROLE_MODERATEUR: [ROLE_LECTEUR_PRESSE]
         ROLE_EDITEUR: [ROLE_LECTEUR_PRESSE]
         ROLE_SUPER_ADMIN: [ROLE_EDITEUR, ROLE_MODERATEUR]

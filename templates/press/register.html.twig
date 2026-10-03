@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Espace presse : inscription — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Médias et presse : créez votre compte pour télécharger les kits et les lots de contenus.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        {{ include('partials/_back_link.html.twig', {fallback: back}) }}
+        <span class="eyebrow">Espace presse et médias</span>
+        <h1>Créer un compte presse</h1>
+        <p>Pour télécharger les kits et les lots (TV, radio, mobile) et recevoir les contenus du Gouvernement. Vos coordonnées restent à la Direction de la communication.</p>
+    </section>
+
+    <section class="section wrap press-auth">
+        <div class="form-card">
+            {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+                {{ form_errors(form) }}
+                <div class="form-grid-2">
+                    {{ form_row(form.fullName) }}
+                    {{ form_row(form.organization) }}
+                </div>
+                {{ form_row(form.mediaType) }}
+                <div class="form-grid-2">
+                    {{ form_row(form.email) }}
+                    {{ form_row(form.phone) }}
+                </div>
+                <div class="form-grid-2">
+                    {{ form_row(form.plainPassword.first) }}
+                    {{ form_row(form.plainPassword.second) }}
+                </div>
+                {{ form_row(form.consent) }}
+                <button type="submit" class="btn btn--primary">Créer mon compte</button>
+            {{ form_end(form) }}
+        </div>
+
+        <aside class="press-auth__aside">
+            <h2>Déjà inscrit ?</h2>
+            <p>Connectez-vous avec votre adresse e-mail et votre mot de passe.</p>
+            <a class="btn btn--dark" href="{{ path('app_press_login', {retour: back}) }}">Se connecter</a>
+        </aside>
+    </section>
+{% endblock %}

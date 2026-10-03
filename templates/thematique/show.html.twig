@@ -10,7 +10,7 @@
         {{ include('partials/_back_link.html.twig', {fallback: path('app_thematique_index')}) }}
         <span class="eyebrow">Thématique</span>
         <h1>{{ thematic.name }}</h1>
-        <p>{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} sur cette thématique{{ councilLabel ? ' · ' ~ councilLabel }}.</p>
+        <p data-live-region="results-count">{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} sur cette thématique{{ councilLabel ? ' · ' ~ councilLabel }}.</p>
     </section>
 
     <section class="section wrap video-layout">
@@ -27,17 +27,18 @@
             }) }}
         </aside>
 
-        <div class="video-layout__main">
+        <div class="video-layout__main" data-live-region="results">
             {% if councilOptions|length > 1 or selectedCouncil %}
                 {# Tous les conseils, ou un seul : garde les autres filtres (langues, formats, recherche). #}
-                <form method="get" action="{{ path('app_thematique_show', {slug: thematic.slug}) }}" class="council-filter">
+                <form method="get" action="{{ path('app_thematique_show', {slug: thematic.slug}) }}" class="council-filter"
+                      data-controller="live-filters" data-action="change->live-filters#change submit->live-filters#submit">
                     {% for name, value in routeParams|filter((v, k) => k != 'conseil') %}
                         {% for item in value is iterable ? value : [value] %}
                             <input type="hidden" name="{{ name }}{{ value is iterable ? '[]' }}" value="{{ item }}">
                         {% endfor %}
                     {% endfor %}
                     <label for="council-filter">Conseil des ministres</label>
-                    <select id="council-filter" name="conseil" onchange="this.form.submit()">
+                    <select id="council-filter" name="conseil">
                         <option value="">Tous les conseils ({{ councilOptions|reduce((sum, row) => sum + row.videoCount, 0) }})</option>
                         {% for row in councilOptions %}
                             {% set council = row.councilSession %}

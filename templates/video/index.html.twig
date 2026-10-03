@@ -4,19 +4,10 @@
 {% block meta_description %}Parcourez tous les contenus du programme, filtrables par thématique, par langue nationale ou par mot-clé.{% endblock %}
 
 {% block body %}
-    {% set roleLabels = {tous: 'Tous les Ministres', ministre: 'Ministres', conseiller: 'Ministres conseillés'} %}
+    {% set roleLabels = {tous: 'Tous les Ministres', ministre: 'Ministres', conseiller: 'Ministres conseillers'} %}
 
-    <nav class="view-tabs wrap" aria-label="Vue des contenus">
-        {% for role, label in roleLabels %}
-            {% if role == selectedRole %}
-                <span class="view-tabs__item is-active" aria-current="page">{{ label }}</span>
-            {% else %}
-                <a class="view-tabs__item" href="{{ path('app_video_index', routeParams|merge({role: role == 'tous' ? null : role})) }}">{{ label }}</a>
-            {% endif %}
-        {% endfor %}
-    </nav>
-
-    <section class="section wrap video-layout">
+    {# Filtres en haut (Intervenants et Langue visibles, le reste sous « + Plus de filtres »), contenus en dessous. #}
+    <section class="section wrap video-layout video-layout--stacked">
         <aside class="video-layout__sidebar">
             {{ include('partials/_video_filters.html.twig', {
                 action: path('app_video_index'),
@@ -31,6 +22,9 @@
                 selectedCouncilSessionSlugs: selectedCouncilSessionSlugs,
                 query: query,
                 selectedRole: selectedRole,
+                layout: 'top',
+                roleLabels: roleLabels,
+                resetUrl: resetUrl,
                 people: people,
                 periodShortcuts: periodShortcuts,
                 speakerPeriod: speakerPeriod,
@@ -38,11 +32,26 @@
             }) }}
         </aside>
 
-        <div class="video-layout__main">
+        {# Résultats rafraîchis sur place à chaque choix de filtre (live_filters_controller.js). #}
+        <div class="video-layout__main" data-live-region="results">
             <div class="page-header">
                 <h1>{{ roleLabels[selectedRole] }}</h1>
                 <p>{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }}.</p>
             </div>
+
+            {{ include('partials/_active_filters.html.twig', {activeFilters: activeFilters, resetUrl: resetUrl}) }}
+
+            {# Recherche qui désigne un intervenant : sa page en premier. #}
+            {% for person in matchedPeople %}
+                <a class="person-match" href="{{ path('app_intervenant_show', {person: person.slug}) }}">
+                    <span class="person-match__icon" aria-hidden="true"><i class="fa-solid fa-user-tie"></i></span>
+                    <span class="person-match__info">
+                        <strong>{{ person.name }}</strong>
+                        {% if person.role %}<span class="muted">{{ person.role }}</span>{% endif %}
+                    </span>
+                    <span class="person-match__cta">Voir sa page · {{ person.videoCount }} contenu{{ person.videoCount > 1 ? 's' }} et ses kits →</span>
+                </a>
+            {% endfor %}
 
             {{ include('partials/_video_grid.html.twig', {
                 results: results,

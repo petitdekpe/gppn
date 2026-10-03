@@ -70,6 +70,16 @@ enum VideoFileType: string
     }
 
     /**
+     * Versions TV (1080p et 480p) et radio (audio) : téléchargement et
+     * recherche réservés aux médias (voir MediaAccess). La version Mobile
+     * reste ouverte à tous ; la lecture sur le site aussi.
+     */
+    public function isMediaOnly(): bool
+    {
+        return in_array($this, [self::MP4_1080P, self::MP4_480P, self::AUDIO], true);
+    }
+
+    /**
      * PDF et image restent masqués de la liste de téléchargement publique
      * tant que leur usage concret n'est pas défini avec un intitulé clair.
      */

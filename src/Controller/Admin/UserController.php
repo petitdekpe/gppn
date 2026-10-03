@@ -5,6 +5,7 @@ namespace App\Controller\Admin;
 use App\Entity\User;
 use App\Form\Admin\UserType;
 use App\Repository\UserRepository;
+use App\Service\AdminPaginator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,13 +20,60 @@ class UserController extends AbstractController
 {
     use BulkActionTrait;
 
+    /**
+     * Deux onglets : l'équipe (back-office) et les médias inscrits depuis
+     * l'espace presse, avec leurs coordonnées.
+     */
     #[Route('', name: 'admin_user_index')]
-    public function index(UserRepository $userRepository): Response
+    public function index(UserRepository $userRepository, Request $request): Response
     {
+        $tab = $request->query->getString('type') === 'medias' ? 'medias' : 'equipe';
+        $results = AdminPaginator::paginate(
+            $this->usersOfTab($userRepository, $tab)->orderBy($tab === 'medias' ? 'u.registeredAt' : 'u.email', $tab === 'medias' ? 'DESC' : 'ASC'),
+            $request->query->getInt('page', 1),
+            50,
+        );
+
         return $this->render('admin/user/index.html.twig', [
-            'users' => $userRepository->findBy([], ['email' => 'ASC']),
+            'users' => $results['items'],
+            'results' => $results,
+            'tab' => $tab,
+            'counts' => [
+                'equipe' => (int) $this->usersOfTab($userRepository, 'equipe')->select('COUNT(u.id)')->getQuery()->getSingleScalarResult(),
+                'medias' => (int) $this->usersOfTab($userRepository, 'medias')->select('COUNT(u.id)')->getQuery()->getSingleScalarResult(),
+            ],
             'roles' => User::ASSIGNABLE_ROLES,
         ]);
+    }
+
+    /** Coordonnées des médias inscrits, pour un tableur. */
+    #[Route('/export-medias.csv', name: 'admin_user_export_media')]
+    public function exportMedia(UserRepository $userRepository): Response
+    {
+        $users = $this->usersOfTab($userRepository, 'medias')->orderBy('u.registeredAt', 'DESC')->getQuery()->getResult();
+
+        $rows = [['Nom', 'Média ou organisation', 'Type de média', 'E-mail', 'Téléphone', 'Inscription']];
+        foreach ($users as $user) {
+            $rows[] = [$user->getFullName(), $user->getOrganization(), $user->getMediaTypeLabel(), $user->getEmail(), $user->getPhone(), $user->getRegisteredAt()?->format('d/m/Y H:i')];
+        }
+        // Point-virgule et BOM : ouverture directe et sans accents cassés dans Excel.
+        $csv = "\xEF\xBB\xBF" . implode("\r\n", array_map(static fn (array $row) => implode(';', array_map(
+            static fn ($cell) => '"' . str_replace('"', '""', (string) $cell) . '"',
+            $row,
+        )), $rows));
+
+        return new Response($csv, Response::HTTP_OK, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => sprintf('attachment; filename="medias-%s.csv"', (new \DateTimeImmutable())->format('Y-m-d')),
+        ]);
+    }
+
+    private function usersOfTab(UserRepository $userRepository, string $tab): \Doctrine\ORM\QueryBuilder
+    {
+        // Rôles stockés en JSON : un compte Média ne porte que ROLE_MEDIA.
+        return $userRepository->createQueryBuilder('u')
+            ->andWhere($tab === 'medias' ? 'u.roles LIKE :media' : 'u.roles NOT LIKE :media')
+            ->setParameter('media', '%"' . User::ROLE_MEDIA . '"%');
     }
 
     /**

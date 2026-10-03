@@ -13,12 +13,23 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
+use Symfony\Component\Security\Http\Util\TargetPathTrait;
 
 class SecurityController extends AbstractController
 {
+    use TargetPathTrait;
+
     #[Route('/admin/login', name: 'admin_login')]
-    public function login(AuthenticationUtils $authenticationUtils): Response
+    public function login(AuthenticationUtils $authenticationUtils, Request $request): Response
     {
+        // « Espace médias : se connecter » depuis le site : retour à la page
+        // d'origine après connexion. Chemin interne uniquement (pas de
+        // redirection vers un autre site).
+        $back = $request->query->getString('retour');
+        if (self::isSafeReturnPath($back)) {
+            $this->saveTargetPath($request->getSession(), 'main', $back);
+        }
+
         return $this->render('admin/security/login.html.twig', [
             'last_username' => $authenticationUtils->getLastUsername(),
             'error' => $authenticationUtils->getLastAuthenticationError(),
@@ -33,7 +44,7 @@ class SecurityController extends AbstractController
     {
         $session = $request->getSession();
         if ($session->get(LoginOtpSubscriber::PENDING_KEY) !== true) {
-            return $this->redirectToRoute('admin_dashboard');
+            return $this->getUser() !== null && !$this->isGranted('ROLE_ADMIN') ? $this->redirectToRoute('app_media_space') : $this->redirectToRoute('admin_dashboard');
         }
 
         $form = $this->createForm(OtpCodeType::class);
@@ -45,7 +56,16 @@ class SecurityController extends AbstractController
             if ($result === OtpResult::VALID) {
                 $session->remove(LoginOtpSubscriber::PENDING_KEY);
 
-                return $this->redirectToRoute('admin_dashboard');
+                // Page d'origine (média venu du site), sinon le tableau de bord ;
+                // un compte Média n'y a pas accès : il va à l'espace média.
+                $target = $this->getTargetPath($session, 'main');
+                if ($target !== null) {
+                    $this->removeTargetPath($session, 'main');
+
+                    return $this->redirect($target);
+                }
+
+                return $this->isGranted('ROLE_ADMIN') ? $this->redirectToRoute('admin_dashboard') : $this->redirectToRoute('app_media_space');
             }
 
             if ($result === OtpResult::TOO_MANY_ATTEMPTS) {
@@ -82,6 +102,18 @@ class SecurityController extends AbstractController
         }
 
         return $this->redirectToRoute('admin_login_otp');
+    }
+
+    /**
+     * Chemin de ce site uniquement : « //autre-site » ou « /\autre-site »
+     * seraient compris par le navigateur comme une autre adresse.
+     */
+    public static function isSafeReturnPath(string $path): bool
+    {
+        return str_starts_with($path, '/')
+            && !str_starts_with($path, '//')
+            && !str_starts_with($path, '/\\')
+            && !str_starts_with($path, '/admin/login');
     }
 
     #[Route('/admin/logout', name: 'admin_logout')]

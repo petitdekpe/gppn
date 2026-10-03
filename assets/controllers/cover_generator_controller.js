@@ -29,7 +29,7 @@ export default class extends Controller {
             this.previewTarget.src = body.url;
             this.previewTarget.hidden = false;
             this.captionTarget.hidden = false;
-            this.captionTarget.textContent = 'Image actuelle (tirée de la vidéo TV) :';
+            this.captionTarget.textContent = 'Image actuelle (tirée de la vidéo) :';
             this.setStatus(`Couverture remplacée par l’image à ${body.second} s. Elle est déjà enregistrée.`);
         } catch {
             this.setStatus('Connexion au serveur perdue : réessayez.', true);

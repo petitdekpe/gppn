@@ -127,6 +127,72 @@ class VideoRepository extends ServiceEntityRepository
     }
 
     /**
+     * Dernier conseil des ministres (par date) ayant au moins un contenu
+     * publié et visible : section « Derniers contenus publiés » de l'accueil.
+     */
+    public function findLatestCouncilSession(): ?CouncilSession
+    {
+        $video = $this->baseQueryBuilder()
+            ->addSelect('cs')
+            ->innerJoin('s.councilSession', 'cs')
+            ->orderBy('cs.date', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $video?->getSubject()->getCouncilSession();
+    }
+
+    /**
+     * Contenus publiés d'un intervenant (toutes ses fiches), pour sa page :
+     * du conseil le plus récent au plus ancien, puis par sujet et langue.
+     * Fichiers chargés d'un coup (boutons de téléchargement, kits).
+     *
+     * @param list<int> $speakerIds
+     *
+     * @return Video[]
+     */
+    public function findPublishedForSpeakers(array $speakerIds, ?CouncilSession $councilSession = null): array
+    {
+        if ($speakerIds === []) {
+            return [];
+        }
+
+        $qb = $this->baseQueryBuilder()
+            ->addSelect('cs', 'f', 'sp')
+            ->innerJoin('s.councilSession', 'cs')
+            ->leftJoin('v.files', 'f')
+            ->leftJoin('v.speaker', 'sp')
+            ->andWhere('v.speaker IN (:speakers)')
+            ->setParameter('speakers', $speakerIds)
+            ->orderBy('cs.date', 'DESC')
+            ->addOrderBy('s.title', 'ASC')
+            ->addOrderBy('l.name', 'ASC');
+        if ($councilSession !== null) {
+            $qb->andWhere('cs = :councilSession')->setParameter('councilSession', $councilSession);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Contenus publiés d'un conseil des ministres, les plus récents d'abord.
+     *
+     * @return Video[]
+     */
+    public function findLatestForCouncilSession(CouncilSession $councilSession, int $limit = 6): array
+    {
+        return $this->baseQueryBuilder()
+            ->andWhere('s.councilSession = :councilSession')
+            ->setParameter('councilSession', $councilSession)
+            ->orderBy('v.publishedAt', 'DESC')
+            ->addOrderBy('v.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * @return Video[]
      */
     public function findFeatured(int $limit = 3): array
@@ -225,7 +291,28 @@ class VideoRepository extends ServiceEntityRepository
      * @param CouncilSession[] $councilSessions
      * @return array{videos: Video[], total: int, hasMore: bool, page: int}
      */
-    public function search(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::PER_PAGE, ?string $speakerRole = null, array $councilSessions = [], ?SpeakerPeriodFilter $speakerPeriod = null): array
+    /**
+     * Suggestions de la barre de recherche : contenus dont le titre contient
+     * le texte tapé, les plus récents d'abord.
+     *
+     * @return Video[]
+     */
+    public function suggest(string $text, int $limit = 5): array
+    {
+        return $this->baseQueryBuilder()
+            ->andWhere('s.title LIKE :text')
+            ->setParameter('text', '%' . addcslashes($text, '%_') . '%')
+            ->orderBy('v.publishedAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @param list<int> $querySpeakerIds fiches des intervenants reconnus dans le texte recherché
+     *   (nom dans le désordre, sigle : voir SpeakerPeriodCriteria::searchPeople)
+     */
+    public function search(array $thematics, array $languages, array $formats, ?string $query, int $page = 1, int $perPage = self::PER_PAGE, ?string $speakerRole = null, array $councilSessions = [], ?SpeakerPeriodFilter $speakerPeriod = null, array $querySpeakerIds = []): array
     {
         $page = max(1, $page);
 
@@ -256,8 +343,13 @@ class VideoRepository extends ServiceEntityRepository
         }
 
         if ($query !== null && $query !== '') {
-            $qb->andWhere('s.title LIKE :query OR s.summary LIKE :query')
-                ->setParameter('query', '%' . $query . '%');
+            // Titre, résumé, nom de l'intervenant ; et ses contenus s'il est reconnu dans le texte.
+            $qb->leftJoin('v.speaker', 'qsp')
+                ->andWhere('s.title LIKE :query OR s.summary LIKE :query OR qsp.fullName LIKE :query' . ($querySpeakerIds !== [] ? ' OR v.speaker IN (:querySpeakers)' : ''))
+                ->setParameter('query', '%' . addcslashes($query, '%_') . '%');
+            if ($querySpeakerIds !== []) {
+                $qb->setParameter('querySpeakers', $querySpeakerIds);
+            }
         }
 
         if ($speakerRole !== null) {

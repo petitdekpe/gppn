@@ -42,7 +42,7 @@
                         {{ form_help(form.coverImageFile) }}
                         {% set coverUri = form.coverImageFile.vars.image_uri %}
                         <p class="form-help" data-cover-generator-target="caption"{% if not coverUri %} hidden{% endif %}>
-                            Image actuelle{% if video.coverGenerated %} (tirée de la vidéo TV){% endif %} :
+                            Image actuelle{% if video.coverGenerated %} (tirée de la vidéo){% endif %} :
                         </p>
                         <img class="admin-cover-preview" src="{{ coverUri }}" alt="" data-cover-generator-target="preview"{% if not coverUri %} hidden{% endif %}>
                         {{ form_widget(form.coverImageFile) }}
@@ -52,15 +52,15 @@
                             {% if coverSource|default(false) %}
                                 {# Champs sans « name » : ils ne partent pas avec le formulaire du contenu. #}
                                 <div class="admin-cover-generate">
-                                    <label for="cover-second">Ou tirer l’image de la vidéo TV, à la seconde</label>
+                                    <label for="cover-second">Ou tirer l’image de la {{ coverSource }}, à la seconde</label>
                                     <input type="number" id="cover-second" min="0"{% if video.durationSeconds > 0 %} max="{{ video.durationSeconds - 1 }}"{% endif %} step="1" value="15" data-cover-generator-target="second" data-action="keydown.enter->cover-generator#generate:prevent">
                                     <button type="button" class="btn btn--outline btn--sm" data-cover-generator-target="button" data-action="cover-generator#generate">
-                                        <i class="fa-solid fa-camera" aria-hidden="true"></i> Générer depuis la vidéo TV
+                                        <i class="fa-solid fa-camera" aria-hidden="true"></i> Générer depuis la {{ coverSource }}
                                     </button>
                                 </div>
                                 <p class="form-help" data-cover-generator-target="status" aria-live="polite"></p>
                             {% else %}
-                                <p class="form-help">Pour tirer la couverture de la vidéo, déposez d’abord une vidéo HD 1080p (étape Fichiers) et enregistrez.</p>
+                                <p class="form-help">Pour tirer la couverture de la vidéo, déposez d’abord une vidéo HD 1080p ou une vidéo verticale (étape Fichiers) et enregistrez.</p>
                             {% endif %}
                         {% endif %}
                     </div>

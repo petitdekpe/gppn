@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Les ministres — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Retrouvez les prises de parole de chaque ministre, conseil des ministres par conseil des ministres, à télécharger et à partager.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        <h1>Les ministres</h1>
+        <p>Choisissez un ministre pour retrouver ses vidéos, conseil des ministres par conseil des ministres, les télécharger et les transmettre en kit.</p>
+    </section>
+
+    <section class="section wrap">
+        {% for group in [{title: 'Ministres', people: ministers}, {title: 'Ministres conseillers', people: councillors}] %}
+            {% if group.people is not empty %}
+                <h2 class="person-grid__title">{{ group.title }}</h2>
+                <ul class="person-grid">
+                    {% for person in group.people %}
+                        <li>
+                            <a class="person-card" href="{{ path('app_intervenant_show', {person: person.slug}) }}">
+                                <strong>{{ person.name }}</strong>
+                                {% if person.role %}<span class="person-card__role">{{ person.role }}</span>{% endif %}
+                                <span class="person-card__count">{{ person.videoCount }} contenu{{ person.videoCount > 1 ? 's' }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% else %}
+            <p class="empty-state">Aucun contenu publié pour le moment.</p>
+        {% endfor %}
+    </section>
+{% endblock %}

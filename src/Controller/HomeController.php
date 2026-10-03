@@ -50,10 +50,14 @@ class HomeController extends AbstractController
             }
         }
 
+        // « Derniers contenus publiés » : ceux du dernier conseil des ministres seulement.
+        $latestCouncilSession = $videoRepository->findLatestCouncilSession();
+
         return $this->render('home/index.html.twig', [
             'heroVideo' => $heroVideo,
             'spotlightVideo' => $spotlightVideo ?? $heroVideo,
-            'latestVideos' => $videoRepository->findLatest(6),
+            'latestCouncilSession' => $latestCouncilSession,
+            'latestVideos' => $latestCouncilSession ? $videoRepository->findLatestForCouncilSession($latestCouncilSession, 6) : [],
             // Toutes : le gabarit en montre 8, les autres derrière « Voir plus ».
             'languages' => $activeLanguages ?: $languages,
             'thematics' => \array_slice($shownThematics, 0, 6),

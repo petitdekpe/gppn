@@ -1,0 +1,34 @@
+{#
+    Bouton « Partager » (voir share_controller.js) : feuille de partage du
+    téléphone sur mobile, menu des réseaux et copie du lien sur ordinateur.
+    Paramètres : video (contenu partagé), ou shareLink + shareTitle (ex. lien d'un kit) ;
+    variant (card | spotlight | detail | kit) ; shareLabel (texte du bouton, « Partager » par défaut).
+    Noms préfixés : include transmet aussi les variables de la page appelante.
+#}
+{% set shareUrl = shareLink ?? url('app_video_show', {slug: video.slug}) %}
+{% set shareTitle = shareTitle ?? video.title %}
+{% set shareText = shareTitle ~ ' — Le Gouvernement plus près de nous' %}
+<div class="share share--{{ variant|default('card') }}" data-controller="share"
+     data-share-url-value="{{ shareUrl }}" data-share-title-value="{{ shareTitle }}">
+    <button type="button" class="share__toggle" data-action="share#share" data-share-target="toggle"
+            aria-haspopup="true" aria-expanded="false" aria-label="{{ shareLabel ?? 'Partager' }} « {{ shareTitle }} »">
+        <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> <span data-share-target="label">{{ shareLabel ?? 'Partager' }}</span>
+    </button>
+    <div class="share__menu" popover data-share-target="menu" aria-label="Partager">
+        <a href="https://wa.me/?text={{ (shareText ~ ' ' ~ shareUrl)|url_encode }}" target="_blank" rel="noopener noreferrer" data-action="share#close">
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp
+        </a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ shareUrl|url_encode }}" target="_blank" rel="noopener noreferrer" data-action="share#close">
+            <i class="fa-brands fa-facebook-f" aria-hidden="true"></i> Facebook
+        </a>
+        <a href="https://twitter.com/intent/tweet?text={{ shareText|url_encode }}&amp;url={{ shareUrl|url_encode }}" target="_blank" rel="noopener noreferrer" data-action="share#close">
+            <i class="fa-brands fa-x-twitter" aria-hidden="true"></i> X
+        </a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ shareUrl|url_encode }}" target="_blank" rel="noopener noreferrer" data-action="share#close">
+            <i class="fa-brands fa-linkedin-in" aria-hidden="true"></i> LinkedIn
+        </a>
+        <button type="button" data-action="share#copy">
+            <i class="fa-solid fa-link" aria-hidden="true"></i> Copier le lien
+        </button>
+    </div>
+</div>

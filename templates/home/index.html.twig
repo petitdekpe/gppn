@@ -19,6 +19,8 @@
 
             {% if heroVideo %}
                 {% set previewFile = heroVideo.primaryPlaybackFile %}
+                {# Bouton « Télécharger » : version Mobile en priorité (masqué sur téléphone s'il n'y en a pas). #}
+                {% set heroDownload = preferred_download(heroVideo) %}
                 {% set previewCategory = previewFile ? previewFile.type.category.value : null %}
                 {% set coverImageUrl = video_cover_url(heroVideo) %}
                 <div class="home2-hero__media">
@@ -38,7 +40,8 @@
                                     </div>
                                     <div class="video-detail__poster-actions">
                                         <a href="{{ path('app_video_show', {slug: heroVideo.slug}) }}" class="btn btn--outline btn--sm">Voir la vidéo</a>
-                                        <a href="{{ video_file_url(previewFile) }}" download="{{ previewFile.originalName ?? previewFile.fileName }}" class="btn btn--dark btn--sm">Télécharger</a>
+                                        {% if heroDownload %}<a href="{{ video_file_url(heroDownload) }}" download="{{ heroDownload.originalName ?? heroDownload.fileName }}" class="btn btn--dark btn--sm {{ download_class(heroDownload) }}">Télécharger</a>{% endif %}
+                                        {{ include('partials/_share.html.twig', {video: heroVideo, variant: 'spotlight'}) }}
                                     </div>
                                 </div>
                             </div>
@@ -56,7 +59,8 @@
                             </div>
                             <div class="home2-hero__actions-row">
                                 <a class="btn btn--outline btn--sm" href="{{ path('app_video_show', {slug: heroVideo.slug}) }}">Voir la vidéo</a>
-                                <a class="btn btn--dark btn--sm" href="{{ video_file_url(previewFile) }}" download="{{ previewFile.originalName ?? previewFile.fileName }}">Télécharger</a>
+                                {% if heroDownload %}<a class="btn btn--dark btn--sm {{ download_class(heroDownload) }}" href="{{ video_file_url(heroDownload) }}" download="{{ heroDownload.originalName ?? heroDownload.fileName }}">Télécharger</a>{% endif %}
+                                {{ include('partials/_share.html.twig', {video: heroVideo, variant: 'spotlight'}) }}
                             </div>
                         </div>
                     {% else %}
@@ -75,9 +79,10 @@
                         </div>
                         <div class="home2-hero__actions-row">
                             <a class="btn btn--outline" href="{{ path('app_video_show', {slug: heroVideo.slug}) }}">Voir la vidéo</a>
-                            {% if previewFile %}
-                                <a class="btn btn--dark" href="{{ video_file_url(previewFile) }}" download="{{ previewFile.originalName ?? previewFile.fileName }}">Télécharger</a>
+                            {% if heroDownload %}
+                                <a class="btn btn--dark {{ download_class(heroDownload) }}" href="{{ video_file_url(heroDownload) }}" download="{{ heroDownload.originalName ?? heroDownload.fileName }}">Télécharger</a>
                             {% endif %}
+                            {{ include('partials/_share.html.twig', {video: heroVideo, variant: 'spotlight'}) }}
                         </div>
                     {% endif %}
                 </div>
@@ -118,6 +123,9 @@
     <section class="section wrap" id="home2-derniers-contenus">
         <div class="section__header">
             <h2>Derniers contenus publiés</h2>
+            {% if latestCouncilSession %}
+                <p>{{ latestCouncilSession.label ?: 'Conseil des ministres du ' ~ latestCouncilSession.date|date('d/m/Y') }}</p>
+            {% endif %}
         </div>
 
         {% if latestVideos is empty %}
@@ -129,7 +137,8 @@
                 {% endfor %}
             </div>
             <div class="section__more">
-                <a class="btn btn--dark" href="{{ path('app_video_index') }}">Afficher plus</a>
+                {# Tous les contenus de ce conseil, sur la page Vidéos filtrée. #}
+                <a class="btn btn--dark" href="{{ path('app_video_index', {conseil: [latestCouncilSession.slug]}) }}">Afficher plus</a>
             </div>
         {% endif %}
     </section>

@@ -12,6 +12,7 @@ use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Vich\UploaderBundle\Mapping\Attribute\Uploadable;
 use Vich\UploaderBundle\Mapping\Attribute\UploadableField;
 
@@ -273,7 +274,11 @@ class Video
 
         if ($coverImageFile instanceof File) {
             $this->coverImageUpdatedAt = new \DateTimeImmutable();
-            // Image déposée à la main ; le générateur rétablit l'indicateur après cet appel.
+        }
+        // Nouvelle image envoyée : déposée à la main, sauf si le générateur
+        // rétablit l'indicateur juste après. Vich, lui, réinjecte ici un
+        // simple File une fois l'image enregistrée : il ne doit rien changer.
+        if ($coverImageFile instanceof UploadedFile) {
             $this->coverGenerated = false;
         }
 

@@ -10,6 +10,7 @@ use App\Repository\LanguageRepository;
 use App\Repository\SubjectRepository;
 use App\Repository\VideoFileRepository;
 use App\Search\SpeakerPeriodFilter;
+use App\Service\MediaAccess;
 use App\Service\SpeakerPeriodCriteria;
 use App\Service\VideoFileZipBuilder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,6 +31,7 @@ class MediaSpaceController extends AbstractController
         LanguageRepository $languageRepository,
         VideoFileRepository $videoFileRepository,
         SpeakerPeriodCriteria $speakerPeriodCriteria,
+        MediaAccess $mediaAccess,
     ): Response {
         $subjectRows = $subjectRepository->findAllWithVideoCount();
 
@@ -103,6 +105,8 @@ class MediaSpaceController extends AbstractController
             'people' => $speakerPeriodCriteria->people(),
             'periodShortcuts' => $speakerPeriodCriteria->periodShortcuts(),
             'lotSubjectCount' => count($lotSubjects),
+            // Le lot se compose librement ; son téléchargement demande un compte presse.
+            'canDownload' => $mediaAccess->canDownloadBundles(),
         ]);
     }
 
@@ -114,9 +118,14 @@ class MediaSpaceController extends AbstractController
         VideoFileRepository $videoFileRepository,
         VideoFileZipBuilder $zipBuilder,
         SpeakerPeriodCriteria $speakerPeriodCriteria,
+        MediaAccess $mediaAccess,
     ): Response {
         if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Jeton CSRF invalide.');
+        }
+        // Lot complet : presse et médias, après connexion ou inscription.
+        if (!$mediaAccess->canDownloadBundles()) {
+            return $this->redirectToRoute('app_press_login', ['retour' => $this->generateUrl('app_media_space')]);
         }
 
         $subjectIds = array_map('intval', $request->request->all('sujet'));
@@ -149,7 +158,7 @@ class MediaSpaceController extends AbstractController
             ]) + $speakerPeriod->queryParams());
         }
 
-        $zipPath = $zipBuilder->build($files, $this->buildAttributionSheet($files));
+        $zipPath = $zipBuilder->build($files, $zipBuilder->attributionSheet($files));
 
         $response = new BinaryFileResponse($zipPath);
         $response->deleteFileAfterSend(true);
@@ -178,32 +187,4 @@ class MediaSpaceController extends AbstractController
         return $subjectRepository->findMatching($speakerPeriod);
     }
 
-    /**
-     * @param VideoFile[] $files
-     */
-    private function buildAttributionSheet(array $files): string
-    {
-        $lines = [
-            'LE GOUVERNEMENT PLUS PRÈS DE NOUS — FICHE D’ATTRIBUTION',
-            'Lot généré le ' . (new \DateTimeImmutable())->format('d/m/Y à H:i'),
-            '',
-            'Contenu de ce lot :',
-        ];
-
-        foreach ($files as $file) {
-            $video = $file->getVideo();
-            $lines[] = sprintf(
-                '- %s | %s | %s | %s',
-                $video->getTitle(),
-                $video->getThematic()->getName(),
-                $video->getLanguage()->getName(),
-                $file->getType()->getLabel(),
-            );
-        }
-
-        $lines[] = '';
-        $lines[] = 'Mention obligatoire à la diffusion : « Le Gouvernement Plus Près de Nous - République du Bénin. »';
-
-        return implode("\n", $lines);
-    }
 }

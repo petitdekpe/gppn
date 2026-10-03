@@ -101,14 +101,14 @@ class VideoController extends AbstractController
                 $queued = 0;
                 foreach ($videos as $video) {
                     if (!$coverGenerator->hasSource($video)) {
-                        $skipped[] = sprintf('%s — %s (pas de vidéo TV)', $video->getTitle(), $video->getLanguage()->getName());
+                        $skipped[] = sprintf('%s — %s (ni vidéo TV ni vidéo Mobile)', $video->getTitle(), $video->getLanguage()->getName());
 
                         continue;
                     }
                     $bus->dispatch(new GenerateVideoCover($video->getId(), force: true));
                     ++$queued;
                 }
-                $message = sprintf('%s en cours de génération (image de la vidéo TV à 15 s) : rechargez la page dans un instant.', self::plural($queued, 'couverture'));
+                $message = sprintf('%s en cours de génération (image de la vidéo TV, à défaut Mobile, à 15 s) : rechargez la page dans un instant.', self::plural($queued, 'couverture'));
                 break;
             case 'delete':
                 foreach ($videos as $video) {
@@ -176,12 +176,12 @@ class VideoController extends AbstractController
             'form' => $form,
             'video' => $video,
             'calendar' => $councilSessionRepository->findCalendarWithSubjectCount(),
-            'coverSource' => $coverGenerator->hasSource($video),
+            'coverSource' => $coverGenerator->sourceLabel($video),
         ]);
     }
 
     /**
-     * Bouton « Générer depuis la vidéo TV » du formulaire : image de la
+     * Bouton « Générer depuis la vidéo » du formulaire : image de la
      * seconde choisie, qui remplace la couverture actuelle. Appelé en fetch
      * pour ne pas perdre les modifications en cours du formulaire.
      */

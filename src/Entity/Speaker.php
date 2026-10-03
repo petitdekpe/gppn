@@ -122,6 +122,20 @@ class Speaker
     }
 
     /**
+     * Identifiant de la personne dans les adresses (page intervenant, filtre
+     * « Intervenant ») : commun à toutes ses fiches, d'un gouvernement à l'autre.
+     */
+    public function getPersonSlug(): string
+    {
+        return self::slugForName($this->fullName);
+    }
+
+    public static function slugForName(string $fullName): string
+    {
+        return str_replace(' ', '-', self::nameKey($fullName));
+    }
+
+    /**
      * Un « Ministre Conseiller(ère) » se reconnaît au radical « Conseill »
      * de sa fonction (accord féminin « Conseillère » compris) : aucune
      * donnée structurée dédiée pour l'instant.

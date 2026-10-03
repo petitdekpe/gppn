@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Video;
+use App\Entity\VideoFile;
 use App\Enum\VideoFileType;
 use App\Exception\CoverGenerationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -11,10 +12,12 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Process\Process;
 
 /**
- * Tire l'image de couverture d'un contenu de sa vidéo TV (1080p), avec
- * ffmpeg. Seule la vidéo TV sert : elle a le cadrage horizontal des cartes.
+ * Tire l'image de couverture d'un contenu d'une de ses vidéos, avec ffmpeg :
+ * la vidéo TV (1080p, à défaut 480p), qui a le cadrage horizontal des
+ * cartes ; sans vidéo TV, la vidéo Mobile (verticale), recadrée en 16:9 sur
+ * sa partie haute, où se trouvent les visages, puis mise à l'échelle.
  *
- * - automatique (après l'envoi d'une vidéo TV, ou commande de rattrapage) :
+ * - automatique (après l'envoi d'une vidéo, ou commande de rattrapage) :
  *   à 15 s, parmi les images des 2 secondes suivantes, la plus
  *   représentative (évite une image noire ou un fondu) ; jamais à la place
  *   d'une couverture déposée à la main ;
@@ -24,6 +27,15 @@ use Symfony\Component\Process\Process;
 class VideoCoverGenerator
 {
     public const DEFAULT_SECOND = 15;
+
+    /** Sources possibles, par ordre de préférence. */
+    private const SOURCES = [VideoFileType::MP4_1080P, VideoFileType::MP4_480P, VideoFileType::MP4_VERTICAL];
+
+    /**
+     * Haut de la fenêtre 16:9 découpée dans une vidéo verticale, en part de
+     * sa hauteur : sous le bandeau du haut, à hauteur des visages.
+     */
+    private const VERTICAL_CROP_TOP = 0.16;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -42,7 +54,32 @@ class VideoCoverGenerator
 
     public function hasSource(Video $video): bool
     {
-        return $video->getVideoFileByType(VideoFileType::MP4_1080P)?->getFileName() !== null;
+        return $this->source($video) !== null;
+    }
+
+    /**
+     * Vidéo qui servirait de source : TV si possible, sinon Mobile. Statique
+     * pour VideoCoverSubscriber (écouteur Doctrine, qui ne peut pas dépendre
+     * de ce service sans boucle de dépendances).
+     */
+    public static function source(Video $video): ?VideoFile
+    {
+        foreach (self::SOURCES as $type) {
+            $file = $video->getVideoFileByType($type);
+            if ($file?->getFileName() !== null) {
+                return $file;
+            }
+        }
+
+        return null;
+    }
+
+    /** « vidéo TV » ou « vidéo Mobile », pour les messages et l'administration. */
+    public function sourceLabel(Video $video): ?string
+    {
+        $source = $this->source($video);
+
+        return $source === null ? null : ($source->getType() === VideoFileType::MP4_VERTICAL ? 'vidéo Mobile' : 'vidéo TV');
     }
 
     /**
@@ -52,34 +89,36 @@ class VideoCoverGenerator
      */
     public function generate(Video $video, ?int $second = null): int
     {
-        $source = $video->getVideoFileByType(VideoFileType::MP4_1080P);
-        if ($source?->getFileName() === null) {
-            throw new CoverGenerationException('Ce contenu n’a pas de vidéo TV (1080p) : la couverture ne peut pas en être tirée.');
+        $source = $this->source($video);
+        if ($source === null) {
+            throw new CoverGenerationException('Ce contenu n’a ni vidéo TV ni vidéo Mobile : la couverture ne peut pas en être tirée.');
         }
+        $label = $this->sourceLabel($video);
+        $vertical = $source->getType() === VideoFileType::MP4_VERTICAL;
 
         $duration = $video->getDurationSeconds();
         if ($second !== null && $duration > 0 && $second >= $duration) {
-            throw new CoverGenerationException(sprintf('La vidéo TV dure %d s : choisissez une seconde entre 0 et %d.', $duration, $duration - 1));
+            throw new CoverGenerationException(sprintf('La %s dure %d s : choisissez une seconde entre 0 et %d.', $label, $duration, $duration - 1));
         }
         // Vidéo plus courte que 15 s : on vise le milieu.
         $at = $second ?? ($duration > 0 && $duration <= self::DEFAULT_SECOND ? intdiv($duration, 2) : self::DEFAULT_SECOND);
 
         $path = $this->downloadsDir . '/' . $source->getFileName();
         if (!is_file($path)) {
-            throw new CoverGenerationException(sprintf('Le fichier de la vidéo TV est introuvable sur le serveur (%s).', $source->getFileName()));
+            throw new CoverGenerationException(sprintf('Le fichier de la %s est introuvable sur le serveur (%s).', $label, $source->getFileName()));
         }
 
         $output = sys_get_temp_dir() . '/cover_' . bin2hex(random_bytes(6)) . '.jpg';
         try {
-            $error = $this->extract($path, $at, $second === null, $output);
+            $error = $this->extract($path, $at, $second === null, $vertical, $output);
             // Durée inconnue et vidéo plus courte que 15 s : rien à cette
             // position, on se rabat sur la première seconde.
             if ($error !== null && $second === null && $at > 1) {
                 $at = 1;
-                $error = $this->extract($path, $at, true, $output);
+                $error = $this->extract($path, $at, true, $vertical, $output);
             }
             if ($error !== null) {
-                throw new CoverGenerationException(sprintf('Aucune image à %d s : la vidéo TV est probablement plus courte, ou illisible. Détail ffmpeg : %s', $at, $error));
+                throw new CoverGenerationException(sprintf('Aucune image à %d s : la %s est probablement plus courte, ou illisible. Détail ffmpeg : %s', $at, $label, $error));
             }
 
             $video
@@ -97,10 +136,14 @@ class VideoCoverGenerator
     /**
      * @return string|null null si l'image est produite, sinon la fin de la sortie d'erreur de ffmpeg
      */
-    private function extract(string $path, int $at, bool $pickBest, string $output): ?string
+    private function extract(string $path, int $at, bool $pickBest, bool $vertical, string $output): ?string
     {
-        // Largeur des cartes et de la fiche détail, sans agrandir une vidéo plus petite.
-        $filters = 'scale=min(1280\,iw):-2';
+        $filters = $vertical
+            // Fenêtre 16:9 sur toute la largeur, en haut de l'image (sans
+            // déborder du bas), agrandie à la largeur des cartes.
+            ? sprintf('crop=iw:iw*9/16:0:min(ih*%s\,ih-iw*9/16),scale=1280:-2:flags=lanczos', self::VERTICAL_CROP_TOP)
+            // Largeur des cartes et de la fiche détail, sans agrandir une vidéo plus petite.
+            : 'scale=min(1280\,iw):-2';
         if ($pickBest) {
             $filters = 'thumbnail=50,' . $filters;
         }
