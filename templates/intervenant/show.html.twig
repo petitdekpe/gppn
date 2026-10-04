@@ -61,27 +61,12 @@
                     </div>
                 {% endif %}
 
-                <ul class="speaker-council__videos">
+                {# Mêmes cartes que la page Contenus : couverture vers la fiche (lecture), Télécharger et Partager en icônes. #}
+                <div class="video-grid">
                     {% for video in group.videos %}
-                        <li class="speaker-video">
-                            <a class="speaker-video__info" href="{{ path('app_video_show', {slug: video.slug}) }}">
-                                <strong>{{ video.title }}</strong>
-                                <span class="muted">{{ video.language.name }}{{ video.durationSeconds > 0 ? ' · ' ~ video.durationLabel }}</span>
-                            </a>
-                            {# Fichier par fichier : vidéo Mobile partout, vidéo TV et audio MP3 sur ordinateur seulement. #}
-                            <span class="speaker-video__files">
-                                {% for part in ['mobile', 'tv', 'radio'] %}
-                                    {% set file = kit_file(video, part) %}
-                                    {% if file %}
-                                        <a class="btn {{ part == 'mobile' ? 'btn--dark' : 'btn--outline' }} btn--sm {{ download_class(file) }}" href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" title="{{ parts[part].label }}{% if file.fileSize %} · {{ file.fileSize|file_size }}{% endif %}">
-                                            <i class="fa-solid {{ part == 'mobile' ? 'fa-download' : parts[part].icon }}" aria-hidden="true"></i> {{ parts[part].label }}{% if part == 'mobile' and file.fileSize %} · {{ file.fileSize|file_size }}{% endif %}
-                                        </a>
-                                    {% endif %}
-                                {% endfor %}
-                            </span>
-                        </li>
+                        {{ include('partials/_video_card.html.twig', {video: video, cardIconActions: true, eager: loop.parent.loop.first and loop.index <= 4}) }}
                     {% endfor %}
-                </ul>
+                </div>
             </section>
         {% endfor %}
     </section>
