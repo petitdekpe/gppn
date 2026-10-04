@@ -25,6 +25,15 @@ class LangueController extends AbstractController
         'idatcha' => 'idaasha',
     ];
 
+    /** Toutes les langues qui ont des contenus publiés, par ordre alphabétique (« Voir plus de langues » de l'accueil). */
+    #[Route('/langues', name: 'app_langue_index')]
+    public function index(LanguageRepository $languageRepository): Response
+    {
+        return $this->render('langue/index.html.twig', [
+            'languages' => array_values(array_filter($languageRepository->findAllWithVideoCount(), static fn (array $row) => $row['videoCount'] > 0)),
+        ]);
+    }
+
     /**
      * Comme la page Contenus (barre de filtres en haut, un bloc par sujet), langue imposée :
      * conseil des ministres, puis intervenants, thématique, intervenant,

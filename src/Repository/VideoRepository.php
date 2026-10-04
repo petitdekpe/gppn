@@ -258,14 +258,23 @@ class VideoRepository extends ServiceEntityRepository
     /**
      * @return Video[]
      */
-    public function findRelated(Video $video, int $limit = 3): array
+    /**
+     * Le même sujet dans les autres langues (fiche contenu, « Dans d'autres langues »).
+     *
+     * @return Video[]
+     */
+    public function findOtherLanguages(Video $video, int $limit = 12): array
     {
+        if ($video->getSubject() === null) {
+            return [];
+        }
+
         return $this->baseQueryBuilder()
-            ->andWhere('t = :thematic')
+            ->andWhere('v.subject = :subject')
             ->andWhere('v.id != :id')
-            ->setParameter('thematic', $video->getThematic())
+            ->setParameter('subject', $video->getSubject())
             ->setParameter('id', $video->getId())
-            ->orderBy('v.publishedAt', 'DESC')
+            ->orderBy('l.name', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -313,20 +322,65 @@ class VideoRepository extends ServiceEntityRepository
      * @return array{videos: Video[], total: int, hasMore: bool, page: int}
      */
     /**
-     * Suggestions de la barre de recherche : contenus dont le titre ou les
-     * mots-clés contiennent le texte tapé, les plus récents d'abord.
+     * Suggestions de la barre de recherche : mêmes champs que les listes
+     * (voir textCondition), les contenus dont le titre contient le texte
+     * tapé en tête, puis les plus récents.
      *
      * @return Video[]
      */
     public function suggest(string $text, int $limit = 5): array
     {
-        return $this->baseQueryBuilder()
-            ->andWhere('s.title LIKE :text OR s.keywords LIKE :text')
-            ->setParameter('text', '%' . addcslashes($text, '%_') . '%')
-            ->orderBy('v.publishedAt', 'DESC')
+        $qb = $this->baseQueryBuilder()->leftJoin('v.speaker', 'qsp');
+        $condition = $this->textCondition($qb, $text, 'qsp');
+        if ($condition === null) {
+            return [];
+        }
+
+        return $qb
+            ->andWhere($condition)
+            ->addSelect('CASE WHEN s.title LIKE :titleText THEN 0 ELSE 1 END AS HIDDEN titleRank')
+            ->setParameter('titleText', '%' . self::likeText(trim($text)) . '%')
+            ->orderBy('titleRank')
+            ->addOrderBy('v.publishedAt', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Recherche par texte, commune aux listes et aux suggestions : chaque mot
+     * tapé doit se trouver dans l'un des champs (titre, résumé, mots-clés du
+     * sujet, thématique, langue, nom et sigle de l'intervenant), dans
+     * n'importe quel ordre : « permis conduire fon » trouve « Permis de
+     * conduire : la nouvelle procédure » en fon. Accents et casse ignorés par
+     * la collation des colonnes (utf8mb4_0900_ai_ci).
+     *
+     * @return string|null condition DQL, null si le texte est vide
+     */
+    private function textCondition(\Doctrine\ORM\QueryBuilder $qb, string $text, string $speakerAlias): ?string
+    {
+        $words = preg_split('/\s+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY);
+        // Mots d'une lettre (« à », « l ») ignorés, sauf s'il n'y a qu'eux.
+        $words = array_values(array_unique(array_filter($words, static fn (string $word) => mb_strlen($word) >= 2) ?: $words));
+        if ($words === []) {
+            return null;
+        }
+
+        $fields = ['s.title', 's.summary', 's.keywords', 't.name', 'l.name', $speakerAlias . '.fullName', $speakerAlias . '.sigle'];
+        $conditions = [];
+        foreach (\array_slice($words, 0, 8) as $index => $word) {
+            $parameter = 'textWord' . $index;
+            $conditions[] = '(' . implode(' OR ', array_map(static fn (string $field) => $field . ' LIKE :' . $parameter, $fields)) . ')';
+            $qb->setParameter($parameter, '%' . self::likeText($word) . '%');
+        }
+
+        return implode(' AND ', $conditions);
+    }
+
+    /** Texte à chercher dans un LIKE ; apostrophe droite ou typographique au choix : « l'eau » trouve « l’eau ». */
+    private static function likeText(string $text): string
+    {
+        return preg_replace("/['’‘ʼ]/u", '_', addcslashes($text, '%_\\'));
     }
 
     /**
@@ -443,14 +497,15 @@ class VideoRepository extends ServiceEntityRepository
             ))->setParameter('fileTypes', $fileTypes);
         }
 
-        if ($query !== null && $query !== '') {
-            // Titre, résumé, mots-clés, nom de l'intervenant ; et ses contenus s'il est reconnu dans le texte.
-            $qb->leftJoin('v.speaker', 'qsp')
-                ->andWhere('s.title LIKE :query OR s.summary LIKE :query OR s.keywords LIKE :query OR qsp.fullName LIKE :query' . ($querySpeakerIds !== [] ? ' OR v.speaker IN (:querySpeakers)' : ''))
-                ->setParameter('query', '%' . addcslashes($query, '%_') . '%');
+        if ($query !== null && trim($query) !== '') {
+            // Mots du texte (voir textCondition) ; et les contenus de l'intervenant s'il y est reconnu.
+            $qb->leftJoin('v.speaker', 'qsp');
+            $condition = $this->textCondition($qb, $query, 'qsp');
             if ($querySpeakerIds !== []) {
+                $condition = '(' . $condition . ') OR v.speaker IN (:querySpeakers)';
                 $qb->setParameter('querySpeakers', $querySpeakerIds);
             }
+            $qb->andWhere($condition);
         }
 
         if ($speakerRole !== null) {

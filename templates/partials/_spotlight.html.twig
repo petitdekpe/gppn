@@ -13,13 +13,13 @@
                     <a href="{{ path('app_video_show', {slug: spotlight.slug}) }}" class="spotlight__media" style="--thematic-color: {{ spotlight.thematic.colorHex }}">
                         <span class="video-card__lang-tag">{{ spotlight.language.name }}</span>
                         {% if coverImageUrl %}
-                            <img class="video-card__preview" src="{{ coverImageUrl }}" alt="">
+                            {{ include('partials/_cover_picture.html.twig', {video: spotlight}) }}
                         {% elseif previewCategory == 'video' %}
                             <video class="video-card__preview" muted preload="metadata" playsinline>
                                 {{ include('partials/_video_sources.html.twig', {file: previewFile}) }}
                             </video>
                         {% elseif previewCategory == 'image' %}
-                            <img class="video-card__preview" src="{{ video_file_url(previewFile) }}" alt="">
+                            <img class="video-card__preview" src="{{ video_file_url(previewFile) }}" alt="" loading="lazy">
                         {% else %}
                             <span class="video-card__play" aria-hidden="true">▶</span>
                         {% endif %}
@@ -36,7 +36,8 @@
                         <h3>
                             <a href="{{ path('app_video_show', {slug: spotlight.slug}) }}">{{ spotlight.title }}</a>
                         </h3>
-                        <p>{{ spotlight.summary }}</p>
+                        {% set summary = spotlight.summary|striptags|trim %}
+                        {% if summary %}<p>{{ summary }}</p>{% endif %}
                         <div class="spotlight__actions">
                             {# Vidéo Mobile en priorité (masqué sur téléphone s'il n'y en a pas). #}
                             {% set spotlightDownload = preferred_download(spotlight) %}

@@ -1,0 +1,7 @@
+{# Couverture d'une carte : vignette WebP si elle existe, l'image d'origine sinon.
+   Chargement différé, sauf pour les cartes du premier écran (eager). #}
+{% set coverThumbUrl = video_cover_thumb_url(video) %}
+<picture>
+    {% if coverThumbUrl %}<source srcset="{{ coverThumbUrl }}" type="image/webp">{% endif %}
+    <img class="video-card__preview" src="{{ coverImageUrl }}" alt=""{% if not (eager ?? false) %} loading="lazy"{% endif %}>
+</picture>

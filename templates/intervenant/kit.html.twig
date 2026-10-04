@@ -39,7 +39,7 @@
                         </span>
                         <span class="speaker-video__files">
                             {% for part, file in item.files %}
-                                <a class="btn btn--outline btn--sm" href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" title="{{ parts[part].label }}{% if file.fileSize %} · {{ (file.fileSize / 1048576)|round(1) }} Mo{% endif %}">
+                                <a class="btn btn--outline btn--sm" href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" title="{{ parts[part].label }}{% if file.fileSize %} · {{ file.fileSize|file_size }}{% endif %}">
                                     <i class="fa-solid {{ parts[part].icon }}" aria-hidden="true"></i> {{ parts[part].label }}
                                 </a>
                             {% endfor %}

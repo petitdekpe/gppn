@@ -3,7 +3,7 @@
 {% else %}
     <div class="video-grid">
         {% for video in results.videos %}
-            {{ include('partials/_video_card.html.twig', {video: video}) }}
+            {{ include('partials/_video_card.html.twig', {video: video, eager: loop.index <= 4}) }}
         {% endfor %}
     </div>
     {{ include('partials/_pagination.html.twig', {results: results, route: route, route_params: route_params}) }}

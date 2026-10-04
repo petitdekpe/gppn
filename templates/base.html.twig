@@ -6,9 +6,17 @@
         <title>{% block title %}Le Gouvernement plus près de nous{% endblock %}</title>
         <meta name="description" content="{% block meta_description %}Des contenus courts du Gouvernement du Bénin, en vidéo TV, vidéo Mobile et audio MP3, expliqués en Fon, Yoruba, Bariba, Dendi et d’autres langues nationales.{% endblock %}">
         {% block meta_keywords %}{% endblock %}
-        <meta property="og:title" content="{{ block('title') }}">
-        <meta property="og:description" content="{{ block('meta_description') }}">
-        <meta property="og:type" content="website">
+        {# Aperçu au partage (WhatsApp, Facebook, X…). Image par défaut : photo officielle du Gouvernement ;
+           une fiche contenu la remplace par sa couverture. URL sans paramètres : un seul aperçu par page. #}
+        <meta property="og:site_name" content="Le Gouvernement plus près de nous">
+        <meta property="og:locale" content="fr_FR">
+        <meta property="og:title" content="{% block og_title %}{{ block('title')|trim }}{% endblock %}">
+        <meta property="og:description" content="{{ block('meta_description')|trim }}">
+        <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+        <meta property="og:url" content="{{ app.request.schemeAndHttpHost ~ app.request.baseUrl ~ app.request.pathInfo }}">
+        <meta property="og:image" content="{% block og_image %}{{ absolute_url(asset('images/hero-gouvernement.jpg')) }}{% endblock %}">
+        <meta property="og:image:alt" content="{% block og_image_alt %}Les membres du Gouvernement de la République du Bénin{% endblock %}">
+        <meta name="twitter:card" content="summary_large_image">
         <link rel="icon" href="{{ asset('images/favicon-32.png') }}" sizes="32x32" type="image/png">
         <link rel="icon" href="{{ asset('images/favicon-16.png') }}" sizes="16x16" type="image/png">
         <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
@@ -25,7 +33,7 @@
                 <div class="wrap site-header__inner">
                     <a class="brand" href="{{ path('app_home') }}">
                         <img class="brand__logo" src="{{ asset('images/logo-gppn.png') }}" alt="Le Gouvernement plus près de nous">
-                        <img class="brand__picto" src="{{ asset('images/picto-logo-gppn.png') }}" alt="" aria-hidden="true">
+                        <img class="brand__picto" src="{{ asset('images/picto-logo-gppn.svg') }}" alt="" aria-hidden="true">
                     </a>
 
                     <button type="button" class="nav-toggle" data-action="nav#toggle" aria-expanded="false" aria-controls="primary-nav">
@@ -86,7 +94,7 @@
             <div class="wrap site-footer__grid">
                 <div class="site-footer__about">
                     <div class="brand brand--footer">
-                        <img class="brand__logo brand__logo--footer" src="{{ asset('images/logo-gouv.png') }}" alt="Gouvernement de la République du Bénin">
+                        <img class="brand__logo brand__logo--footer" src="{{ asset('images/logo-gouv.png') }}" alt="Gouvernement de la République du Bénin" loading="lazy">
                     </div>
                     <h3>Abonnez-vous à notre Newsletter</h3>
                     <p class="site-footer__newsletter-text">Recevez par e-mail les nouveaux contenus du Gouvernement dès leur publication : vidéos TV, vidéos Mobile et audios MP3 qui expliquent les décisions du Conseil des ministres, dans les langues nationales.</p>
@@ -103,7 +111,6 @@
                         <li><a href="{{ path('app_video_index') }}">Contenus</a></li>
                         <li><a href="{{ path('app_thematique_index') }}">Thématiques</a></li>
                         <li><a href="{{ path('app_intervenant_index') }}">Les ministres</a></li>
-                        <li><a href="{{ path('app_video_feed') }}">Vidéos Mobile</a></li>
                         <li><a href="{{ path('app_media_space') }}">Espace média</a></li>
                         <li><a href="{{ path('app_about') }}">À propos</a></li>
                     </ul>
@@ -123,6 +130,7 @@
                             <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ link.label }} (nouvel onglet)" title="{{ link.label }}"><i class="fa-brands {{ link.icon }}" aria-hidden="true"></i></a>
                         {% endfor %}
                     </div>
+                    <a class="site-footer__contact" href="{{ path('app_contact') }}"><i class="fa-regular fa-envelope" aria-hidden="true"></i> Nous contacter</a>
                 </div>
             </div>
 
@@ -130,10 +138,8 @@
                 <div class="wrap site-footer__bottom-inner">
                     <p>© Gouvernement de la République du Bénin - {{ "now"|date("Y") }}</p>
                     <nav>
-                        <a href="{{ path('app_about') }}">Politique de confidentialité</a>
-                        <a href="{{ path('app_about') }}">Mentions légales</a>
-                        <a href="{{ path('app_about') }}">Conditions générales d’utilisation</a>
-                        <a href="{{ path('app_about') }}">Gestion des cookies</a>
+                        <a href="{{ path('app_privacy') }}">Politique de confidentialité</a>
+                        <a href="{{ path('app_legal_notice') }}">Mentions légales</a>
                     </nav>
                 </div>
             </div>

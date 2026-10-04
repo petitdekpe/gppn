@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Form\Admin\SettingsType;
 use App\Service\AppSettings;
+use App\Service\CoverThumbnailer;
 use League\Flysystem\FilesystemException;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,6 +23,7 @@ class SettingsController extends AbstractController
     public function index(
         Request $request,
         AppSettings $settings,
+        CoverThumbnailer $thumbnailer,
         #[Autowire(service: 'video_cover.storage')] FilesystemOperator $coverStorage,
         #[Autowire('%env(MAILER_DSN)%')] string $mailerDsn,
     ): Response {
@@ -49,12 +51,14 @@ class SettingsController extends AbstractController
                     fclose($stream);
                 }
                 $settings->setDefaultCover($fileName);
+                $thumbnailer->generate($fileName);
             } elseif ($data['removeDefaultCover']) {
                 $settings->setDefaultCover(null);
             }
             if ($previousCover !== null && $previousCover !== $settings->getDefaultCover()) {
                 try {
                     $coverStorage->delete($previousCover);
+                    $thumbnailer->delete($previousCover);
                 } catch (FilesystemException) {
                     // Fichier orphelin sans conséquence : le paramètre ne le désigne plus.
                 }

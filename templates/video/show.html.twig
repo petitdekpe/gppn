@@ -1,7 +1,17 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}{{ video.title }} | Le Gouvernement plus près de nous{% endblock %}
-{% block meta_description %}{{ video.summary|striptags|slice(0, 150) }}{% endblock %}
+{% block meta_description %}
+    {%- set summary = video.summary|striptags|trim -%}
+    {{- summary ? summary|slice(0, 150) : video.title ~ ', expliqué en ' ~ video.language.name ~ ' par le Gouvernement du Bénin.' -}}
+{% endblock %}
+{% block og_title %}{{ video.title }} · en {{ video.language.name }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_image %}
+    {%- set ogCoverUrl = video_cover_url(video) ?? (video.primaryPlaybackFile and video.primaryPlaybackFile.type.medium == 'image' ? video_file_url(video.primaryPlaybackFile) : null) -%}
+    {{- ogCoverUrl ? absolute_url(ogCoverUrl) : parent() -}}
+{% endblock %}
+{% block og_image_alt %}{{ video.title }}{% endblock %}
 {% block meta_keywords %}
     {% if video.keywordsList is not empty %}
         <meta name="keywords" content="{{ video.keywordsList|join(', ') }}">
@@ -89,7 +99,8 @@
                             <p class="video-card__meta">Publiée le {{ video.publishedAt|date_fr }} · <strong>{{ video.viewsCount|number_format(0, ',', ' ') }} vue{{ video.viewsCount > 1 ? 's' }}</strong></p>
                             {{ include('partials/_share.html.twig', {video: video, variant: 'detail'}) }}
                         </div>
-                        <p class="video-detail__summary">{{ video.summary }}</p>
+                        {% set summary = video.summary|striptags|trim %}
+                        {% if summary %}<p class="video-detail__summary">{{ summary }}</p>{% endif %}
 
                         {% set learningPoints = video.learningPointsList %}
                         {% if learningPoints is not empty %}
@@ -170,7 +181,7 @@
                                         <strong>{{ file.type.usageLabel }}</strong>
                                         {% if video.durationSeconds > 0 %}<span class="muted">{{ video.durationLabel }}</span>{% endif %}
                                     </span>
-                                    <span class="download-list__size">{{ (file.fileSize / 1048576)|round(1) }} Mo</span>
+                                    <span class="download-list__size">{{ file.fileSize|file_size }}</span>
                                     <a href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" class="btn btn--outline btn--sm">Télécharger</a>
                                 </li>
                             {% endfor %}
@@ -188,18 +199,20 @@
         </div>
     </section>
 
-    {% if relatedVideos is not empty %}
+    {% if otherLanguageVideos is not empty %}
         <section class="section wrap">
             <div class="section__header">
-                <h2>Contenus similaires</h2>
+                <h2>Dans d’autres langues</h2>
+                <p>Le même sujet, expliqué en {{ otherLanguageVideos|length }} autre{{ otherLanguageVideos|length > 1 ? 's' }} langue{{ otherLanguageVideos|length > 1 ? 's' }}.</p>
             </div>
+            {# Même sujet : la carte met en avant la langue et l'intervenant, comme dans les blocs par sujet. #}
             <div class="video-grid">
-                {% for related in relatedVideos %}
-                    {{ include('partials/_video_card.html.twig', {video: related}) }}
+                {% for other in otherLanguageVideos %}
+                    {{ include('partials/_video_card.html.twig', {video: other, cardIconActions: true, inSubject: true}) }}
                 {% endfor %}
             </div>
             <div class="section__more">
-                <a class="btn btn--dark" href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}">Afficher plus</a>
+                <a class="btn btn--dark" href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}">Autres sujets : {{ video.thematic.name }}</a>
             </div>
         </section>
     {% endif %}

@@ -28,9 +28,10 @@
                         <a href="{{ path('admin_council_session_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_council_session' ? 'is-active' }}">Conseils des ministres</a>
                     {% endif %}
                     {% if is_granted('ROLE_MODERATEUR') %}
-                        <a href="{{ path('admin_suggestion_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_suggestion' ? 'is-active' }}">Suggestions</a>
+                        <a href="{{ path('admin_suggestion_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_suggestion' ? 'is-active' }}">Messages</a>
                     {% endif %}
                     {% if is_granted('ROLE_SUPER_ADMIN') %}
+                        <a href="{{ path('admin_site_page_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_site_page' ? 'is-active' }}">Pages</a>
                         <a href="{{ path('admin_user_index') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_user' ? 'is-active' }}">Utilisateurs</a>
                         <a href="{{ path('admin_settings') }}" class="{{ app.request.attributes.get('_route') starts with 'admin_settings' ? 'is-active' }}">Paramètres</a>
                     {% endif %}

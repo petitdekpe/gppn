@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{# Page de texte modifiable depuis l'admin (Pages), rédigée en Markdown. #}
+{% block title %}{{ page.title }} | Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}{{ page.title }} du site « Le Gouvernement plus près de nous », plateforme du Gouvernement de la République du Bénin.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_home')}) }}
+        <h1>{{ page.title }}</h1>
+        {% if page.updatedAt %}
+            <p>Dernière mise à jour : {{ page.updatedAt|date_fr }}</p>
+        {% endif %}
+    </section>
+
+    <section class="section wrap prose site-page">
+        {{ page.content|markdown_to_html }}
+    </section>
+{% endblock %}

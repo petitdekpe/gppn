@@ -20,18 +20,33 @@ class SuggestionController extends AbstractController
 
     private const PER_PAGE = 30;
 
+    /** Suggestions de sujets et messages « Nous contacter », filtrables par type (onglets). */
     #[Route('', name: 'admin_suggestion_index')]
     public function index(SuggestionRepository $suggestionRepository, Request $request): Response
     {
-        $results = AdminPaginator::paginate(
-            $suggestionRepository->createQueryBuilder('s')->orderBy('s.treated', 'ASC')->addOrderBy('s.createdAt', 'DESC'),
-            $request->query->getInt('page', 1),
-            self::PER_PAGE,
-        );
+        $kind = $request->query->getString('type');
+        $kind = isset(Suggestion::KIND_LABELS[$kind]) ? $kind : null;
+
+        $qb = $suggestionRepository->createQueryBuilder('s')->orderBy('s.treated', 'ASC')->addOrderBy('s.createdAt', 'DESC');
+        if ($kind !== null) {
+            $qb->andWhere('s.kind = :kind')->setParameter('kind', $kind);
+        }
+        $results = AdminPaginator::paginate($qb, $request->query->getInt('page', 1), self::PER_PAGE);
+
+        $untreated = [];
+        foreach ($suggestionRepository->createQueryBuilder('s')
+            ->select('s.kind, COUNT(s.id) AS total')
+            ->andWhere('s.treated = false')
+            ->groupBy('s.kind')
+            ->getQuery()->getArrayResult() as $row) {
+            $untreated[$row['kind']] = (int) $row['total'];
+        }
 
         return $this->render('admin/suggestion/index.html.twig', [
             'suggestions' => $results['items'],
             'results' => $results,
+            'kind' => $kind,
+            'untreated' => $untreated,
         ]);
     }
 
@@ -58,9 +73,9 @@ class SuggestionController extends AbstractController
         $entityManager->flush();
 
         $this->bulkReport(match ($action) {
-            'treated' => self::plural(count($suggestions), 'suggestion marquée traitée', 'suggestions marquées traitées'),
-            'untreated' => self::plural(count($suggestions), 'suggestion remise à traiter', 'suggestions remises à traiter'),
-            'delete' => self::plural(count($suggestions), 'suggestion supprimée', 'suggestions supprimées'),
+            'treated' => self::plural(count($suggestions), 'message marqué traité', 'messages marqués traités'),
+            'untreated' => self::plural(count($suggestions), 'message remis à traiter', 'messages remis à traiter'),
+            'delete' => self::plural(count($suggestions), 'message supprimé', 'messages supprimés'),
         } . '.');
 
         return $this->backToList($request, 'admin_suggestion_index');
@@ -92,7 +107,7 @@ class SuggestionController extends AbstractController
             $entityManager->remove($suggestion);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Suggestion supprimée.');
+            $this->addFlash('success', 'Message supprimé.');
         }
 
         return $this->redirectToRoute('admin_suggestion_index');

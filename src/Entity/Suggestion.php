@@ -6,10 +6,25 @@ use App\Repository\SuggestionRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * Message reçu depuis le site : suggestion de sujet (« Proposer un sujet »,
+ * nom et e-mail facultatifs) ou demande de contact (« Nous contacter »,
+ * nom et e-mail obligatoires pour pouvoir répondre : groupe de validation
+ * « contact »). Les deux se traitent dans l'admin, menu « Messages ».
+ */
 #[ORM\Entity(repositoryClass: SuggestionRepository::class)]
 #[ORM\Table(name: 'suggestion')]
 class Suggestion
 {
+    public const KIND_SUGGESTION = 'suggestion';
+    public const KIND_CONTACT = 'contact';
+
+    /** @var array<string, string> */
+    public const KIND_LABELS = [
+        self::KIND_SUGGESTION => 'Suggestion',
+        self::KIND_CONTACT => 'Contact',
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -26,13 +41,23 @@ class Suggestion
     private string $message = '';
 
     #[ORM\Column(length: 150, nullable: true)]
+    #[Assert\NotBlank(message: 'Merci d’indiquer votre nom.', groups: ['contact'])]
     #[Assert\Length(max: 150)]
     private ?string $fullName = null;
 
     #[ORM\Column(length: 180, nullable: true)]
+    #[Assert\NotBlank(message: 'Merci d’indiquer votre adresse e-mail pour recevoir notre réponse.', groups: ['contact'])]
     #[Assert\Email(message: 'Cette adresse email n’est pas valide.')]
     #[Assert\Length(max: 180)]
     private ?string $email = null;
+
+    #[ORM\Column(length: 30, nullable: true)]
+    #[Assert\Length(max: 30)]
+    #[Assert\Regex(pattern: '/^[0-9+().\s-]*$/', message: 'Ce numéro de téléphone n’est pas valide.')]
+    private ?string $phone = null;
+
+    #[ORM\Column(length: 20, options: ['default' => self::KIND_SUGGESTION])]
+    private string $kind = self::KIND_SUGGESTION;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -96,6 +121,35 @@ class Suggestion
         $this->email = $email;
 
         return $this;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function setPhone(?string $phone): static
+    {
+        $this->phone = $phone;
+
+        return $this;
+    }
+
+    public function getKind(): string
+    {
+        return $this->kind;
+    }
+
+    public function setKind(string $kind): static
+    {
+        $this->kind = $kind;
+
+        return $this;
+    }
+
+    public function getKindLabel(): string
+    {
+        return self::KIND_LABELS[$this->kind] ?? $this->kind;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

@@ -1,20 +1,21 @@
 {% extends 'admin/base.html.twig' %}
 
 {% block title %}{{ suggestion.subject }} | Administration GPPN{% endblock %}
-{% block page_title %}Suggestion{% endblock %}
-{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_suggestion_index'), label: 'Retour aux suggestions'}) }}{% endblock %}
+{% block page_title %}{{ suggestion.kind == 'contact' ? 'Message de contact' : 'Suggestion de sujet' }}{% endblock %}
+{% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_suggestion_index'), label: 'Retour aux messages'}) }}{% endblock %}
 
 {% block body %}
     <div class="admin-form-card">
         <span class="admin-badge {{ suggestion.treated ? 'admin-badge--done' : 'admin-badge--pending' }}">
-            {{ suggestion.treated ? 'Traitée' : 'À traiter' }}
+            {{ suggestion.treated ? 'Traité' : 'À traiter' }}
         </span>
 
         <h2>{{ suggestion.subject }}</h2>
         <p class="muted">
-            Reçue le {{ suggestion.createdAt|datetime_fr }}
+            {{ suggestion.kindLabel }} reçu le {{ suggestion.createdAt|datetime_fr }}
             {% if suggestion.fullName %} · {{ suggestion.fullName }}{% endif %}
-            {% if suggestion.email %} · <a href="mailto:{{ suggestion.email }}">{{ suggestion.email }}</a>{% endif %}
+            {% if suggestion.email %} · <a href="mailto:{{ suggestion.email }}?subject={{ ('Re : ' ~ suggestion.subject)|url_encode }}">{{ suggestion.email }}</a>{% endif %}
+            {% if suggestion.phone %} · <a href="tel:{{ suggestion.phone|replace({' ': ''}) }}">{{ suggestion.phone }}</a>{% endif %}
         </p>
 
         <p class="admin-suggestion-message">{{ suggestion.message|nl2br }}</p>
@@ -23,10 +24,10 @@
             <form method="post" action="{{ path('admin_suggestion_toggle_treated', {id: suggestion.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('toggle-suggestion-' ~ suggestion.id) }}">
                 <button type="submit" class="btn btn--primary">
-                    {{ suggestion.treated ? 'Marquer comme à traiter' : 'Marquer comme traitée' }}
+                    {{ suggestion.treated ? 'Marquer comme à traiter' : 'Marquer comme traité' }}
                 </button>
             </form>
-            <form method="post" action="{{ path('admin_suggestion_delete', {id: suggestion.id}) }}" onsubmit="return confirm('Supprimer cette suggestion ?');">
+            <form method="post" action="{{ path('admin_suggestion_delete', {id: suggestion.id}) }}" onsubmit="return confirm('Supprimer ce message ?');">
                 <input type="hidden" name="_token" value="{{ csrf_token('delete-suggestion-' ~ suggestion.id) }}">
                 <button type="submit" class="btn btn--danger">Supprimer</button>
             </form>

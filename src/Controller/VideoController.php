@@ -118,7 +118,7 @@ class VideoController extends AbstractController
 
         return $this->render('video/show.html.twig', [
             'video' => $video,
-            'relatedVideos' => $videoRepository->findRelated($video, 8),
+            'otherLanguageVideos' => $videoRepository->findOtherLanguages($video),
             'feedbackEnabled' => $settings->isFeedbackEnabled(),
         ]);
     }

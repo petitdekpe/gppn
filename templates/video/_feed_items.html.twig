@@ -14,7 +14,7 @@
                 {# Actions flottantes à droite de la vidéo, au-dessus du bandeau. #}
                 <div class="feed-item__actions">
                     {{ include('partials/_share.html.twig', {video: video, variant: 'feed'}) }}
-                    <a href="{{ video_file_url(verticalFile) }}" download="{{ verticalFile.originalName ?? verticalFile.fileName }}" class="feed-item__action" aria-label="Télécharger « {{ video.title }} » (vidéo Mobile{% if verticalFile.fileSize %}, {{ (verticalFile.fileSize / 1048576)|round(1) }} Mo{% endif %})">
+                    <a href="{{ video_file_url(verticalFile) }}" download="{{ verticalFile.originalName ?? verticalFile.fileName }}" class="feed-item__action" aria-label="Télécharger « {{ video.title }} » (vidéo Mobile{% if verticalFile.fileSize %}, {{ verticalFile.fileSize|file_size }}{% endif %})">
                         <span class="feed-item__action-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
                         <span class="feed-item__action-label">Télécharger</span>
                     </a>

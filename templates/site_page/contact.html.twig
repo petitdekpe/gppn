@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ page.title }} | Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Contactez l’équipe du programme « Le Gouvernement plus près de nous » : question, demande de fichier, accréditation ou partenariat.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        {{ include('partials/_back_link.html.twig', {fallback: path('app_home')}) }}
+        <h1>{{ page.title }}</h1>
+        <p>Une question, une demande de fichier, un besoin de diffusion ou de partenariat ? Écrivez-nous, nous vous répondons par e-mail.</p>
+    </section>
+
+    <section class="section wrap contact-layout">
+        <div class="form-card contact-layout__form">
+            {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+                {{ form_errors(form) }}
+                <div class="form-grid-2">
+                    {{ form_row(form.fullName) }}
+                    {{ form_row(form.email) }}
+                </div>
+                <div class="form-grid-2">
+                    {{ form_row(form.phone) }}
+                    {{ form_row(form.subject) }}
+                </div>
+                {{ form_row(form.message) }}
+
+                {# Information des personnes au moment de la collecte (Code du numérique, APDP). #}
+                <p class="contact-layout__notice">
+                    Vos nom, coordonnées et message sont utilisés uniquement pour traiter votre demande et vous répondre. Ils sont conservés au plus 12 mois après le traitement de la demande.
+                    Vous pouvez y accéder, les faire rectifier ou supprimer : voir notre <a href="{{ path('app_privacy') }}">politique de confidentialité</a>.
+                </p>
+
+                <button type="submit" class="btn btn--primary">Envoyer mon message</button>
+            {{ form_end(form) }}
+        </div>
+
+        {# Coordonnées modifiables depuis l'admin (Pages > Nous contacter). #}
+        <aside class="contact-layout__aside prose">
+            {{ page.content|markdown_to_html }}
+        </aside>
+    </section>
+{% endblock %}

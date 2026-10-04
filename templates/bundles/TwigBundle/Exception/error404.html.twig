@@ -8,10 +8,11 @@
         <div class="error-page__stripe" aria-hidden="true"></div>
         <p class="error-page__code">404</p>
         <h1 class="error-page__title">Page introuvable</h1>
-        <p class="error-page__text">Cette page n’existe pas ou a été déplacée. Vérifiez l’adresse ou repartez depuis l’accueil.</p>
+        <p class="error-page__text">Cette page n’existe pas ou a été déplacée. Vérifiez l’adresse, ou retrouvez le contenu que vous cherchiez :</p>
+        {{ include('partials/_error_help.html.twig') }}
         <div class="error-page__actions">
-            <a class="btn btn--primary" href="{{ path('app_home') }}">Retour à l’accueil</a>
-            <a class="btn btn--outline" href="{{ path('app_video_index') }}">Explorer les contenus</a>
+            <a class="btn btn--outline" href="{{ path('app_home') }}">Retour à l’accueil</a>
+            <a class="btn btn--outline" href="{{ path('app_video_index') }}">Tous les contenus</a>
         </div>
     </section>
 {% endblock %}

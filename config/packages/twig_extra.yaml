@@ -1,0 +1,7 @@
+# Filtre markdown_to_html : pages modifiables depuis l'admin (confidentialité,
+# mentions légales, contact). Le HTML saisi est échappé et les liens
+# dangereux (javascript:, data:…) sont retirés.
+twig_extra:
+    commonmark:
+        html_input: 'escape'
+        allow_unsafe_links: false

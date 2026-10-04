@@ -19,7 +19,7 @@
             {% if summary %}<p class="subject-group__summary">{{ summary }}</p>{% endif %}
             <div class="video-grid">
                 {% for video in group.videos %}
-                    {{ include('partials/_video_card.html.twig', {video: video, cardIconActions: true, inSubject: true}) }}
+                    {{ include('partials/_video_card.html.twig', {video: video, cardIconActions: true, inSubject: true, eager: loop.parent.loop.first and loop.index <= 4}) }}
                 {% endfor %}
             </div>
         </section>

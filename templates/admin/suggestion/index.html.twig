@@ -1,11 +1,22 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}Suggestions | Administration GPPN{% endblock %}
-{% block page_title %}Suggestions citoyennes{% endblock %}
+{% block title %}Messages | Administration GPPN{% endblock %}
+{% block page_title %}Messages reçus{% endblock %}
 
 {% block body %}
+    {# Onglets par type : messages « Nous contacter » et suggestions de sujets (compteur : à traiter). #}
+    <nav class="admin-tabs" aria-label="Types de messages">
+        {% for value, label in {'': 'Tous', contact: 'Contact', suggestion: 'Suggestions de sujets'} %}
+            {% set active = (kind ?? '') == value %}
+            {% set count = value == '' ? untreated|reduce((sum, n) => sum + n, 0) : untreated[value] ?? 0 %}
+            <a href="{{ path('admin_suggestion_index', {type: value ?: null}) }}" class="admin-tabs__tab{{ active ? ' is-active' }}"{{ active ? ' aria-current="page"' }}>
+                {{ label }}{% if count > 0 %} <span class="admin-tabs__count" title="À traiter">{{ count }}</span>{% endif %}
+            </a>
+        {% endfor %}
+    </nav>
+
     {% if suggestions is empty %}
-        <p class="empty-state">Aucune suggestion pour le moment.</p>
+        <p class="empty-state">Aucun message pour le moment.</p>
     {% else %}
         <div data-controller="bulk-select">
             {{ include('admin/_bulk_bar.html.twig', {
@@ -13,9 +24,9 @@
                 action: path('admin_suggestion_bulk'),
                 tokenId: 'bulk-suggestion',
                 actions: [
-                    {value: 'treated', label: 'Marquer comme traitées'},
+                    {value: 'treated', label: 'Marquer comme traités'},
                     {value: 'untreated', label: 'Remettre à traiter'},
-                    {value: 'delete', label: 'Supprimer', confirm: 'Supprimer définitivement les %count% suggestions sélectionnées ?'},
+                    {value: 'delete', label: 'Supprimer', confirm: 'Supprimer définitivement les %count% messages sélectionnés ?'},
                 ],
             }) }}
 
@@ -25,9 +36,10 @@
                         <tr>
                             {{ include('admin/_bulk_all.html.twig') }}
                             <th>Statut</th>
-                            <th>Sujet</th>
+                            <th>Type</th>
+                            <th>Objet</th>
                             <th>De</th>
-                            <th>Reçue le</th>
+                            <th>Reçu le</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -37,9 +49,10 @@
                                 {{ include('admin/_bulk_checkbox.html.twig', {formId: 'bulk-suggestion', id: suggestion.id, label: suggestion.subject}) }}
                                 <td>
                                     <span class="admin-badge {{ suggestion.treated ? 'admin-badge--done' : 'admin-badge--pending' }}">
-                                        {{ suggestion.treated ? 'Traitée' : 'À traiter' }}
+                                        {{ suggestion.treated ? 'Traité' : 'À traiter' }}
                                     </span>
                                 </td>
+                                <td>{{ suggestion.kindLabel }}</td>
                                 <td><a href="{{ path('admin_suggestion_show', {id: suggestion.id}) }}">{{ suggestion.subject }}</a></td>
                                 <td>{{ suggestion.fullName ?: 'Anonyme' }}</td>
                                 <td>{{ suggestion.createdAt|datetime_fr }}</td>
@@ -51,7 +64,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ include('partials/_pagination.html.twig', {results: results, route: 'admin_suggestion_index', route_params: {}, label: 'Pagination des suggestions'}) }}
+            {{ include('partials/_pagination.html.twig', {results: results, route: 'admin_suggestion_index', route_params: {type: kind}|filter(v => v), label: 'Pagination des messages'}) }}
         </div>
     {% endif %}
 {% endblock %}

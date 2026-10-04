@@ -223,7 +223,7 @@
 
                 <p class="lot-builder__summary-total">
                     <span class="lot-builder__step-number">4</span>
-                    Poids total : <strong>{{ (totalSize / 1048576)|round(1) }} Mo</strong>
+                    Poids total : <strong>{{ totalSize|file_size }}</strong>
                 </p>
 
                 {% if matchingFiles is not empty %}
@@ -258,7 +258,7 @@
         <div class="cta-card cta-card--dark">
             <h3>Un besoin que le catalogue ne couvre pas ?</h3>
             <p>Contactez la Direction de la communication (Dircom) pour un format sur mesure, un fichier en très haute définition, une question d’accréditation, ou un besoin non couvert par le catalogue.</p>
-            <a class="btn btn--gold" href="{{ path('app_suggestion_new') }}">Nous contacter</a>
+            <a class="btn btn--gold" href="{{ path('app_contact') }}">Nous contacter</a>
         </div>
     </section>
 {% endblock %}

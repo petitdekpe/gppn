@@ -1,0 +1,43 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Pages | Administration GPPN{% endblock %}
+{% block page_title %}Pages du site{% endblock %}
+
+{% block body %}
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Page</th>
+                    <th>Dernière modification</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in pages %}
+                    {% set page = item.page %}
+                    <tr>
+                        <td>
+                            <a href="{{ path('admin_site_page_edit', {slug: page.slug}) }}"><strong>{{ page.title }}</strong></a>
+                            <div class="muted">{{ item.definition.help }}</div>
+                            {% if '[à compléter' in page.content %}
+                                <span class="admin-badge admin-badge--pending">Informations à compléter</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if page.updatedAt %}
+                                {{ page.updatedAt|datetime_fr }}{% if page.updatedBy %} · {{ page.updatedBy.fullName ?: page.updatedBy.email }}{% endif %}
+                            {% else %}
+                                <span class="muted">Texte par défaut</span>
+                            {% endif %}
+                        </td>
+                        <td class="admin-table__actions">
+                            <a class="btn btn--outline btn--sm" href="{{ path(item.definition.route) }}" target="_blank" rel="noopener">Voir ↗</a>
+                            <a class="btn btn--primary btn--sm" href="{{ path('admin_site_page_edit', {slug: page.slug}) }}">Modifier</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

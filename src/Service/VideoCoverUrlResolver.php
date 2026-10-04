@@ -13,6 +13,7 @@ class VideoCoverUrlResolver
         #[Autowire(service: 'video_cover.storage')]
         private readonly FilesystemOperator $storage,
         private readonly AppSettings $settings,
+        private readonly CoverThumbnailer $thumbnailer,
     ) {
     }
 
@@ -46,6 +47,23 @@ class VideoCoverUrlResolver
         }
 
         return $this->resolveDefault();
+    }
+
+    /**
+     * Vignette WebP de l'image que resolveForDisplay() affiche, pour les
+     * cartes ; null si elle n'existe pas encore (la carte garde l'original).
+     */
+    public function resolveThumbForDisplay(Video $video): ?string
+    {
+        $fileName = $video->getCoverImageName();
+        if ($fileName === null) {
+            if ($video->getPrimaryPlaybackFile()?->getType()->getCategory() === CapsuleFormat::IMAGE) {
+                return null;
+            }
+            $fileName = $this->settings->getDefaultCover();
+        }
+
+        return $fileName !== null ? $this->thumbnailer->publicUrl($fileName) : null;
     }
 
     public function resolveDefault(): ?string

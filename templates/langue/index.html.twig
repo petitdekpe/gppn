@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Langues | Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Les {{ languages|length }} langues nationales dans lesquelles le Gouvernement du Bénin explique ses décisions : {{ languages|map(row => row.language.name)|join(', ') }}.{% endblock %}
+
+{% block body %}
+    <section class="page-header wrap">
+        <h1>Choisissez une langue</h1>
+        <p>Les décisions du Gouvernement expliquées en {{ languages|length }} langue{{ languages|length > 1 ? 's' }} nationale{{ languages|length > 1 ? 's' }}.</p>
+    </section>
+
+    <section class="section wrap">
+        {% if languages is empty %}
+            <p class="empty-state">Aucune langue disponible pour le moment.</p>
+        {% else %}
+            <div class="home2-lang-grid">
+                {% for row in languages %}
+                    <a href="{{ path('app_langue_show', {slug: row.language.slug}) }}" class="home2-lang-pill">
+                        <span class="home2-lang-pill__label">
+                            <span>{{ row.language.name }}</span>
+                            <small class="home2-lang-pill__count">{{ row.videoCount }} contenu{{ row.videoCount > 1 ? 's' }}</small>
+                        </span>
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

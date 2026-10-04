@@ -87,9 +87,9 @@
                             {{ form_widget(fileForm.file) }}
                             {{ form_errors(fileForm.file) }}
                             {% if videoFile.fileName %}
-                                <p class="form-help">Fichier actuel : <a href="{{ video_file_url(videoFile) }}" target="_blank" rel="noopener">{{ videoFile.originalName ?? videoFile.fileName }}</a> ({{ (videoFile.fileSize / 1048576)|round(1) }} Mo)</p>
+                                <p class="form-help">Fichier actuel : <a href="{{ video_file_url(videoFile) }}" target="_blank" rel="noopener">{{ videoFile.originalName ?? videoFile.fileName }}</a> ({{ videoFile.fileSize|file_size }})</p>
                                 {% if videoFile.webmStatus %}
-                                    <p class="form-help">Version de lecture WebM : {{ videoFile.webmStatus.label }}{% if videoFile.hasPlayableWebm and videoFile.webmFileSize %} ({{ (videoFile.webmFileSize / 1048576)|round(1) }} Mo){% endif %}</p>
+                                    <p class="form-help">Version de lecture WebM : {{ videoFile.webmStatus.label }}{% if videoFile.hasPlayableWebm and videoFile.webmFileSize %} ({{ videoFile.webmFileSize|file_size }}){% endif %}</p>
                                 {% endif %}
                                 {% if videoFile.defective %}
                                     <p class="admin-file-defect">Fichier défectueux, masqué du site depuis le {{ videoFile.defectiveAt|datetime_fr }} : {{ videoFile.defectReason }}. Remplacez-le pour le remettre en ligne.</p>

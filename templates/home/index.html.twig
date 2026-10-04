@@ -98,29 +98,19 @@
             <p class="empty-state">Aucune langue disponible pour le moment.</p>
         {% else %}
             {% set visibleLanguages = 8 %}
-            <div data-controller="reveal">
-                <div class="home2-lang-grid">
-                    {% for row in languages %}
-                        <a
-                            href="{{ path('app_langue_show', {slug: row.language.slug}) }}"
-                            class="home2-lang-pill"
-                            {% if loop.index > visibleLanguages %}data-reveal-target="item"
-                            hidden{% endif %}
-                        >
-                            <span>{{ row.language.name }}</span>
-                            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    {% endfor %}
-                </div>
-                {% if languages|length > visibleLanguages %}
-                    <div class="section__more">
-                        {# Sans JavaScript, le lien mène au catalogue, filtrable par langue. #}
-                        <a class="btn btn--outline" href="{{ path('app_video_index') }}" data-reveal-target="button" data-action="reveal#show">
-                            Voir plus de langues ({{ languages|length - visibleLanguages }})
-                        </a>
-                    </div>
-                {% endif %}
+            <div class="home2-lang-grid">
+                {% for row in languages|slice(0, visibleLanguages) %}
+                    <a href="{{ path('app_langue_show', {slug: row.language.slug}) }}" class="home2-lang-pill">
+                        <span>{{ row.language.name }}</span>
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </a>
+                {% endfor %}
             </div>
+            {% if languages|length > visibleLanguages %}
+                <div class="section__more">
+                    <a class="btn btn--outline" href="{{ path('app_langue_index') }}">Voir les {{ languages|length }} langues</a>
+                </div>
+            {% endif %}
         {% endif %}
     </section>
 
@@ -161,13 +151,13 @@
                 <article class="home2-feature__card">
                     <a href="{{ path('app_video_show', {slug: spotlightVideo.slug}) }}" class="video-card__thumb home2-feature__thumb" style="--thematic-color: {{ spotlightVideo.thematic.colorHex }}">
                         {% if sCoverImageUrl %}
-                            <img class="video-card__preview" src="{{ sCoverImageUrl }}" alt="">
+                            {{ include('partials/_cover_picture.html.twig', {video: spotlightVideo, coverImageUrl: sCoverImageUrl}) }}
                         {% elseif sPreviewCategory == 'video' %}
                             <video class="video-card__preview" muted preload="metadata" playsinline>
                                 {{ include('partials/_video_sources.html.twig', {file: sPreviewFile}) }}
                             </video>
                         {% elseif sPreviewCategory == 'image' %}
-                            <img class="video-card__preview" src="{{ video_file_url(sPreviewFile) }}" alt="">
+                            <img class="video-card__preview" src="{{ video_file_url(sPreviewFile) }}" alt="" loading="lazy">
                         {% endif %}
                         <span class="video-detail__poster-lang">{{ spotlightVideo.language.name }}</span>
                         {% if sPreviewFile %}
@@ -183,7 +173,8 @@
                     </a>
                     <div class="home2-feature__body">
                         <a href="{{ path('app_thematique_show', {slug: spotlightVideo.thematic.slug}) }}" class="video-card__thematic" style="color: {{ spotlightVideo.thematic.colorHex }}">{{ spotlightVideo.thematic.name|upper }}</a>
-                        <p>{{ spotlightVideo.summary }}</p>
+                        {% set summary = spotlightVideo.summary|striptags|trim %}
+                        {% if summary %}<p>{{ summary }}</p>{% endif %}
                         <a class="home2-feature__link" href="{{ path('app_video_show', {slug: spotlightVideo.slug}) }}">{{ sPreviewCategory == 'audio' ? 'Écouter l’audio' : 'Voir la vidéo' }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
@@ -252,7 +243,7 @@
     </section>
 
     <section class="wrap home2-trust">
-        <img src="{{ asset('images/picto-logo-gppn.png') }}" alt="" class="home2-trust__emblem" aria-hidden="true">
+        <img src="{{ asset('images/picto-logo-gppn.svg') }}" alt="" class="home2-trust__emblem" aria-hidden="true" loading="lazy">
         <div>
             <h3>Une information officielle, au service de tous.</h3>
             <p>Ces contenus sont produits par le Gouvernement de la République du Bénin pour une meilleure compréhension de l’action publique.</p>

@@ -22,6 +22,8 @@ class VideoExtension extends AbstractExtension
             new TwigFunction('video_webm_url', $this->downloadUrlResolver->resolveWebm(...)),
             // Gabarits publics : couverture par défaut incluse.
             new TwigFunction('video_cover_url', $this->coverUrlResolver->resolveForDisplay(...)),
+            // Cartes : vignette WebP de cette même image, null tant qu'elle n'existe pas.
+            new TwigFunction('video_cover_thumb_url', $this->coverUrlResolver->resolveThumbForDisplay(...)),
             new TwigFunction('default_cover_url', $this->coverUrlResolver->resolveDefault(...)),
         ];
     }

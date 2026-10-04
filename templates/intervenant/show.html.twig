@@ -73,8 +73,8 @@
                                 {% for part in ['mobile', 'tv', 'radio'] %}
                                     {% set file = kit_file(video, part) %}
                                     {% if file %}
-                                        <a class="btn {{ part == 'mobile' ? 'btn--dark' : 'btn--outline' }} btn--sm {{ download_class(file) }}" href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" title="{{ parts[part].label }}{% if file.fileSize %} · {{ (file.fileSize / 1048576)|round(1) }} Mo{% endif %}">
-                                            <i class="fa-solid {{ part == 'mobile' ? 'fa-download' : parts[part].icon }}" aria-hidden="true"></i> {{ parts[part].label }}{% if part == 'mobile' and file.fileSize %} · {{ (file.fileSize / 1048576)|round(1) }} Mo{% endif %}
+                                        <a class="btn {{ part == 'mobile' ? 'btn--dark' : 'btn--outline' }} btn--sm {{ download_class(file) }}" href="{{ video_file_url(file) }}" download="{{ file.originalName ?? file.fileName }}" title="{{ parts[part].label }}{% if file.fileSize %} · {{ file.fileSize|file_size }}{% endif %}">
+                                            <i class="fa-solid {{ part == 'mobile' ? 'fa-download' : parts[part].icon }}" aria-hidden="true"></i> {{ parts[part].label }}{% if part == 'mobile' and file.fileSize %} · {{ file.fileSize|file_size }}{% endif %}
                                         </a>
                                     {% endif %}
                                 {% endfor %}
