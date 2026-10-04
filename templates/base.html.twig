@@ -6,7 +6,7 @@
         <title>{% block title %}Le Gouvernement plus près de nous{% endblock %}</title>
         <meta name="description" content="{% block meta_description %}Des contenus courts du Gouvernement du Bénin, en vidéo TV, vidéo Mobile et audio MP3, expliqués en Fon, Yoruba, Bariba, Dendi et d’autres langues nationales.{% endblock %}">
         {% block meta_keywords %}{% endblock %}
-        {# Aperçu au partage (WhatsApp, Facebook, X…). Image par défaut : photo officielle du Gouvernement ;
+        {# Aperçu au partage (WhatsApp, Facebook, X…). Image par défaut : le pictogramme du programme ;
            une fiche contenu la remplace par sa couverture. URL sans paramètres : un seul aperçu par page. #}
         <meta property="og:site_name" content="Le Gouvernement plus près de nous">
         <meta property="og:locale" content="fr_FR">
@@ -14,8 +14,8 @@
         <meta property="og:description" content="{{ block('meta_description')|trim }}">
         <meta property="og:type" content="{% block og_type %}website{% endblock %}">
         <meta property="og:url" content="{{ app.request.schemeAndHttpHost ~ app.request.baseUrl ~ app.request.pathInfo }}">
-        <meta property="og:image" content="{% block og_image %}{{ absolute_url(asset('images/hero-gouvernement.jpg')) }}{% endblock %}">
-        <meta property="og:image:alt" content="{% block og_image_alt %}Les membres du Gouvernement de la République du Bénin{% endblock %}">
+        <meta property="og:image" content="{% block og_image %}{{ absolute_url(asset('images/og-image.png')) }}{% endblock %}">
+        <meta property="og:image:alt" content="{% block og_image_alt %}Pictogramme du programme « Le Gouvernement plus près de nous »{% endblock %}">
         <meta name="twitter:card" content="summary_large_image">
         <link rel="icon" href="{{ asset('images/favicon-32.png') }}" sizes="32x32" type="image/png">
         <link rel="icon" href="{{ asset('images/favicon-16.png') }}" sizes="16x16" type="image/png">
