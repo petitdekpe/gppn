@@ -22,7 +22,9 @@ use Symfony\Component\Process\Process;
  *   représentative (évite une image noire ou un fondu) ; jamais à la place
  *   d'une couverture déposée à la main ;
  * - à la demande (bouton de l'administration) : l'image exacte de la
- *   seconde choisie, qui remplace la couverture quelle qu'elle soit.
+ *   seconde choisie, qui remplace la couverture quelle qu'elle soit ;
+ * - depuis la vidéo Mobile même s'il y a une vidéo TV (commande
+ *   app:video:generate-covers --mobile).
  */
 class VideoCoverGenerator
 {
@@ -74,26 +76,40 @@ class VideoCoverGenerator
         return null;
     }
 
+    /** Vidéo Mobile déposée, ou null. */
+    public static function mobileSource(Video $video): ?VideoFile
+    {
+        $file = $video->getVideoFileByType(VideoFileType::MP4_VERTICAL);
+
+        return $file?->getFileName() !== null ? $file : null;
+    }
+
     /** « vidéo TV » ou « vidéo Mobile », pour les messages et l'administration. */
     public function sourceLabel(Video $video): ?string
     {
-        $source = $this->source($video);
+        return self::label(self::source($video));
+    }
 
+    private static function label(?VideoFile $source): ?string
+    {
         return $source === null ? null : ($source->getType() === VideoFileType::MP4_VERTICAL ? 'vidéo Mobile' : 'vidéo TV');
     }
 
     /**
-     * @param int|null $second seconde choisie par l'éditeur ; null = automatique
+     * @param int|null $second     seconde choisie par l'éditeur ; null = automatique
+     * @param bool     $fromMobile vidéo Mobile même s'il y a une vidéo TV
      *
      * @return int seconde réellement utilisée
      */
-    public function generate(Video $video, ?int $second = null): int
+    public function generate(Video $video, ?int $second = null, bool $fromMobile = false): int
     {
-        $source = $this->source($video);
+        $source = $fromMobile ? self::mobileSource($video) : self::source($video);
         if ($source === null) {
-            throw new CoverGenerationException('Ce contenu n’a ni vidéo TV ni vidéo Mobile : la couverture ne peut pas en être tirée.');
+            throw new CoverGenerationException($fromMobile
+                ? 'Ce contenu n’a pas de vidéo Mobile : la couverture ne peut pas en être tirée.'
+                : 'Ce contenu n’a ni vidéo TV ni vidéo Mobile : la couverture ne peut pas en être tirée.');
         }
-        $label = $this->sourceLabel($video);
+        $label = self::label($source);
         $vertical = $source->getType() === VideoFileType::MP4_VERTICAL;
 
         $duration = $video->getDurationSeconds();

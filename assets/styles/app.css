@@ -2392,6 +2392,8 @@ aside[id],
 
 .brand--footer {
     margin-right: 0;
+    /* Deux lignes d'air entre le logo et le bloc Newsletter. */
+    margin-bottom: 3rem;
 }
 
 .brand__logo--footer {
