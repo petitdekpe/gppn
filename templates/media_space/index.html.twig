@@ -13,9 +13,16 @@
 
     <section class="section wrap">
         {# Chaque choix met à jour langues, formats et récapitulatif sans recharger la page (lot_builder_controller.js). #}
-        <div class="lot-builder" data-controller="lot-builder">
+        {# Préférences : proposées à l'enregistrement au téléchargement, appliquées en un clic (lot_preference_controller.js). #}
+        <div class="lot-builder" data-controller="lot-builder lot-preference"
+             data-lot-preference-save-url-value="{{ path('app_media_space_preference_save') }}"
+             data-lot-preference-prompt-url-value="{{ path('app_media_space_preference_prompt') }}"
+             data-lot-preference-token-value="{{ csrf_token(preferenceTokenId) }}">
+            {{ include('media_space/_preferences.html.twig') }}
+
             <form method="get" action="{{ path('app_media_space') }}" class="lot-builder__steps"
-                  data-lot-builder-target="form" data-action="change->lot-builder#refresh submit->lot-builder#submit">
+                  data-lot-builder-target="form" data-lot-preference-target="choices"
+                  data-action="change->lot-builder#refresh submit->lot-builder#submit">
                 {# Raccourci facultatif, replié : toutes les vidéos d'un intervenant et/ou d'une période.
                    Sans sujet coché, il compose le lot à lui seul ; avec des sujets cochés, il les restreint. #}
                 <details class="lot-builder__step lot-builder__optional"{{ speakerPeriod.isActive ? ' open' }} data-lot-builder-target="region" data-region="shortcut">
@@ -141,12 +148,17 @@
                         <p class="muted">Choisissez d’abord un ou plusieurs sujets, ou utilisez le raccourci intervenant ou période.</p>
                     {% elseif availableLanguages is empty %}
                         <p class="muted">Aucune langue disponible pour cette sélection.</p>
-                    {% else %}
+                    {% endif %}
+                    {# Une langue cochée (par exemple venue d'une préférence) reste affichée même sans contenu dans cette sélection. #}
+                    {% if (lotSubjectCount > 0 and availableLanguages is not empty) or selectedLanguageIds is not empty %}
                         <div class="filters-sidebar__options">
-                            {% for language in availableLanguages %}
+                            {% for language in (lotSubjectCount > 0 ? languageOptions : languageOptions|filter(l => l.id in selectedLanguageIds)) %}
                                 <label class="filters-sidebar__option">
                                     <input type="checkbox" name="langue[]" value="{{ language.id }}"{{ language.id in selectedLanguageIds ? ' checked' }}>
                                     <span>{{ language.name }}</span>
+                                    {% if lotSubjectCount > 0 and language.id not in availableLanguages|map(l => l.id) %}
+                                        <span class="filters-sidebar__option-count">aucun contenu</span>
+                                    {% endif %}
                                 </label>
                             {% endfor %}
                         </div>
@@ -160,12 +172,16 @@
                         <p class="muted">Choisissez d’abord un ou plusieurs sujets, ou utilisez le raccourci intervenant ou période.</p>
                     {% elseif availableFormats is empty %}
                         <p class="muted">Aucun format disponible pour cette sélection.</p>
-                    {% else %}
+                    {% endif %}
+                    {% if (lotSubjectCount > 0 and availableFormats is not empty) or selectedFormatValues is not empty %}
                         <div class="filters-sidebar__options">
-                            {% for format in availableFormats %}
+                            {% for format in (lotSubjectCount > 0 ? formatOptions : formatOptions|filter(f => f.value in selectedFormatValues)) %}
                                 <label class="filters-sidebar__option">
                                     <input type="checkbox" name="format[]" value="{{ format.value }}"{{ format.value in selectedFormatValues ? ' checked' }}>
                                     <span>{{ format.label }}</span>
+                                    {% if lotSubjectCount > 0 and format.value not in availableFormats|map(f => f.value) %}
+                                        <span class="filters-sidebar__option-count">aucun contenu</span>
+                                    {% endif %}
                                 </label>
                             {% endfor %}
                         </div>
@@ -212,7 +228,9 @@
 
                 {% if matchingFiles is not empty %}
                     {# Hors Turbo : la réponse est une archive, pas une page (sinon le clic reste sans effet). #}
-                    <form method="post" action="{{ path('app_media_space_download') }}" data-turbo="false">
+                    {# Au clic, proposition d'enregistrer les choix (lot-preference#download), puis téléchargement. #}
+                    <form method="post" action="{{ path('app_media_space_download') }}" data-turbo="false"
+                          data-lot-preference-target="download" data-action="submit->lot-preference#download">
                         <input type="hidden" name="_token" value="{{ csrf_token(csrfTokenId) }}">
                         {% for id in selectedSubjectIds %}<input type="hidden" name="sujet[]" value="{{ id }}">{% endfor %}
                         {% for id in selectedLanguageIds %}<input type="hidden" name="langue[]" value="{{ id }}">{% endfor %}
@@ -227,6 +245,8 @@
 
                         <button type="submit" class="btn btn--primary lot-builder__download">Télécharger le lot (.zip)</button>
                     </form>
+                {% elseif lotSubjectCount > 0 %}
+                    <p class="muted">Aucun fichier dans ces langues et formats pour cette sélection.</p>
                 {% else %}
                     <p class="muted">Choisissez au moins un sujet, ou un intervenant ou une période, pour composer votre lot.</p>
                 {% endif %}

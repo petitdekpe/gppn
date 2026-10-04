@@ -80,6 +80,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $registeredAt = null;
 
+    /** Espace média : proposer d'enregistrer ses choix au téléchargement d'un lot (case « Ne plus me proposer »). */
+    #[ORM\Column(options: ['default' => true])]
+    private bool $lotPreferencePrompt = true;
+
     public function getFullName(): ?string
     {
         return $this->fullName;
@@ -141,6 +145,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setRegisteredAt(?\DateTimeImmutable $registeredAt): static
     {
         $this->registeredAt = $registeredAt;
+
+        return $this;
+    }
+
+    public function hasLotPreferencePrompt(): bool
+    {
+        return $this->lotPreferencePrompt;
+    }
+
+    public function setLotPreferencePrompt(bool $lotPreferencePrompt): static
+    {
+        $this->lotPreferencePrompt = $lotPreferencePrompt;
 
         return $this;
     }

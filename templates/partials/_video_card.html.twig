@@ -24,8 +24,9 @@
     </a>
     <div class="video-card__body">
         {# inSubject (blocs par sujet) : thématique, titre et résumé sont déjà dans l'en-tête du sujet ;
-           la carte montre qui parle (nom et sigle). #}
+           la carte montre en quelle langue, puis qui parle (nom et sigle). #}
         {% if inSubject ?? false %}
+            <p class="video-card__language">{{ video.language.name }}</p>
             {% if video.speaker %}
                 <h3 class="video-card__speaker">
                     <a href="{{ path('app_intervenant_show', {person: video.speaker.personSlug}) }}">{{ video.speaker.fullName }}</a>
@@ -43,7 +44,9 @@
         {% endif %}
         <p class="video-card__meta">{{ video.publishedAt|date_fr }} · {{ video.viewsCount|number_format(0, ',', ' ') }} vue{{ video.viewsCount > 1 ? 's' }}</p>
         <div class="video-card__badges">
-            <span class="video-card__badge">{{ video.language.name }}</span>
+            {% if not (inSubject ?? false) %}
+                <span class="video-card__badge">{{ video.language.name }}</span>
+            {% endif %}
             {% for format in video.availableFormats %}
                 <span class="video-card__badge video-card__badge--format">{{ format.label }}</span>
             {% endfor %}

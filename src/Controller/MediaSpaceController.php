@@ -4,12 +4,15 @@ namespace App\Controller;
 
 use App\Entity\Language;
 use App\Entity\Subject;
+use App\Entity\User;
 use App\Entity\VideoFile;
 use App\Enum\CapsuleFormat;
 use App\Repository\LanguageRepository;
+use App\Repository\LotPreferenceRepository;
 use App\Repository\SubjectRepository;
 use App\Repository\VideoFileRepository;
 use App\Search\SpeakerPeriodFilter;
+use App\Service\LotPreferences;
 use App\Service\MediaAccess;
 use App\Service\SpeakerPeriodCriteria;
 use App\Service\VideoFileZipBuilder;
@@ -32,10 +35,27 @@ class MediaSpaceController extends AbstractController
         VideoFileRepository $videoFileRepository,
         SpeakerPeriodCriteria $speakerPeriodCriteria,
         MediaAccess $mediaAccess,
+        LotPreferences $lotPreferences,
+        LotPreferenceRepository $lotPreferenceRepository,
     ): Response {
         // Réservé à la presse et aux médias : connexion ou inscription, puis retour ici (choix conservés).
-        if (!$mediaAccess->isMedia()) {
+        $user = $this->getUser();
+        if (!$mediaAccess->isMedia() || !$user instanceof User) {
             return $this->redirectToRoute('app_press_login', ['retour' => $request->getRequestUri()]);
+        }
+
+        // Préférence choisie : ses langues, formats et intervenant remplacent
+        // ceux en cours (la période aussi, qu'elle ne retient pas) ; les sujets cochés restent.
+        if ($request->query->has('preference')) {
+            $params = $request->query->all();
+            $preference = $lotPreferenceRepository->findOneForUser($user, $request->query->getInt('preference'));
+            if ($preference !== null) {
+                unset($params['langue'], $params['format'], $params['intervenant'], $params['du'], $params['au'], $params['periode']);
+                $params += $lotPreferences->queryParams($lotPreferences->choicesOf($preference));
+            }
+            unset($params['preference']);
+
+            return $this->redirectToRoute('app_media_space', $params);
         }
 
         $subjectRows = $subjectRepository->findAllWithVideoCount();
@@ -75,24 +95,33 @@ class MediaSpaceController extends AbstractController
         $speakerPeriod = $speakerPeriodCriteria->fromParams($request->query->all());
         $lotSubjects = $this->lotSubjects($selectedSubjects, $speakerPeriod, $subjectRepository);
 
+        // Langues et formats cochés, même absents des sujets en cours (par
+        // exemple venus d'une préférence avant le choix des sujets) : ils
+        // restent cochés et filtrent le lot, comme au téléchargement.
         $availableLanguages = $languageRepository->findAvailableForSubjects($lotSubjects, $speakerPeriod);
         $languageIds = array_map('intval', $request->query->all('langue'));
-        $selectedLanguages = array_values(array_filter(
-            $availableLanguages,
-            static fn (Language $language): bool => in_array($language->getId(), $languageIds, true),
-        ));
+        $selectedLanguages = $languageIds !== [] ? $languageRepository->findBy(['id' => $languageIds]) : [];
+        $languageIds = array_map(static fn (Language $language): int => $language->getId(), $selectedLanguages);
+        $languageOptions = $availableLanguages;
+        foreach ($selectedLanguages as $language) {
+            if (!in_array($language, $languageOptions, true)) {
+                $languageOptions[] = $language;
+            }
+        }
 
         $availableFormats = $videoFileRepository->findAvailableFormatsForSubjects($lotSubjects, $selectedLanguages, $speakerPeriod);
         $formatValues = array_values(array_filter(array_map(
             static fn (mixed $value): ?string => CapsuleFormat::tryFrom((string) $value)?->value,
             $request->query->all('format'),
         )));
-        $selectedFormats = array_values(array_filter(
-            $availableFormats,
-            static fn (CapsuleFormat $format): bool => in_array($format->value, $formatValues, true),
+        $selectedFormats = array_map(static fn (string $value): CapsuleFormat => CapsuleFormat::from($value), $formatValues);
+        $formatOptions = array_values(array_filter(
+            CapsuleFormat::cases(),
+            static fn (CapsuleFormat $format): bool => in_array($format, $availableFormats, true) || in_array($format, $selectedFormats, true),
         ));
 
         $matchingFiles = $videoFileRepository->findForLot($lotSubjects, $selectedLanguages, $selectedFormats, $speakerPeriod);
+        $currentChoices = $lotPreferences->choicesFromParams($request->query->all());
 
         return $this->render('media_space/index.html.twig', [
             'subjectRowsBySession' => $subjectRowsBySession,
@@ -100,8 +129,10 @@ class MediaSpaceController extends AbstractController
             'selectedSessionId' => $selectedSessionId,
             'selectedSubjectIds' => $subjectIds,
             'availableLanguages' => $availableLanguages,
+            'languageOptions' => $languageOptions,
             'selectedLanguageIds' => $languageIds,
             'availableFormats' => $availableFormats,
+            'formatOptions' => $formatOptions,
             'selectedFormatValues' => $formatValues,
             'matchingFiles' => $matchingFiles,
             'totalSize' => array_sum(array_map(static fn (VideoFile $file): int => $file->getFileSize() ?? 0, $matchingFiles)),
@@ -110,7 +141,7 @@ class MediaSpaceController extends AbstractController
             'people' => $speakerPeriodCriteria->people(),
             'periodShortcuts' => $speakerPeriodCriteria->periodShortcuts(),
             'lotSubjectCount' => count($lotSubjects),
-        ]);
+        ] + $lotPreferences->panel($user, $currentChoices));
     }
 
     #[Route('/espace-media/telecharger', name: 'app_media_space_download', methods: ['POST'])]

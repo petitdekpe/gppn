@@ -1,0 +1,95 @@
+{# Panneau « Mes préférences » de l'espace média et fenêtre d'enregistrement
+   des choix (lot_preference_controller.js). Zone du constructeur de lot :
+   rafraîchie à chaque choix, et rendue seule après un enregistrement ou une
+   suppression (MediaSpacePreferenceController). #}
+<div class="lot-preferences"
+     data-lot-builder-target="region" data-region="preferences"
+     data-lot-preference-target="panel"
+     data-prompt="{{ preferencePrompt ? 'true' : 'false' }}"
+     data-savable="{{ currentChoicesSavable ? 'true' : 'false' }}"
+     data-saved="{{ currentChoicesSaved ? 'true' : 'false' }}">
+    <div class="lot-preferences__bar">
+        <span class="lot-preferences__title"><i class="fa-solid fa-bookmark" aria-hidden="true"></i> Mes préférences</span>
+
+        {% for row in preferenceRows %}
+            {% set preference = row.preference %}
+            <div class="lot-preferences__item{{ row.active ? ' is-active' }}">
+                <a href="{{ path('app_media_space', {preference: preference.id}) }}" class="lot-preferences__apply"
+                   data-action="lot-preference#apply"{{ row.active ? ' aria-current="true"' }}>
+                    <strong>{{ preference.name }}</strong>
+                    <span>{{ row.summary.languages }} · {{ row.summary.formats }}{{ row.summary.speaker ? ' · ' ~ row.summary.speaker }}</span>
+                </a>
+                <button type="button" class="lot-preferences__delete" aria-label="Supprimer la préférence « {{ preference.name }} »"
+                        data-action="lot-preference#delete"
+                        data-lot-preference-url-param="{{ path('app_media_space_preference_delete', {id: preference.id}) }}"
+                        data-lot-preference-name-param="{{ preference.name }}">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+        {% else %}
+            <span class="muted lot-preferences__empty">Aucune pour le moment : enregistrez vos langues et formats pour les retrouver en un clic.</span>
+        {% endfor %}
+
+        <button type="button" class="lot-preferences__save" data-action="lot-preference#openSave">
+            <i class="fa-regular fa-floppy-disk" aria-hidden="true"></i> Enregistrer mes choix
+        </button>
+    </div>
+
+    <dialog class="upload-dialog lot-preferences__dialog" aria-labelledby="lot-preference-title"
+            data-lot-preference-target="dialog" data-action="close->lot-preference#closed">
+        <form class="upload-dialog__panel" data-lot-preference-target="form" data-action="submit->lot-preference#save">
+            <div class="upload-dialog__header">
+                <h2 id="lot-preference-title">Enregistrer vos choix ?</h2>
+                <button type="button" class="upload-dialog__close" aria-label="Fermer" data-action="lot-preference#close">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            {% if currentChoicesSavable %}
+                <p>Retrouvez-les en un clic à votre prochaine visite.</p>
+                <dl class="lot-preferences__summary">
+                    <div><dt>Langues</dt><dd>{{ currentChoices.languages }}</dd></div>
+                    <div><dt>Formats</dt><dd>{{ currentChoices.formats }}</dd></div>
+                    {% if currentChoices.speaker %}
+                        <div><dt>Intervenant</dt><dd>{{ currentChoices.speaker }}</dd></div>
+                    {% endif %}
+                </dl>
+                <p class="muted lot-builder__hint">Les sujets et la période ne sont pas enregistrés : ils changent à chaque conseil.</p>
+
+                <div class="lot-preferences__field">
+                    <label for="lot-preference-name">Nom de la préférence</label>
+                    <input type="text" id="lot-preference-name" name="nom" maxlength="60" required
+                           placeholder="Ex. : Radio en fon et yoruba" autocomplete="off">
+                </div>
+
+                {% if preferenceRows|length >= preferenceMax %}
+                    <fieldset class="lot-preferences__replace">
+                        <legend>Vous avez déjà {{ preferenceMax }} préférences : laquelle remplacer ?</legend>
+                        {% for row in preferenceRows %}
+                            <label class="filters-sidebar__option">
+                                <input type="radio" name="remplacer" value="{{ row.preference.id }}" required>
+                                <span>{{ row.preference.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </fieldset>
+                {% endif %}
+            {% else %}
+                <p>Choisissez au moins une langue, un format ou un intervenant : ce sont ces choix qu’une préférence enregistre.</p>
+            {% endif %}
+
+            <label class="filters-sidebar__option lot-preferences__dismiss" data-lot-preference-target="dismiss">
+                <input type="checkbox" data-action="change->lot-preference#togglePrompt">
+                <span>Ne plus me proposer d’enregistrer mes choix</span>
+            </label>
+
+            <p class="upload-dialog__status is-error" role="alert" data-lot-preference-target="error" hidden></p>
+
+            <div class="lot-preferences__actions">
+                {% if currentChoicesSavable %}
+                    <button type="submit" class="btn btn--primary" data-lot-preference-target="submit">Enregistrer</button>
+                {% endif %}
+                <button type="button" class="btn btn--outline" data-lot-preference-target="skip" data-action="lot-preference#skip">Annuler</button>
+            </div>
+        </form>
+    </dialog>
+</div>

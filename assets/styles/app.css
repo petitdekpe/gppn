@@ -771,6 +771,20 @@ button {
 }
 
 /* Carte d'un bloc par sujet : l'intervenant et son sigle à la place du titre. */
+.video-card__language {
+    display: inline-block;
+    margin: 0 0 8px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--thematic-color, var(--color-navy));
+    color: #fff;
+}
+
 .video-card__speaker {
     margin: 0 0 8px;
     font-size: 0.98rem;
@@ -5445,6 +5459,177 @@ select option.subject-create-option {
 
 .lot-builder.is-loading [data-lot-builder-target~="region"] {
     opacity: 0.55;
+}
+
+/* Espace média : préférences de lot (lot_preference_controller.js). */
+.lot-preferences {
+    grid-column: 1 / -1;
+}
+
+.lot-preferences__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-cream);
+}
+
+.lot-preferences__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: var(--color-navy);
+}
+
+.lot-preferences__empty {
+    flex: 1 1 240px;
+    font-size: 0.88rem;
+}
+
+.lot-preferences__item {
+    display: inline-flex;
+    align-items: stretch;
+    max-width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+}
+
+.lot-preferences__item.is-active {
+    border-color: var(--color-green);
+    box-shadow: inset 0 0 0 1px var(--color-green);
+}
+
+.lot-preferences__apply {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: 7px 4px 7px 12px;
+    color: var(--color-navy);
+}
+
+.lot-preferences__apply strong {
+    font-size: 0.92rem;
+}
+
+.lot-preferences__apply span {
+    overflow: hidden;
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.lot-preferences__apply:hover strong {
+    text-decoration: underline;
+}
+
+.lot-preferences__delete {
+    flex-shrink: 0;
+    padding: 0 10px;
+    border: none;
+    background: transparent;
+    color: var(--color-muted);
+    cursor: pointer;
+}
+
+.lot-preferences__delete:hover {
+    color: #a12727;
+}
+
+.lot-preferences__save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    padding: 6px 4px;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--color-green-dark);
+    cursor: pointer;
+}
+
+.lot-preferences__save:hover {
+    text-decoration: underline;
+}
+
+.lot-preferences__summary {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--color-cream);
+}
+
+.lot-preferences__summary div {
+    display: flex;
+    gap: 10px;
+}
+
+.lot-preferences__summary dt {
+    flex: 0 0 90px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-muted);
+}
+
+.lot-preferences__summary dd {
+    margin: 0;
+    font-weight: 600;
+    color: var(--color-navy);
+}
+
+.lot-preferences__field {
+    margin-top: 16px;
+}
+
+.lot-preferences__field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.lot-preferences__field input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font: inherit;
+}
+
+.lot-preferences__replace {
+    margin: 16px 0 0;
+    padding: 0;
+    border: none;
+}
+
+.lot-preferences__replace legend {
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.lot-preferences__dismiss {
+    margin-top: 12px;
+}
+
+.lot-preferences__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
 }
 
 /* ---- Fil vertical : actions flottantes à droite (partager, télécharger) ---- */
