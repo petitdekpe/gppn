@@ -17,8 +17,8 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
 
 /**
- * Espace presse : connexion et inscription des médias, demandées avant tout
- * téléchargement groupé (archives, lots, kits). L'inscription recueille
+ * Espace presse : connexion et inscription des médias, demandées pour
+ * l'espace média et les téléchargements groupés (archives, lots). L'inscription recueille
  * l'adresse e-mail et le numéro de téléphone.
  *
  * La connexion passe par le même mécanisme que l'administration (formulaire

@@ -11,26 +11,30 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Kit de diffusion d'un intervenant pour un conseil des ministres : une
- * archive des contenus de ce seul intervenant, rangée en TV/, Radio/ et
- * Mobile/, toutes langues confondues, pour ses télévisions, radios et
- * groupes WhatsApp partenaires.
+ * archive des contenus de ce seul intervenant (Vidéo TV, Vidéo Mobile et
+ * Audio MP3), rangée en dossiers « Video TV », « Video Mobile » et
+ * « Audio MP3 », toutes langues confondues, pour ses télévisions, radios
+ * et groupes WhatsApp partenaires.
  *
  * Le kit se transmet par un lien signé, que chacun peut envoyer (un cabinet
  * ministériel sans compte par exemple) : son destinataire ne peut ni le
- * deviner ni le modifier pour obtenir autre chose, et doit se connecter ou
- * s'inscrire dans l'espace presse avant de télécharger (voir MediaAccess).
+ * deviner ni le modifier pour obtenir autre chose, et le télécharge
+ * librement, sans compte (contrairement aux lots de l'espace média).
  */
 class SpeakerKit
 {
-    /** Parties d'un kit ; pour chaque contenu, les types sont essayés dans l'ordre. */
+    /**
+     * Parties d'un kit ; pour chaque contenu, les types sont essayés dans l'ordre.
+     * Dossiers de l'archive sans accent : certains outils de décompression les abîment.
+     */
     public const PARTS = [
-        'tv' => ['label' => 'TV', 'icon' => 'fa-tv', 'types' => [VideoFileType::MP4_1080P, VideoFileType::MP4_480P]],
-        'radio' => ['label' => 'Radio', 'icon' => 'fa-radio', 'types' => [VideoFileType::AUDIO]],
-        'mobile' => ['label' => 'Mobile', 'icon' => 'fa-mobile-screen-button', 'types' => [VideoFileType::MP4_VERTICAL]],
+        'tv' => ['label' => 'Vidéo TV', 'folder' => 'Video TV', 'icon' => 'fa-tv', 'types' => [VideoFileType::MP4_1080P, VideoFileType::MP4_480P]],
+        'radio' => ['label' => 'Audio MP3', 'folder' => 'Audio MP3', 'icon' => 'fa-headphones', 'types' => [VideoFileType::AUDIO]],
+        'mobile' => ['label' => 'Vidéo Mobile', 'folder' => 'Video Mobile', 'icon' => 'fa-mobile-screen-button', 'types' => [VideoFileType::MP4_VERTICAL]],
     ];
 
     public const FORMATS = [
-        'kit' => ['label' => 'Kit de diffusion (TV, radio et mobile)', 'parts' => ['tv', 'radio', 'mobile']],
+        'kit' => ['label' => 'Kit de diffusion (vidéo TV, vidéo Mobile et audio MP3)', 'parts' => ['tv', 'radio', 'mobile']],
     ];
 
     public function __construct(
@@ -88,7 +92,7 @@ class SpeakerKit
     }
 
     /**
-     * Nombre de fichiers par partie (« 2 TV · 3 radio · 3 mobile »).
+     * Nombre de fichiers par partie (« Vidéo TV : 2 · Audio MP3 : 3 · Vidéo Mobile : 3 »).
      *
      * @param Video[] $videos
      *
@@ -106,12 +110,12 @@ class SpeakerKit
         return array_intersect_key(array_merge(array_fill_keys(self::FORMATS[$format]['parts'], 0), $counts), $counts);
     }
 
-    /** Dossier d'un fichier dans l'archive du kit : TV, Radio ou Mobile. */
+    /** Dossier d'un fichier dans l'archive du kit : Video TV, Audio MP3 ou Video Mobile. */
     public function folderFor(VideoFile $file): ?string
     {
         foreach (self::PARTS as $part) {
             if (\in_array($file->getType(), $part['types'], true)) {
-                return $part['label'];
+                return $part['folder'];
             }
         }
 

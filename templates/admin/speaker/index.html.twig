@@ -37,7 +37,7 @@
                 </h2>
                 <p class="admin-table__muted">
                     {{ results.total }} intervenant{{ results.total > 1 ? 's' }}{{ query ? ' pour « ' ~ query ~ ' »' }}
-                    {%- if government and government.startedAt %} · en fonction depuis le {{ government.startedAt|date('d/m/Y') }}{% endif %}
+                    {%- if government and government.startedAt %} · en fonction depuis le {{ government.startedAt|date_fr }}{% endif %}
                 </p>
             </div>
             {% if government %}

@@ -19,8 +19,9 @@ class ThematiqueController extends AbstractController
     #[Route('/thematiques', name: 'app_thematique_index')]
     public function index(ThematicRepository $thematicRepository): Response
     {
+        // Thématiques sans aucun contenu publié : pas de tuile vide.
         return $this->render('thematique/index.html.twig', [
-            'thematics' => $thematicRepository->findAllWithVideoCount(),
+            'thematics' => array_values(array_filter($thematicRepository->findAllWithVideoCount(), static fn (array $row) => $row['videoCount'] > 0)),
         ]);
     }
 
@@ -41,7 +42,7 @@ class ThematiqueController extends AbstractController
         $languageSlugs = isset($queryParams['langue']) ? array_values((array) $queryParams['langue']) : [];
         $formatValues = isset($queryParams['format']) ? array_values((array) $queryParams['format']) : [];
         $selectedLanguages = $languageSlugs ? $languageRepository->findBy(['slug' => $languageSlugs]) : [];
-        // Recherche par format « Audio » (radio) réservée aux médias.
+        // Recherche par format « Audio MP3 » réservée aux médias.
         $selectedFormats = $mediaAccess->filterFormats(array_filter(array_map(
             static fn (mixed $value): ?CapsuleFormat => CapsuleFormat::tryFrom((string) $value),
             $formatValues,

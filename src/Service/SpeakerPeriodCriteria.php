@@ -9,6 +9,8 @@ use App\Repository\GovernmentRepository;
 use App\Repository\SpeakerRepository;
 use App\Search\SpeakerPeriodFilter;
 use Doctrine\ORM\EntityManagerInterface;
+use League\Flysystem\FilesystemOperator;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Données et lecture des filtres facultatifs « Intervenant » et « Période ».
@@ -21,13 +23,15 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class SpeakerPeriodCriteria
 {
-    /** @var list<array{slug: string, name: string, role: ?string, councillor: bool, speakerIds: list<int>, videoCount: int}>|null */
+    /** @var list<array{slug: string, name: string, role: ?string, photo: ?string, precedence: ?int, councillor: bool, speakerIds: list<int>, videoCount: int}>|null */
     private ?array $people = null;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly SpeakerRepository $speakerRepository,
         private readonly GovernmentRepository $governmentRepository,
+        #[Autowire(service: 'speaker_photo.storage')]
+        private readonly FilesystemOperator $photoStorage,
     ) {
     }
 
@@ -66,7 +70,7 @@ class SpeakerPeriodCriteria
      * Nom et fonction affichés : ceux de la fiche la plus récente
      * (gouvernement actuel d'abord).
      *
-     * @return list<array{slug: string, name: string, role: ?string, councillor: bool, codes: list<string>, speakerIds: list<int>, videoCount: int}>
+     * @return list<array{slug: string, name: string, role: ?string, photo: ?string, precedence: ?int, councillor: bool, codes: list<string>, speakerIds: list<int>, videoCount: int}>
      */
     public function people(): array
     {
@@ -93,10 +97,16 @@ class SpeakerPeriodCriteria
         foreach ($groups as $key => $speakers) {
             usort($speakers, fn (Speaker $a, Speaker $b) => $this->recency($b) <=> $this->recency($a));
             $latest = $speakers[0];
+            // Photo de la fiche la plus récente qui en a une : un portrait déposé
+            // pour un ancien gouvernement sert tant qu'il n'est pas remplacé.
+            $photo = current(array_filter(array_map(static fn (Speaker $s) => $s->getPhotoName(), $speakers))) ?: null;
             $people[] = [
                 'slug' => Speaker::slugForName($latest->getFullName()),
                 'name' => $latest->getFullName(),
                 'role' => $latest->getRole(),
+                'photo' => $photo !== null ? $this->photoStorage->publicUrl($photo) : null,
+                // Rang protocolaire, pour les seuls membres du gouvernement actuel.
+                'precedence' => $latest->getGovernment()?->isCurrent() ? $latest->getPrecedence() : null,
                 'councillor' => $latest->isMinistreConseiller(),
                 // Sigles et codes de fichier de toutes ses fiches : recherche « MFAS », « MCCMFAS ».
                 'codes' => array_values(array_unique(array_filter(array_merge(...array_map(static fn (Speaker $s) => [$s->getSigle(), $s->getFileCode()], $speakers))))),
@@ -112,7 +122,7 @@ class SpeakerPeriodCriteria
     /**
      * Personne d'après son identifiant d'adresse (page intervenant).
      *
-     * @return array{slug: string, name: string, role: ?string, councillor: bool, speakerIds: list<int>, videoCount: int}|null
+     * @return array{slug: string, name: string, role: ?string, photo: ?string, precedence: ?int, councillor: bool, speakerIds: list<int>, videoCount: int}|null
      */
     public function person(string $slug): ?array
     {
@@ -131,7 +141,7 @@ class SpeakerPeriodCriteria
      * « tognifode vero » trouve Véronique TOGNIFODÉ), ou le texte est un de
      * ses sigles. Les plus fournies d'abord.
      *
-     * @return list<array{slug: string, name: string, role: ?string, councillor: bool, codes: list<string>, speakerIds: list<int>, videoCount: int}>
+     * @return list<array{slug: string, name: string, role: ?string, photo: ?string, precedence: ?int, councillor: bool, codes: list<string>, speakerIds: list<int>, videoCount: int}>
      */
     public function searchPeople(string $text, int $limit = 5): array
     {

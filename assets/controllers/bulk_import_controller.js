@@ -102,16 +102,15 @@ export default class extends Controller {
         });
     }
 
-    /** Lit durée et orientation dans le fichier (sans l'envoyer). */
+    /** Lit l'orientation dans le fichier (sans l'envoyer). */
     probe(row) {
-        if (!row.file.type.startsWith('video/') && !row.file.type.startsWith('audio/')) {
+        if (!row.file.type.startsWith('video/')) {
             return;
         }
-        const media = document.createElement(row.file.type.startsWith('video/') ? 'video' : 'audio');
+        const media = document.createElement('video');
         const url = URL.createObjectURL(row.file);
         media.preload = 'metadata';
         media.onloadedmetadata = () => {
-            row.duration = Number.isFinite(media.duration) ? media.duration : null;
             if (media.videoWidth && media.videoHeight) {
                 row.orientation = media.videoHeight > media.videoWidth ? 'portrait' : 'landscape';
                 // Aucun format dans le nom : l'orientation de la vidéo le donne.
@@ -293,9 +292,6 @@ export default class extends Controller {
             data.append('language', row.languageId);
             data.append('format', row.format);
             data.append('replace', row.replace ? '1' : '0');
-            if (row.duration) {
-                data.append('duration', String(row.duration));
-            }
             // Pas de renvoi automatique ici : si la réponse s'est perdue,
             // le fichier a pu être rangé, et l'éditeur doit le vérifier.
             const { xhr, body } = await this.request('POST', this.configValue.uploadUrl, data);

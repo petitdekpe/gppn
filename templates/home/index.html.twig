@@ -1,16 +1,16 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Le Gouvernement plus près de nous — Les capsules du Gouvernement, dans les langues du Bénin
+{% block title %}Le Gouvernement plus près de nous — Vidéos TV, vidéos Mobile et audios MP3 du Gouvernement, dans les langues du Bénin
 {% endblock %}
 
-{% block meta_description %}Regardez, téléchargez et partagez des vidéos et audios du Gouvernement du Bénin, prêts à être diffusés dans les langues nationales.{% endblock %}
+{% block meta_description %}Regardez, téléchargez et partagez les vidéos TV, vidéos Mobile et audios MP3 du Gouvernement du Bénin, prêts à être diffusés dans les langues nationales.{% endblock %}
 
 {% block body %}
     <section class="home2-hero">
         <div class="wrap home2-hero__grid">
             <div class="home2-hero__text">
-                <h1>Les capsules du Gouvernement, dans les langues du Bénin.</h1>
-                <p>Regardez, téléchargez et partagez des vidéos et audios prêts à être diffusés.</p>
+                <h1>Les décisions du Gouvernement, dans les langues du Bénin.</h1>
+                <p>Regardez, téléchargez et partagez des vidéos TV, vidéos Mobile et audios MP3 prêts à être diffusés.</p>
                 <div class="home2-hero__actions">
                     <a class="btn btn--primary" href="#home2-langues">Choisir une langue</a>
                     <a class="btn btn--outline" href="#home2-a-la-une">Voir les sujets à la une</a>
@@ -19,9 +19,9 @@
 
             {% if heroVideo %}
                 {% set previewFile = heroVideo.primaryPlaybackFile %}
-                {# Bouton « Télécharger » : version Mobile en priorité (masqué sur téléphone s'il n'y en a pas). #}
+                {# Bouton « Télécharger » : vidéo Mobile en priorité (masqué sur téléphone s'il n'y en a pas). #}
                 {% set heroDownload = preferred_download(heroVideo) %}
-                {% set previewCategory = previewFile ? previewFile.type.category.value : null %}
+                {% set previewCategory = previewFile ? previewFile.type.medium : null %}
                 {% set coverImageUrl = video_cover_url(heroVideo) %}
                 <div class="home2-hero__media">
                     {% if previewCategory == 'video' %}
@@ -101,8 +101,12 @@
             <div data-controller="reveal">
                 <div class="home2-lang-grid">
                     {% for row in languages %}
-                        <a href="{{ path('app_langue_show', {slug: row.language.slug}) }}" class="home2-lang-pill"
-                           {% if loop.index > visibleLanguages %}data-reveal-target="item" hidden{% endif %}>
+                        <a
+                            href="{{ path('app_langue_show', {slug: row.language.slug}) }}"
+                            class="home2-lang-pill"
+                            {% if loop.index > visibleLanguages %}data-reveal-target="item"
+                            hidden{% endif %}
+                        >
                             <span>{{ row.language.name }}</span>
                             <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
                         </a>
@@ -124,7 +128,7 @@
         <div class="section__header">
             <h2>Derniers contenus publiés</h2>
             {% if latestCouncilSession %}
-                <p>{{ latestCouncilSession.label ?: 'Conseil des ministres du ' ~ latestCouncilSession.date|date('d/m/Y') }}</p>
+                <p>{{ latestCouncilSession.title }}</p>
             {% endif %}
         </div>
 
@@ -152,7 +156,7 @@
         <div class="home2-feature">
             {% if spotlightVideo %}
                 {% set sPreviewFile = spotlightVideo.primaryPlaybackFile %}
-                {% set sPreviewCategory = sPreviewFile ? sPreviewFile.type.category.value : null %}
+                {% set sPreviewCategory = sPreviewFile ? sPreviewFile.type.medium : null %}
                 {% set sCoverImageUrl = video_cover_url(spotlightVideo) %}
                 <article class="home2-feature__card">
                     <a href="{{ path('app_video_show', {slug: spotlightVideo.slug}) }}" class="video-card__thumb home2-feature__thumb" style="--thematic-color: {{ spotlightVideo.thematic.colorHex }}">
@@ -180,7 +184,7 @@
                     <div class="home2-feature__body">
                         <a href="{{ path('app_thematique_show', {slug: spotlightVideo.thematic.slug}) }}" class="video-card__thematic" style="color: {{ spotlightVideo.thematic.colorHex }}">{{ spotlightVideo.thematic.name|upper }}</a>
                         <p>{{ spotlightVideo.summary }}</p>
-                        <a class="home2-feature__link" href="{{ path('app_video_show', {slug: spotlightVideo.slug}) }}">Voir la capsule <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                        <a class="home2-feature__link" href="{{ path('app_video_show', {slug: spotlightVideo.slug}) }}">{{ sPreviewCategory == 'audio' ? 'Écouter l’audio' : 'Voir la vidéo' }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
                     </div>
                 </article>
             {% else %}
@@ -219,14 +223,14 @@
                 <span class="home2-step__num">1</span>
                 <div>
                     <h3>Regarder</h3>
-                    <p>Consultez les capsules dans la langue de votre choix.</p>
+                    <p>Consultez les vidéos TV, vidéos Mobile et audios MP3 dans la langue de votre choix.</p>
                 </div>
             </div>
             <div class="home2-step">
                 <span class="home2-step__num">2</span>
                 <div>
                     <h3>Télécharger</h3>
-                    <p>Récupérez les vidéos et audios prêts à être diffusés.</p>
+                    <p>Récupérez la vidéo TV pour les télévisions, la vidéo Mobile pour les réseaux sociaux et l’audio MP3 pour les radios.</p>
                 </div>
             </div>
             <div class="home2-step">
@@ -242,7 +246,7 @@
     <section class="section wrap cta-grid cta-grid--single">
         <div class="cta-card cta-card--dark">
             <h3>Préparer un pack de diffusion</h3>
-            <p>Téléchargez les capsules en pack, par langue ou par thématique, avec les fiches de diffusion et les mentions à respecter.</p>
+            <p>Téléchargez les vidéos TV, vidéos Mobile et audios MP3 en pack, par langue ou par thématique, avec les fiches de diffusion et les mentions à respecter.</p>
             <a class="btn btn--gold" href="{{ path('app_media_space') }}">Accéder au pack de diffusion</a>
         </div>
     </section>
@@ -251,7 +255,7 @@
         <img src="{{ asset('images/picto-logo-gppn.png') }}" alt="" class="home2-trust__emblem" aria-hidden="true">
         <div>
             <h3>Une information officielle, au service de tous.</h3>
-            <p>Ces contenus sont produits par le Gouvernement de la République du Bénin pour une meilleure compréhension des actions publiques.</p>
+            <p>Ces contenus sont produits par le Gouvernement de la République du Bénin pour une meilleure compréhension de l’action publique.</p>
         </div>
     </section>
 {% endblock %}

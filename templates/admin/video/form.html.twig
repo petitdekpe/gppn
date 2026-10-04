@@ -31,7 +31,12 @@
                     {{ form_row(form.language) }}
                     <div class="form-grid-2">
                         {{ form_row(form.status) }}
-                        {{ form_row(form.durationSeconds) }}
+                        {# Lue dans le fichier vidéo ou audio après l'envoi (voir VideoDurationProbe). #}
+                        <div>
+                            <label for="video-duration">Durée</label>
+                            <input type="text" id="video-duration" value="{{ video.durationSeconds > 0 ? video.durationLabel : 'Pas encore calculée' }}" readonly aria-describedby="video-duration-help">
+                            <div id="video-duration-help" class="help">Calculée automatiquement à partir du fichier vidéo ou audio déposé.</div>
+                        </div>
                     </div>
                     {{ form_row(form.featured) }}
                     {{ form_row(form.speaker) }}
@@ -60,7 +65,7 @@
                                 </div>
                                 <p class="form-help" data-cover-generator-target="status" aria-live="polite"></p>
                             {% else %}
-                                <p class="form-help">Pour tirer la couverture de la vidéo, déposez d’abord une vidéo HD 1080p ou une vidéo verticale (étape Fichiers) et enregistrez.</p>
+                                <p class="form-help">Pour tirer la couverture de la vidéo, déposez d’abord une vidéo TV HD 1080p ou une vidéo Mobile (étape Fichiers) et enregistrez.</p>
                             {% endif %}
                         {% endif %}
                     </div>
@@ -87,7 +92,7 @@
                                     <p class="form-help">Version de lecture WebM : {{ videoFile.webmStatus.label }}{% if videoFile.hasPlayableWebm and videoFile.webmFileSize %} ({{ (videoFile.webmFileSize / 1048576)|round(1) }} Mo){% endif %}</p>
                                 {% endif %}
                                 {% if videoFile.defective %}
-                                    <p class="admin-file-defect">Fichier défectueux, masqué du site depuis le {{ videoFile.defectiveAt|date('d/m/Y à H:i') }} : {{ videoFile.defectReason }}. Remplacez-le pour le remettre en ligne.</p>
+                                    <p class="admin-file-defect">Fichier défectueux, masqué du site depuis le {{ videoFile.defectiveAt|datetime_fr }} : {{ videoFile.defectReason }}. Remplacez-le pour le remettre en ligne.</p>
                                 {% endif %}
                             {% endif %}
                         </div>

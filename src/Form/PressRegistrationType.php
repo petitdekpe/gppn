@@ -16,7 +16,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Inscription d'un compte presse ou média depuis le site : coordonnées
+ * Inscription d'un compte presse ou organisation depuis le site : coordonnées
  * (e-mail et téléphone obligatoires) et mot de passe.
  */
 class PressRegistrationType extends AbstractType
@@ -29,19 +29,18 @@ class PressRegistrationType extends AbstractType
                 'constraints' => [new Assert\NotBlank(message: 'Indiquez votre nom.'), new Assert\Length(max: 150)],
             ])
             ->add('organization', TextType::class, [
-                'label' => 'Média ou organisation',
+                'label' => 'Nom de la structure / entité',
                 'help' => 'Ex. : Radio Tokpa, ORTB, groupe WhatsApp « Femmes de Djougou ».',
-                'constraints' => [new Assert\NotBlank(message: 'Indiquez votre média ou organisation.'), new Assert\Length(max: 150)],
+                'constraints' => [new Assert\NotBlank(message: 'Indiquez le nom de votre structure.'), new Assert\Length(max: 150)],
             ])
             ->add('mediaType', ChoiceType::class, [
-                'label' => 'Type de média',
+                'label' => 'Type de structure / entité',
                 'choices' => User::MEDIA_TYPES,
                 'placeholder' => '— Choisir —',
-                'constraints' => [new Assert\NotBlank(message: 'Choisissez un type de média.')],
+                'constraints' => [new Assert\NotBlank(message: 'Choisissez un type de structure.')],
             ])
             ->add('email', EmailType::class, [
                 'label' => 'Adresse e-mail',
-                'help' => 'Un code de vérification vous y sera envoyé à chaque connexion.',
                 'constraints' => [new Assert\NotBlank(message: 'Indiquez votre adresse e-mail.'), new Assert\Email(message: 'Cette adresse e-mail n’est pas valide.')],
             ])
             ->add('phone', TelType::class, [
@@ -61,7 +60,7 @@ class PressRegistrationType extends AbstractType
                 'constraints' => [new Assert\NotBlank(message: 'Choisissez un mot de passe.'), new Assert\Length(min: 8, minMessage: 'Le mot de passe doit faire au moins {{ limit }} caractères.')],
             ])
             ->add('consent', CheckboxType::class, [
-                'label' => 'J’accepte que la Direction de la communication du Gouvernement conserve ces coordonnées pour me transmettre les contenus et me contacter à leur sujet.',
+                'label' => 'J’accepte que mes coordonnées soient conservées pour me transmettre les contenus et me contacter à leur sujet.',
                 'mapped' => false,
                 'constraints' => [new Assert\IsTrue(message: 'Votre accord est nécessaire pour créer le compte.')],
             ])

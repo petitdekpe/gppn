@@ -15,7 +15,7 @@
         {% if videoFlow|default(false) %}
             <p class="admin-flow-note">Une fois enregistré, ce sujet sera sélectionné dans votre nouveau contenu.</p>
         {% endif %}
-        <p class="form-help">Conseil des ministres : <strong>{{ councilSession.label ?: councilSession.date|date('d/m/Y') }}</strong></p>
+        <p class="form-help"><strong>{{ councilSession.title }}</strong></p>
 
         {{ form_start(form) }}
             {{ form_errors(form) }}
@@ -23,6 +23,7 @@
             {{ form_row(form.title) }}
             {{ form_row(form.summary) }}
             {{ form_row(form.learningPoints) }}
+            {{ form_row(form.keywords) }}
 
             <div class="admin-form-actions">
                 <button type="submit" class="btn btn--primary">Enregistrer</button>

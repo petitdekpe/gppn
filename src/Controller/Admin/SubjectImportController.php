@@ -257,12 +257,6 @@ class SubjectImportController extends AbstractController
             }
             $videoFile->setFile($file);
 
-            // Durée lue par le navigateur, seulement si le contenu n'en a pas encore.
-            $duration = (int) round((float) $request->request->get('duration'));
-            if ($video->getDurationSeconds() === 0 && $duration > 0 && !$type->isAudio()) {
-                $video->setDurationSeconds($duration);
-            }
-
             // Tout contenu alimenté par l'import est mis en ligne. Un contenu
             // masqué l'a été volontairement : il le reste.
             $published = false;

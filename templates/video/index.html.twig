@@ -36,7 +36,7 @@
         <div class="video-layout__main" data-live-region="results">
             <div class="page-header">
                 <h1>{{ roleLabels[selectedRole] }}</h1>
-                <p>{{ results.videoTotal }} capsule{{ results.videoTotal > 1 ? 's' : '' }} disponible{{ results.videoTotal > 1 ? 's' : '' }}{% if results.total > 0 %}, {{ results.total }} sujet{{ results.total > 1 ? 's' : '' }}{% endif %}.</p>
+                <p>{{ results.videoTotal }} contenu{{ results.videoTotal > 1 ? 's' }} disponible{{ results.videoTotal > 1 ? 's' }}{% if results.total > 0 %}, {{ results.total }} sujet{{ results.total > 1 ? 's' : '' }}{% endif %}.</p>
             </div>
 
             {{ include('partials/_active_filters.html.twig', {activeFilters: activeFilters, resetUrl: resetUrl}) }}
@@ -53,30 +53,7 @@
                 </a>
             {% endfor %}
 
-            {# Un bloc par sujet : ses contenus (une langue, un intervenant chacun) côte à côte. #}
-            {% if results.groups is empty %}
-                <p class="empty-state">Aucun contenu ne correspond à ces critères pour le moment.</p>
-            {% else %}
-                {% for group in results.groups %}
-                    {% set subject = group.subject %}
-                    <section class="subject-group" aria-labelledby="subject-{{ subject.id }}" style="--thematic-color: {{ subject.thematic.colorHex }}">
-                        <header class="subject-group__header">
-                            <h2 id="subject-{{ subject.id }}">{{ subject.title }}</h2>
-                            <p class="subject-group__meta">
-                                <a href="{{ path('app_thematique_show', {slug: subject.thematic.slug}) }}" class="subject-group__thematic">{{ subject.thematic.name }}</a>
-                                · Conseil du {{ subject.councilSession.date|date('d/m/Y') }}
-                                · {{ group.videos|length }} contenu{{ group.videos|length > 1 ? 's' }}
-                            </p>
-                        </header>
-                        <div class="video-grid">
-                            {% for video in group.videos %}
-                                {{ include('partials/_video_card.html.twig', {video: video, cardIconActions: true}) }}
-                            {% endfor %}
-                        </div>
-                    </section>
-                {% endfor %}
-                {{ include('partials/_pagination.html.twig', {results: results, route: 'app_video_index', route_params: routeParams, label: 'Pagination des sujets'}) }}
-            {% endif %}
+            {{ include('partials/_subject_groups.html.twig', {results: results, route: 'app_video_index', route_params: routeParams}) }}
         </div>
     </section>
 

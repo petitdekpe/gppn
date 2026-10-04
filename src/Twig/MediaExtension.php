@@ -19,10 +19,9 @@ class MediaExtension extends AbstractExtension
     {
         return [
             new TwigFunction('is_media', $this->mediaAccess->isMedia(...)),
-            new TwigFunction('can_download_bundles', $this->mediaAccess->canDownloadBundles(...)),
             new TwigFunction('downloadable_files', $this->mediaAccess->downloadableFiles(...)),
             new TwigFunction('preferred_download', $this->mediaAccess->preferredDownload(...)),
-            // Classe à poser sur un bouton de téléchargement : masqué sur téléphone sauf version Mobile.
+            // Classe à poser sur un bouton de téléchargement : masqué sur téléphone sauf vidéo Mobile.
             new TwigFunction('download_class', static fn ($file) => MediaAccess::isPhoneFormat($file) ? 'download--phone' : 'download--desktop'),
         ];
     }

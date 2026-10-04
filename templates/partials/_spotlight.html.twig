@@ -8,7 +8,7 @@
                 {% set slideIndex = loop.index0 %}
                 <div class="spotlight__slide{{ loop.first ? ' is-active' }}" data-carousel-target="slide">
                     {% set previewFile = spotlight.primaryPlaybackFile %}
-                    {% set previewCategory = previewFile ? previewFile.type.category.value : null %}
+                    {% set previewCategory = previewFile ? previewFile.type.medium : null %}
                     {% set coverImageUrl = video_cover_url(spotlight) %}
                     <a href="{{ path('app_video_show', {slug: spotlight.slug}) }}" class="spotlight__media" style="--thematic-color: {{ spotlight.thematic.colorHex }}">
                         <span class="video-card__lang-tag">{{ spotlight.language.name }}</span>
@@ -38,7 +38,7 @@
                         </h3>
                         <p>{{ spotlight.summary }}</p>
                         <div class="spotlight__actions">
-                            {# Version Mobile en priorité (masqué sur téléphone s'il n'y en a pas). #}
+                            {# Vidéo Mobile en priorité (masqué sur téléphone s'il n'y en a pas). #}
                             {% set spotlightDownload = preferred_download(spotlight) %}
                             {% if spotlightDownload %}
                                 <a class="btn btn--dark {{ download_class(spotlightDownload) }}" href="{{ video_file_url(spotlightDownload) }}" download="{{ spotlightDownload.originalName ?? spotlightDownload.fileName }}">Télécharger</a>

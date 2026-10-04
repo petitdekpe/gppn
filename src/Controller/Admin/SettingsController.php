@@ -27,6 +27,7 @@ class SettingsController extends AbstractController
     ): Response {
         $form = $this->createForm(SettingsType::class, [
             'otpEnabled' => $settings->isOtpEnabled(),
+            'feedbackEnabled' => $settings->isFeedbackEnabled(),
             'enabledFormats' => $settings->getEnabledFormats(),
         ]);
         $form->handleRequest($request);
@@ -34,6 +35,7 @@ class SettingsController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
             $settings->setOtpEnabled($data['otpEnabled']);
+            $settings->setFeedbackEnabled($data['feedbackEnabled']);
             $settings->setEnabledFormats($data['enabledFormats']);
 
             $previousCover = $settings->getDefaultCover();

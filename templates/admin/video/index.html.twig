@@ -6,9 +6,9 @@
 {% block body %}
     {# Colonne « Formats » : clés de Video::getDistributionFiles(). #}
     {% set formatIcons = {
-        tv: {label: 'TV', icon: 'fa-tv'},
-        mobile: {label: 'Mobile', icon: 'fa-mobile-screen-button'},
-        audio: {label: 'Audio', icon: 'fa-headphones'},
+        tv: {label: 'Vidéo TV', icon: 'fa-tv'},
+        mobile: {label: 'Vidéo Mobile', icon: 'fa-mobile-screen-button'},
+        audio: {label: 'Audio MP3', icon: 'fa-headphones'},
     } %}
 
     <div class="admin-toolbar">
@@ -41,7 +41,7 @@
                     {% set session = group.session %}
                     <section class="admin-session" data-council-calendar-target="panel" data-session-id="{{ session.id }}" aria-labelledby="council-{{ session.id }}"{{ session.id != selectedSessionId ? ' hidden' }}>
                         <header class="admin-session__summary">
-                            <h2 class="admin-session__title" id="council-{{ session.id }}">{{ session.label ?: 'Conseil des ministres du ' ~ session.date|date('d/m/Y') }}</h2>
+                            <h2 class="admin-session__title" id="council-{{ session.id }}">{{ session.title }}</h2>
                             <span class="admin-table__count">{{ group.count }} contenu{{ group.count > 1 ? 's' }}</span>
                         </header>
                         <div class="admin-table-wrap">
@@ -90,7 +90,7 @@
                                                     </span>
                                                 </td>
                                                 <td>{{ video.status.label }}</td>
-                                                <td>{{ video.publishedAt|date('d/m/Y') }}</td>
+                                                <td>{{ video.publishedAt|date_fr }}</td>
                                                 <td>{{ video.viewsCount|number_format(0, ',', ' ') }}</td>
                                                 <td>{{ video.featured ? 'Oui' : 'Non' }}</td>
                                                 <td class="admin-table__actions">

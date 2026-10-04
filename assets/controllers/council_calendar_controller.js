@@ -2,6 +2,8 @@ import { Controller } from '@hotwired/stimulus';
 
 const MONTHS = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'];
 const MONTHS_LONG = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+// « 1er juin », « 17 juin ».
+const dayLabel = (day) => (day === 1 ? '1er' : String(day));
 const YEARS_PER_PAGE = 12;
 
 /*
@@ -256,11 +258,11 @@ export default class extends Controller {
         const list = this.datesTarget.querySelector('[data-role="list"]');
         list.innerHTML = '';
         [...inMonth].sort((a, b) => a.day - b.day).forEach((session) => {
-            const button = this.cell(`${session.day} ${MONTHS[month].toLowerCase()}`, session.id === this.selected.id, false);
+            const button = this.cell(`${dayLabel(session.day)} ${MONTHS[month].toLowerCase()}`, session.id === this.selected.id, false);
             button.classList.add('council-calendar__date');
             button.dataset.id = String(session.id);
             button.dataset.action = 'council-calendar#pickSession';
-            button.setAttribute('aria-label', `Conseil du ${session.day} ${MONTHS_LONG[month]} ${year}, ${session.count} ${this.unitValue}${session.count > 1 ? 's' : ''}`);
+            button.setAttribute('aria-label', `Conseil des ministres du ${dayLabel(session.day)} ${MONTHS_LONG[month]} ${year}, ${session.count} ${this.unitValue}${session.count > 1 ? 's' : ''}`);
             list.append(button);
         });
     }

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\CouncilSession;
+use App\Entity\Language;
 use App\Entity\Subject;
 use App\Entity\Thematic;
 use App\Entity\Video;
@@ -57,6 +58,26 @@ class CouncilSessionRepository extends ServiceEntityRepository
             ->groupBy('cs.id')
             ->orderBy('cs.date', 'DESC')
             ->setParameter('thematic', $thematic)
+            ->setParameter('status', VideoStatus::PUBLIE)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Conseils ayant au moins un contenu publié dans une langue, du plus
+     * récent au plus ancien (filtre de la page d'une langue).
+     *
+     * @return array<int, array{councilSession: CouncilSession, videoCount: int}>
+     */
+    public function findWithVideoCountForLanguage(Language $language): array
+    {
+        return $this->createQueryBuilder('cs')
+            ->select('cs AS councilSession', 'COUNT(v.id) AS videoCount')
+            ->innerJoin(Subject::class, 's', 'WITH', 's.councilSession = cs')
+            ->innerJoin(Video::class, 'v', 'WITH', 'v.subject = s AND v.language = :language AND v.status = :status' . $this->visibleVideoCondition())
+            ->groupBy('cs.id')
+            ->orderBy('cs.date', 'DESC')
+            ->setParameter('language', $language)
             ->setParameter('status', VideoStatus::PUBLIE)
             ->getQuery()
             ->getResult();

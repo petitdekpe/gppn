@@ -12,12 +12,12 @@
 
     <section class="section wrap prose">
         <h2>Notre objectif</h2>
-        <p>Ce programme gouvernemental produit des capsules de contenus courtes, claires et fidèles, qui expliquent les services publics, les démarches administratives et les politiques publiques du Bénin. Chaque capsule est déclinée en plusieurs langues nationales, dont le fon, le yoruba, le bariba, le dendi et bien d’autres, pour que l’information publique soit accessible à toutes et à tous, quelle que soit la langue parlée à la maison.</p>
+        <p>Ce programme gouvernemental produit des contenus courts, clairs et fidèles, en vidéo TV, vidéo Mobile et audio MP3, qui expliquent les services publics, les démarches administratives et les politiques publiques du Bénin. Chaque contenu est décliné en plusieurs langues nationales, dont le fon, le yoruba, le bariba, le dendi et bien d’autres, pour que l’information publique soit accessible à toutes et à tous, quelle que soit la langue parlée à la maison.</p>
 
         <h2>Ce que permet la plateforme</h2>
         <ul class="check-list">
             <li>Présenter le programme et ses objectifs.</li>
-            <li>Faciliter la lecture et le téléchargement multi-format des capsules produites.</li>
+            <li>Faciliter la lecture et le téléchargement des contenus produits, en vidéo TV, vidéo Mobile et audio MP3.</li>
             <li>Faciliter la recherche et le tri par langue, par thématique ou par mot-clé.</li>
             <li>Recueillir les avis et suggestions des citoyens internautes.</li>
         </ul>
@@ -26,7 +26,7 @@
         <div class="audience-grid">
             <div class="audience-card">
                 <h3>Réseau média</h3>
-                <p>Dircom, Maison des médias, médias partenaires : retrouvez les capsules en haute qualité, prêtes à diffuser, dans l’<a href="{{ path('app_media_space') }}">espace média</a>.</p>
+                <p>Dircom, Maison des médias, médias partenaires : retrouvez les vidéos TV, vidéos Mobile et audios MP3 en haute qualité, prêts à diffuser, dans l’<a href="{{ path('app_media_space') }}">espace média</a>.</p>
             </div>
             <div class="audience-card">
                 <h3>Citoyens internautes</h3>
@@ -39,6 +39,7 @@
         </div>
     </section>
 
+    {# Masqué pour l'instant : cartes « Vous êtes un média ou une institution ? » et « Une idée de sujet ? ».
     <section class="section wrap cta-grid">
         <div class="cta-card cta-card--dark">
             <h3>Vous êtes un média ou une institution ?</h3>
@@ -51,4 +52,5 @@
             <a class="btn btn--outline" href="{{ path('app_suggestion_new') }}">Proposer un sujet</a>
         </div>
     </section>
+    #}
 {% endblock %}

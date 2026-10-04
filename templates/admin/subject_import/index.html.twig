@@ -1,7 +1,7 @@
 {% extends 'admin/base.html.twig' %}
 
 {% set councilSession = subject.councilSession %}
-{% set councilLabel = councilSession.label ?: 'Conseil des ministres du ' ~ councilSession.date|date('d/m/Y') %}
+{% set councilLabel = councilSession.title %}
 
 {% block title %}Import en masse — {{ subject.title }} — Administration GPPN{% endblock %}
 {% block page_title %}Import en masse{% endblock %}
@@ -18,7 +18,7 @@
             <p class="form-help">
                 Nommez chaque fichier <code>INTERVENANT-LANGUE-FORMAT</code>, par exemple <code>MPMEPE-DENDI-TV.mp4</code>.
                 Pour un ministre conseiller, le sigle est précédé de <code>MCC</code> (<code>MCCMFAS-FON-TV.mp4</code>).
-                Formats : <strong>TV</strong> (vidéo horizontale 1080p), <strong>MOBILE</strong> (vidéo verticale), <strong>AUDIO</strong>.
+                Formats : <strong>TV</strong> (vidéo TV, horizontale 1080p), <strong>MOBILE</strong> (vidéo Mobile, verticale), <strong>AUDIO</strong> (audio MP3).
                 La lecture est souple : ordre des mots libre, fautes légères tolérées (<code>BAATONU</code> → Baatonou), nom de famille accepté à la place du sigle, format déduit de l’orientation s’il manque.
                 Ces lectures approchées sont signalées « À vérifier » ; un nom illisible reste accepté, il suffit de compléter sa ligne.
                 Les contenus alimentés par l’import sont <strong>publiés</strong> dès l’envoi de leur fichier ; un contenu masqué reste masqué.
@@ -36,7 +36,7 @@
                data-action="dragover->bulk-import#dragOver dragleave->bulk-import#dragLeave drop->bulk-import#drop">
             <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
             <strong>Déposez vos fichiers ici</strong>
-            <span>ou cliquez pour les choisir (vidéos et audios, plusieurs à la fois)</span>
+            <span>ou cliquez pour les choisir (vidéos TV, vidéos Mobile et audios MP3, plusieurs à la fois)</span>
             <input type="file" multiple accept="video/*,audio/*" class="sr-only"
                    data-bulk-import-target="input" data-action="change->bulk-import#pick">
         </label>

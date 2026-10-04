@@ -50,7 +50,7 @@
 {% set languageItems = languages is defined ? languages|filter(row => row.videoCount > 0 or (selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs))|map(row => {value: row.language.slug, label: row.language.name, count: row.videoCount, checked: selectedLanguageSlugs is defined and row.language.slug in selectedLanguageSlugs}) : [] %}
 {% set thematicItems = thematics is defined ? thematics|filter(row => row.videoCount > 0 or (selectedThematicSlugs is defined and row.thematic.slug in selectedThematicSlugs))|map(row => {value: row.thematic.slug, label: row.thematic.name, count: row.videoCount, checked: selectedThematicSlugs is defined and row.thematic.slug in selectedThematicSlugs}) : [] %}
 {% set formatItems = formats is defined ? formats|filter(format => formatCounts is not defined or (formatCounts[format.value] ?? 0) > 0 or (selectedFormatValues is defined and format.value in selectedFormatValues))|map(format => {value: format.value, label: format.label, count: formatCounts is defined ? (formatCounts[format.value] ?? 0) : null, checked: selectedFormatValues is defined and format.value in selectedFormatValues}) : [] %}
-{% set councilItems = councilSessions is defined ? councilSessions|filter(row => row.videoCount > 0 or (selectedCouncilSessionSlugs is defined and row.councilSession.slug in selectedCouncilSessionSlugs))|map(row => {value: row.councilSession.slug, label: row.councilSession.date|date('d/m/Y'), count: row.videoCount, checked: selectedCouncilSessionSlugs is defined and row.councilSession.slug in selectedCouncilSessionSlugs}) : [] %}
+{% set councilItems = councilSessions is defined ? councilSessions|filter(row => row.videoCount > 0 or (selectedCouncilSessionSlugs is defined and row.councilSession.slug in selectedCouncilSessionSlugs))|map(row => {value: row.councilSession.slug, label: row.councilSession.date|date_fr_short, count: null, checked: selectedCouncilSessionSlugs is defined and row.councilSession.slug in selectedCouncilSessionSlugs}) : [] %}
 
 {% set councilGroup %}
     {% if councilItems is not empty %}
@@ -217,7 +217,7 @@
 
             {# Mobile : referme le panneau et montre les résultats (déjà à jour). Sans JavaScript, envoie les choix. #}
             {% if resultsTotal is defined and not isTop %}
-                <button type="submit" class="filters-sidebar__submit" data-live-filters-close>Voir {{ resultsTotal }} capsule{{ resultsTotal > 1 ? 's' : '' }}</button>
+                <button type="submit" class="filters-sidebar__submit" data-live-filters-close>Voir {{ resultsTotal }} contenu{{ resultsTotal > 1 ? 's' }}</button>
             {% endif %}
             <noscript><button type="submit" class="btn btn--dark btn--sm">Appliquer les filtres</button></noscript>
         </form>

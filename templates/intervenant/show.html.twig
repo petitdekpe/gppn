@@ -6,10 +6,15 @@
 {% block body %}
     <section class="page-header wrap">
         {{ include('partials/_back_link.html.twig', {fallback: path('app_intervenant_index')}) }}
-        <span class="eyebrow">{{ person.councillor ? 'Ministre conseiller' : 'Ministre' }}</span>
-        <h1>{{ person.name }}</h1>
-        {% if person.role %}<p>{{ person.role }}</p>{% endif %}
-        <p class="muted">{{ person.videoCount }} contenu{{ person.videoCount > 1 ? 's' }} · {{ councils|length }} conseil{{ councils|length > 1 ? 's' }} des ministres</p>
+        <div class="person-header">
+            {{ include('intervenant/_photo.html.twig', {person: person, class: 'person-header__photo'}) }}
+            <div>
+                <span class="eyebrow">{{ person.councillor ? 'Ministre conseiller' : 'Ministre' }}</span>
+                <h1>{{ person.name }}</h1>
+                {% if person.role %}<p>{{ person.role }}</p>{% endif %}
+                <p class="muted">{{ person.videoCount }} contenu{{ person.videoCount > 1 ? 's' }} · {{ councils|length }} conseil{{ councils|length > 1 ? 's' }} des ministres</p>
+            </div>
+        </div>
     </section>
 
     <section class="section wrap">
@@ -19,15 +24,15 @@
 
         {% for group in councils %}
             {% set council = group.council %}
-            {% set councilLabel = council.label ?: 'Conseil des ministres du ' ~ council.date|date('d/m/Y') %}
+            {% set councilLabel = council.title %}
             <section class="speaker-council" aria-labelledby="council-{{ council.id }}">
                 <header class="speaker-council__header">
                     <h2 id="council-{{ council.id }}">{{ councilLabel }}</h2>
                     <span class="muted">{{ group.videos|length }} contenu{{ group.videos|length > 1 ? 's' }}</span>
                 </header>
 
-                {# Kit du conseil : contenus de ce seul intervenant, en TV, radio et mobile, dans une archive.
-                   Le lien s'envoie librement ; le destinataire se connecte ou s'inscrit avant de télécharger. #}
+                {# Kit du conseil : contenus de ce seul intervenant, en vidéo TV, vidéo Mobile et audio MP3, dans une archive.
+                   Libre téléchargement, sans compte : le lien s'envoie et se télécharge librement. #}
                 {% if group.kit is not empty %}
                     <div class="speaker-council__kits">
                         <div class="kit-card">
@@ -40,7 +45,7 @@
                                     <li><i class="fa-solid {{ parts[part].icon }}" aria-hidden="true"></i> {{ parts[part].label }} : {{ count }} fichier{{ count > 1 ? 's' }}</li>
                                 {% endfor %}
                             </ul>
-                            <p class="kit-card__hint muted">À envoyer à vos télévisions, radios et groupes WhatsApp : ils téléchargent le kit après s’être connectés ou inscrits dans l’espace presse.</p>
+                            <p class="kit-card__hint muted">À envoyer à vos télévisions, radios et groupes WhatsApp : ils le téléchargent librement, sans compte.</p>
                             <div class="kit-card__actions">
                                 {{ include('partials/_share.html.twig', {
                                     shareLink: kit_share_url(person.slug, council),
@@ -48,15 +53,10 @@
                                     shareLabel: 'Envoyer le kit',
                                     variant: 'kit',
                                 }) }}
-                                {% if can_download_bundles() %}
-                                    <a class="btn btn--outline btn--sm" href="{{ kit_zip_url(person.slug, council) }}" data-turbo="false">
-                                        <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger le kit (.zip)
-                                    </a>
-                                {% endif %}
+                                <a class="btn btn--outline btn--sm" href="{{ kit_zip_url(person.slug, council) }}" data-turbo="false">
+                                    <i class="fa-solid fa-download" aria-hidden="true"></i> Télécharger le kit (.zip)
+                                </a>
                             </div>
-                            {% if not can_download_bundles() %}
-                                {{ include('partials/_press_gate.html.twig', {pressGateMessage: 'Presse et médias : connectez-vous ou inscrivez-vous pour télécharger le kit.'}) }}
-                            {% endif %}
                         </div>
                     </div>
                 {% endif %}
@@ -68,7 +68,7 @@
                                 <strong>{{ video.title }}</strong>
                                 <span class="muted">{{ video.language.name }}{{ video.durationSeconds > 0 ? ' · ' ~ video.durationLabel }}</span>
                             </a>
-                            {# Fichier par fichier : Mobile partout, TV et radio sur ordinateur seulement. #}
+                            {# Fichier par fichier : vidéo Mobile partout, vidéo TV et audio MP3 sur ordinateur seulement. #}
                             <span class="speaker-video__files">
                                 {% for part in ['mobile', 'tv', 'radio'] %}
                                     {% set file = kit_file(video, part) %}

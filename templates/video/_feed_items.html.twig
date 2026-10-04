@@ -14,7 +14,7 @@
                 {# Actions flottantes à droite de la vidéo, au-dessus du bandeau. #}
                 <div class="feed-item__actions">
                     {{ include('partials/_share.html.twig', {video: video, variant: 'feed'}) }}
-                    <a href="{{ video_file_url(verticalFile) }}" download="{{ verticalFile.originalName ?? verticalFile.fileName }}" class="feed-item__action" aria-label="Télécharger « {{ video.title }} » (version Mobile{% if verticalFile.fileSize %}, {{ (verticalFile.fileSize / 1048576)|round(1) }} Mo{% endif %})">
+                    <a href="{{ video_file_url(verticalFile) }}" download="{{ verticalFile.originalName ?? verticalFile.fileName }}" class="feed-item__action" aria-label="Télécharger « {{ video.title }} » (vidéo Mobile{% if verticalFile.fileSize %}, {{ (verticalFile.fileSize / 1048576)|round(1) }} Mo{% endif %})">
                         <span class="feed-item__action-icon"><i class="fa-solid fa-download" aria-hidden="true"></i></span>
                         <span class="feed-item__action-label">Télécharger</span>
                     </a>
@@ -26,7 +26,7 @@
                         <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>
                     </div>
                     <h2 class="feed-item__title">{{ video.title }}</h2>
-                    <p class="feed-item__meta">{{ video.viewsCount|number_format(0, ',', ' ') }} vues</p>
+                    <p class="feed-item__meta">{{ video.viewsCount|number_format(0, ',', ' ') }} vue{{ video.viewsCount > 1 ? 's' }}</p>
                 </div>
 
                 <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="btn btn--dark btn--sm feed-item__download">Voir la fiche</a>

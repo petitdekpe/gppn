@@ -33,6 +33,13 @@ class Subject
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $learningPoints = null;
 
+    /**
+     * Mots-clés séparés par des virgules : alimentent la balise meta keywords
+     * de la page du contenu et la barre de recherche.
+     */
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $keywords = null;
+
     /** @var Collection<int, Video> */
     #[ORM\OneToMany(targetEntity: Video::class, mappedBy: 'subject')]
     private Collection $videos;
@@ -117,6 +124,38 @@ class Subject
         }
 
         return array_values(array_filter(array_map('trim', explode("\n", $this->learningPoints)), static fn (string $line) => $line !== ''));
+    }
+
+    public function getKeywords(): ?string
+    {
+        return $this->keywords;
+    }
+
+    /**
+     * Normalise la saisie (virgules, points-virgules ou retours à la ligne)
+     * en une liste « mot, mot, mot » sans doublon.
+     */
+    public function setKeywords(?string $keywords): static
+    {
+        $list = [];
+        foreach (preg_split('/[,;\n]+/', (string) $keywords) as $keyword) {
+            $keyword = trim(preg_replace('/\s+/', ' ', $keyword));
+            if ($keyword !== '') {
+                $list[mb_strtolower($keyword)] ??= $keyword;
+            }
+        }
+
+        $this->keywords = $list !== [] ? implode(', ', $list) : null;
+
+        return $this;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getKeywordsList(): array
+    {
+        return $this->keywords !== null ? explode(', ', $this->keywords) : [];
     }
 
     /**

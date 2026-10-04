@@ -1,14 +1,14 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Préparez un lot de capsules à diffuser — Le Gouvernement plus près de nous{% endblock %}
-{% block meta_description %}Composez un lot de capsules par sujet, langue et format, puis téléchargez-le en une seule archive prête à diffuser.{% endblock %}
+{% block title %}Préparez un lot de contenus à diffuser — Le Gouvernement plus près de nous{% endblock %}
+{% block meta_description %}Composez un lot de vidéos TV, vidéos Mobile et audios MP3 par sujet, langue et format, puis téléchargez-le en une seule archive prête à diffuser.{% endblock %}
 
 {% block body %}
     <section class="page-header wrap page-header--dark">
         {{ include('partials/_back_link.html.twig', {fallback: path('app_home')}) }}
         <span class="eyebrow">Espace média &amp; institutions</span>
-        <h1>Préparez un lot de capsules à diffuser</h1>
-        <p>Composez votre lot par sujet, langue et format, puis téléchargez-le en une seule archive. Il s’adresse aussi bien au réseau média (Dircom, Maison des médias, médias partenaires) qu’aux partenaires institutionnels (ministères, préfectures, mairies).</p>
+        <h1>Préparez un lot de contenus à diffuser</h1>
+        <p>Composez votre lot par sujet, langue et format (vidéo TV, vidéo Mobile, audio MP3), puis téléchargez-le en une seule archive. Il s’adresse aussi bien au réseau média (Dircom, Maison des médias, médias partenaires) qu’aux partenaires institutionnels (ministères, préfectures, mairies).</p>
     </section>
 
     <section class="section wrap">
@@ -106,7 +106,7 @@
                                     {% set councilSession = rows|first.subject.councilSession %}
                                     <div class="lot-builder__council-panel" data-council-calendar-target="panel" data-session-id="{{ sessionId }}"{{ sessionId != selectedSessionId ? ' hidden' }}>
                                         <p class="lot-builder__council-title">
-                                            <strong>{{ councilSession.label ?: 'Conseil des ministres du ' ~ councilSession.date|date('d/m/Y') }}</strong>
+                                            <strong>{{ councilSession.title }}</strong>
                                             <span class="muted">{{ rows|length }} sujet{{ rows|length > 1 ? 's' }}</span>
                                         </p>
                                         <div class="lot-builder__subjects">
@@ -210,10 +210,7 @@
                     Poids total : <strong>{{ (totalSize / 1048576)|round(1) }} Mo</strong>
                 </p>
 
-                {% if matchingFiles is not empty and not canDownload %}
-                    {# Le lot se compose librement ; le télécharger demande un compte presse. #}
-                    {{ include('partials/_press_gate.html.twig', {pressGateMessage: 'Presse et médias : connectez-vous ou inscrivez-vous pour télécharger ce lot. Vos choix sont conservés.'}) }}
-                {% elseif matchingFiles is not empty %}
+                {% if matchingFiles is not empty %}
                     {# Hors Turbo : la réponse est une archive, pas une page (sinon le clic reste sans effet). #}
                     <form method="post" action="{{ path('app_media_space_download') }}" data-turbo="false">
                         <input type="hidden" name="_token" value="{{ csrf_token(csrfTokenId) }}">
@@ -240,7 +237,7 @@
     <section class="section wrap cta-grid cta-grid--single">
         <div class="cta-card cta-card--dark">
             <h3>Un besoin que le catalogue ne couvre pas ?</h3>
-            <p>Chaque fichier se télécharge librement depuis sa fiche ; les lots complets sont réservés à la presse et aux médias inscrits (inscription gratuite). Contactez la Direction de la communication (Dircom) pour un format sur mesure, un fichier en très haute définition, une question d’accréditation, ou un besoin non couvert par le catalogue.</p>
+            <p>Contactez la Direction de la communication (Dircom) pour un format sur mesure, un fichier en très haute définition, une question d’accréditation, ou un besoin non couvert par le catalogue.</p>
             <a class="btn btn--gold" href="{{ path('app_suggestion_new') }}">Nous contacter</a>
         </div>
     </section>

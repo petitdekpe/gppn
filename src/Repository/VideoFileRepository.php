@@ -32,7 +32,7 @@ class VideoFileRepository extends ServiceEntityRepository
      * @param Subject[] $subjects
      * @param Language[] $languages
      * @param CapsuleFormat[] $formats
-     * @param VideoFileType[]|null $allowedTypes types ouverts au visiteur (versions TV et radio réservées aux médias) ; null = tous
+     * @param VideoFileType[]|null $allowedTypes types ouverts au visiteur (vidéo TV et audio MP3 réservés aux médias) ; null = tous
      * @return VideoFile[]
      */
     public function findForLot(array $subjects, array $languages, array $formats, ?SpeakerPeriodFilter $speakerPeriod = null, ?array $allowedTypes = null): array

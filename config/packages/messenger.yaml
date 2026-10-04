@@ -35,6 +35,8 @@ framework:
             App\Message\GenerateVideoCover: async
             # Décodage de quelques secondes de vidéo : rapide, même file.
             App\Message\CheckVideoFile: async
+            # Lecture de l'en-tête du fichier : instantané.
+            App\Message\UpdateVideoDuration: async
 
 when@prod:
     framework:

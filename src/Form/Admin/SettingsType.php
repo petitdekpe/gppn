@@ -11,7 +11,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Données : ['otpEnabled' => bool, 'enabledFormats' => CapsuleFormat[]],
+ * Données : ['otpEnabled' => bool, 'feedbackEnabled' => bool, 'enabledFormats' => CapsuleFormat[]],
  * lues et enregistrées via App\Service\AppSettings. La couverture par défaut
  * (fichier déposé ou case de suppression) est traitée par le contrôleur.
  */
@@ -24,6 +24,11 @@ class SettingsType extends AbstractType
                 'label' => 'Demander un code reçu par e-mail à la connexion et au changement de mot de passe',
                 'required' => false,
                 'help' => 'Un code à 6 chiffres, valable 10 minutes, est envoyé à l’adresse e-mail du compte.',
+            ])
+            ->add('feedbackEnabled', CheckboxType::class, [
+                'label' => 'Afficher la section « Signaler un problème de traduction ou de clarté » sur les fiches contenus',
+                'required' => false,
+                'help' => 'Désactivée, la section disparaît du site et plus aucun avis n’est enregistré. Les avis déjà reçus restent visibles dans le tableau de bord.',
             ])
             ->add('enabledFormats', EnumType::class, [
                 'class' => CapsuleFormat::class,

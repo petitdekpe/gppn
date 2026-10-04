@@ -21,6 +21,15 @@
             </fieldset>
 
             <fieldset class="admin-settings__group">
+                <legend>Avis des visiteurs</legend>
+                <label class="admin-check">
+                    {{ form_widget(form.feedbackEnabled) }}
+                    <span>{{ form.feedbackEnabled.vars.label }}</span>
+                </label>
+                <p class="admin-settings__help">{{ form.feedbackEnabled.vars.help }}</p>
+            </fieldset>
+
+            <fieldset class="admin-settings__group">
                 <legend>{{ form.enabledFormats.vars.label }}</legend>
                 {{ form_errors(form.enabledFormats) }}
                 {% for choice in form.enabledFormats %}

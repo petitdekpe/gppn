@@ -12,6 +12,7 @@ parameters:
     app.uploads_dir: '%kernel.project_dir%/public/uploads'
     app.downloads_dir: '%app.uploads_dir%/downloads'
     app.covers_dir: '%app.uploads_dir%/covers'
+    app.speaker_photos_dir: '%app.uploads_dir%/speakers'
     app.streams_dir: '%app.uploads_dir%/streams'
 
 services:

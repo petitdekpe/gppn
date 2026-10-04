@@ -1,9 +1,9 @@
 {% set formatIcons = {video: '▶', audio: '♪', pdf: '📄', image: '🖼'} %}
 {% set previewFile = video.primaryPlaybackFile %}
-{% set previewCategory = previewFile ? previewFile.type.category.value : null %}
+{% set previewCategory = previewFile ? previewFile.type.medium : null %}
 {% set coverImageUrl = video_cover_url(video) %}
 <article class="video-card" style="--thematic-color: {{ video.thematic.colorHex }}">
-    <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="video-card__thumb">
+    <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="video-card__thumb"{% if inSubject ?? false %} aria-label="Voir « {{ video.title }} » en {{ video.language.name }}{{ video.speaker ? ', par ' ~ video.speaker.fullName }}"{% endif %}>
         {% if previewFile %}
             <span class="video-card__format-tag">{{ previewFile.type.category.label }}</span>
         {% endif %}
@@ -23,13 +23,25 @@
         {% endif %}
     </a>
     <div class="video-card__body">
-        <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>
-        <h3 class="video-card__title"><a href="{{ path('app_video_show', {slug: video.slug}) }}">{{ video.title }}</a></h3>
-        {% set summary = video.summary|striptags|trim %}
-        {% if summary %}
-            <p class="video-card__summary">{{ summary|slice(0, 110) }}{{ summary|length > 110 ? '…' }}</p>
+        {# inSubject (blocs par sujet) : thématique, titre et résumé sont déjà dans l'en-tête du sujet ;
+           la carte montre qui parle (nom et sigle). #}
+        {% if inSubject ?? false %}
+            {% if video.speaker %}
+                <h3 class="video-card__speaker">
+                    <a href="{{ path('app_intervenant_show', {person: video.speaker.personSlug}) }}">{{ video.speaker.fullName }}</a>
+                    {% set sigle = speaker_sigle(video.speaker) %}
+                    {% if sigle %}<span class="video-card__sigle">{{ sigle }}</span>{% endif %}
+                </h3>
+            {% endif %}
+        {% else %}
+            <a href="{{ path('app_thematique_show', {slug: video.thematic.slug}) }}" class="video-card__thematic" style="color: {{ video.thematic.colorHex }}">{{ video.thematic.name|upper }}</a>
+            <h3 class="video-card__title"><a href="{{ path('app_video_show', {slug: video.slug}) }}">{{ video.title }}</a></h3>
+            {% set summary = video.summary|striptags|trim %}
+            {% if summary %}
+                <p class="video-card__summary">{{ summary|slice(0, 110) }}{{ summary|length > 110 ? '…' }}</p>
+            {% endif %}
         {% endif %}
-        <p class="video-card__meta">{{ video.publishedAt|date('d F Y') }} · {{ video.viewsCount|number_format(0, ',', ' ') }} vues</p>
+        <p class="video-card__meta">{{ video.publishedAt|date_fr }} · {{ video.viewsCount|number_format(0, ',', ' ') }} vue{{ video.viewsCount > 1 ? 's' }}</p>
         <div class="video-card__badges">
             <span class="video-card__badge">{{ video.language.name }}</span>
             {% for format in video.availableFormats %}

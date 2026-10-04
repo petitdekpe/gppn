@@ -1,0 +1,9 @@
+{# Portrait de l'intervenant ; à défaut (ministres conseillers absents de gouv.bj), ses initiales. #}
+<span class="person-photo {{ class|default('') }}">
+    {% if person.photo %}
+        <img src="{{ person.photo }}" alt="" loading="lazy">
+    {% else %}
+        {% set words = person.name|split(' ')|filter(w => w matches '/^\\p{L}/u' and w|lower != 'épouse') %}
+        <span class="person-photo__initials" aria-hidden="true">{{ (words|first|first ~ (words|length > 1 ? words|last|first : ''))|upper }}</span>
+    {% endif %}
+</span>

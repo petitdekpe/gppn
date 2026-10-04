@@ -18,7 +18,7 @@
             <div class="admin-stat-card">
                 <strong>{{ views.views|number_format(0, ',', ' ') }}</strong>
                 <span>Vues au total</span>
-                <small>{{ views.average|number_format(0, ',', ' ') }} vues en moyenne par contenu publié</small>
+                <small>{{ views.average|number_format(0, ',', ' ') }} vue{{ views.average|round > 1 ? 's' }} en moyenne par contenu publié</small>
             </div>
             <div class="admin-stat-card">
                 <strong>{{ feedback.total }}</strong>
@@ -55,7 +55,7 @@
         <details class="admin-group" data-dashboard-groups-target="group" data-group="audience" open>
             <summary class="admin-group__summary">
                 <span class="admin-group__title">Audience</span>
-                <span class="admin-group__hint">{{ views.views|number_format(0, ',', ' ') }} vues</span>
+                <span class="admin-group__hint">{{ views.views|number_format(0, ',', ' ') }} vue{{ views.views > 1 ? 's' }}</span>
             </summary>
             <div class="admin-dashboard-grid">
                 <section class="admin-panel">
@@ -68,7 +68,7 @@
                                 <li>
                                     <a href="{{ path('admin_video_edit', {id: video.id}) }}">{{ video.title }}</a>
                                     <span class="admin-rank__meta">{{ video.language }}</span>
-                                    <strong>{{ video.views|number_format(0, ',', ' ') }} vues</strong>
+                                    <strong>{{ video.views|number_format(0, ',', ' ') }} vue{{ video.views > 1 ? 's' }}</strong>
                                 </li>
                             {% endfor %}
                         </ol>
@@ -132,7 +132,7 @@
                                 {% for c in latestComments %}
                                     <li>
                                         <p>« {{ c.comment|length > 180 ? c.comment|slice(0, 180) ~ '…' : c.comment }} »</p>
-                                        <span class="admin-rank__meta">{{ c.title }} · {{ c.ratingLabel }} · {{ c.createdAt|date('d/m/Y') }}</span>
+                                        <span class="admin-rank__meta">{{ c.title }} · {{ c.ratingLabel }} · {{ c.createdAt|date_fr }}</span>
                                     </li>
                                 {% endfor %}
                             </ul>

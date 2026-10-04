@@ -15,7 +15,6 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
@@ -52,8 +51,7 @@ class VideoType extends AbstractType
                 ),
                 // Un groupe par conseil ; le calendrier latéral (council-calendar)
                 // n'affiche que les sujets du conseil choisi grâce à data-council-id.
-                'group_by' => static fn (Subject $subject) => $subject->getCouncilSession()->getLabel()
-                    ?: sprintf('Conseil du %s', $subject->getCouncilSession()->getDate()->format('d/m/Y')),
+                'group_by' => static fn (Subject $subject) => $subject->getCouncilSession()->getTitle(),
                 'choice_attr' => static fn (Subject $subject) => [
                     'data-council-id' => $subject->getCouncilSession()->getId(),
                 ],
@@ -75,12 +73,9 @@ class VideoType extends AbstractType
                 'label' => 'Statut',
                 'help' => 'Masqué retire le contenu du site public sans le supprimer.',
             ])
-            ->add('durationSeconds', IntegerType::class, [
-                'label' => 'Durée (secondes)',
-            ])
             ->add('coverImageFile', VichImageType::class, [
                 'label' => 'Image de couverture',
-                'help' => 'Affichée dans les cartes, à la une et la fiche détail. Sans image déposée, elle est tirée automatiquement de la vidéo HD 1080p à 15 s ; à défaut, du haut de la vidéo verticale (visages).',
+                'help' => 'Affichée dans les cartes, à la une et la fiche détail. Sans image déposée, elle est tirée automatiquement de la vidéo TV HD 1080p à 15 s ; à défaut, du haut de la vidéo verticale (visages).',
                 'required' => false,
                 'allow_delete' => true,
                 'delete_label' => 'Supprimer cette image',

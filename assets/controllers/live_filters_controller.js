@@ -32,7 +32,7 @@ export default class extends Controller {
     submit(event) {
         event.preventDefault();
         clearTimeout(this.timer);
-        // Mobile : « Voir N capsules » referme le panneau sur des résultats déjà à jour.
+        // Mobile : « Voir N contenus » referme le panneau sur des résultats déjà à jour.
         if (event.submitter?.hasAttribute('data-live-filters-close')) {
             this.closePanel();
             this.scrollToResults();

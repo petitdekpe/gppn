@@ -4,28 +4,41 @@
 {% block meta_description %}Tous les contenus du Gouvernement disponibles en {{ language.name }}.{% endblock %}
 
 {% block body %}
+    {% set roleLabels = {tous: 'Tous les contenus', ministre: 'Ministres', conseiller: 'Ministres conseillers'} %}
+
     <section class="page-header wrap">
         {{ include('partials/_back_link.html.twig', {fallback: path('app_video_index')}) }}
         <span class="eyebrow">Langue nationale</span>
         <h1>{{ language.name }}</h1>
-        <p data-live-region="results-count">{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} disponible{{ results.total > 1 ? 's' : '' }} en {{ language.name }}.</p>
+        <p data-live-region="results-count">{{ results.videoTotal }} capsule{{ results.videoTotal > 1 ? 's' : '' }} disponible{{ results.videoTotal > 1 ? 's' : '' }} en {{ language.name }}{% if results.total > 0 %}, {{ results.total }} sujet{{ results.total > 1 ? 's' : '' }}{% endif %}.</p>
     </section>
 
-    <section class="section wrap video-layout">
+    {# Même barre de filtres que la page Contenus, en haut ; la langue est celle de la page. #}
+    <section class="section wrap video-layout video-layout--stacked">
         <aside class="video-layout__sidebar">
             {{ include('partials/_video_filters.html.twig', {
                 action: path('app_langue_show', {slug: language.slug}),
                 thematics: thematics,
                 formats: formats,
+                councilSessions: councilSessions,
                 selectedThematicSlugs: selectedThematicSlugs,
                 selectedFormatValues: selectedFormatValues,
+                selectedCouncilSessionSlugs: selectedCouncilSessionSlugs,
                 query: query,
-                resetUrl: path('app_langue_show', {slug: language.slug}),
+                selectedRole: selectedRole,
+                layout: 'top',
+                roleLabels: roleLabels,
+                resetUrl: resetUrl,
+                people: people,
+                periodShortcuts: periodShortcuts,
+                speakerPeriod: speakerPeriod,
             }) }}
         </aside>
 
         <div class="video-layout__main" data-live-region="results">
-            {{ include('partials/_video_grid.html.twig', {
+            {{ include('partials/_active_filters.html.twig', {activeFilters: activeFilters, resetUrl: resetUrl}) }}
+
+            {{ include('partials/_subject_groups.html.twig', {
                 results: results,
                 route: 'app_langue_show',
                 route_params: routeParams|merge({slug: language.slug}),

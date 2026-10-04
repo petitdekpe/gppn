@@ -1,7 +1,23 @@
 {# Sources d'un <video> : la version WebM générée pour la lecture en priorité,
    l'original (fichier téléchargeable) en repli tant qu'elle n'est pas prête
    ou si le navigateur ne lit pas le WebM. L'échec de la dernière source
-   (aucune n'a pu être lue) est signalé au serveur (assets/playback_report.js). #}
+   (aucune n'a pu être lue) est signalé au serveur (assets/playback_report.js).
+
+   Vidéo TV sur ordinateur, vidéo Mobile sur téléphone : quand `file` est
+   une vidéo TV et que le contenu a une vidéo Mobile, celle-ci passe en
+   tête avec un attribut media (même seuil que .download--desktop, voir
+   app.css). Le navigateur l'ignore sur grand écran et lit la vidéo TV ;
+   sur téléphone, la vidéo TV reste en repli si la Mobile ne se lit pas.
+   Pas de signalement sur ces sources : une source écartée par son attribut
+   media déclenche elle aussi l'événement « error ». #}
+{% set phoneFile = file.type.video ? file.video.phonePlaybackFile : null %}
+{% if phoneFile and phoneFile is not same as(file) %}
+    {% set phoneWebmUrl = video_webm_url(phoneFile) %}
+    {% if phoneWebmUrl %}
+        <source src="{{ phoneWebmUrl }}" type="video/webm" media="(max-width: 767px)" data-phone-version>
+    {% endif %}
+    <source src="{{ video_file_url(phoneFile) }}" type="{{ phoneFile.mimeType ?? 'video/mp4' }}" media="(max-width: 767px)" data-phone-version>
+{% endif %}
 {% set webmUrl = video_webm_url(file) %}
 {% if webmUrl %}
     <source src="{{ webmUrl }}" type="video/webm">

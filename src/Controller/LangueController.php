@@ -2,12 +2,14 @@
 
 namespace App\Controller;
 
-use App\Enum\CapsuleFormat;
+use App\Repository\CouncilSessionRepository;
 use App\Repository\LanguageRepository;
 use App\Repository\ThematicRepository;
 use App\Repository\VideoRepository;
 use App\Service\AppSettings;
+use App\Service\ContentFilters;
 use App\Service\MediaAccess;
+use App\Service\SpeakerPeriodCriteria;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,15 +25,23 @@ class LangueController extends AbstractController
         'idatcha' => 'idaasha',
     ];
 
+    /**
+     * Comme la page Contenus (barre de filtres en haut, un bloc par sujet), langue imposée :
+     * conseil des ministres, puis intervenants, thématique, intervenant,
+     * période et format sous « Plus de filtres ».
+     */
     #[Route('/langues/{slug}', name: 'app_langue_show')]
     public function show(
         string $slug,
         Request $request,
         LanguageRepository $languageRepository,
         ThematicRepository $thematicRepository,
+        CouncilSessionRepository $councilSessionRepository,
         VideoRepository $videoRepository,
         AppSettings $settings,
         MediaAccess $mediaAccess,
+        SpeakerPeriodCriteria $speakerPeriodCriteria,
+        ContentFilters $contentFilters,
     ): Response {
         if (isset(self::RENAMED_SLUGS[$slug])) {
             return $this->redirectToRoute('app_langue_show', ['slug' => self::RENAMED_SLUGS[$slug]] + $request->query->all(), Response::HTTP_MOVED_PERMANENTLY);
@@ -39,34 +49,27 @@ class LangueController extends AbstractController
 
         $language = $languageRepository->findOneBy(['slug' => $slug]) ?? throw $this->createNotFoundException('Langue introuvable.');
 
-        $queryParams = $request->query->all();
-        $thematicSlugs = isset($queryParams['thematique']) ? array_values((array) $queryParams['thematique']) : [];
-        $formatValues = isset($queryParams['format']) ? array_values((array) $queryParams['format']) : [];
-        $selectedThematics = $thematicSlugs ? $thematicRepository->findBy(['slug' => $thematicSlugs]) : [];
-        // Recherche par format « Audio » (radio) réservée aux médias.
-        $selectedFormats = $mediaAccess->filterFormats(array_filter(array_map(
-            static fn (mixed $value): ?CapsuleFormat => CapsuleFormat::tryFrom((string) $value),
-            $formatValues,
-        )));
+        $filters = $contentFilters->read($request, 'app_langue_show', ['slug' => $language->getSlug()], $language);
 
-        $query = $request->query->getString('q') ?: null;
-        $page = max(1, $request->query->getInt('page', 1));
-
-        $results = $videoRepository->search($selectedThematics, [$language], $selectedFormats, $query, $page);
+        $results = $videoRepository->searchBySubject($filters['thematics'], $filters['languages'], $filters['formats'], $filters['query'], $filters['page'], speakerRole: $filters['role'], councilSessions: $filters['councilSessions'], speakerPeriod: $filters['speakerPeriod'], querySpeakerIds: $filters['querySpeakerIds']);
 
         return $this->render('langue/show.html.twig', [
             'language' => $language,
             'results' => $results,
             'thematics' => $thematicRepository->findAllWithVideoCount(),
             'formats' => $mediaAccess->filterFormats($settings->getEnabledFormats()),
-            'selectedThematicSlugs' => $thematicSlugs,
-            'selectedFormatValues' => array_map(static fn (CapsuleFormat $format) => $format->value, $selectedFormats),
-            'query' => $query,
-            'routeParams' => array_filter([
-                'thematique' => $thematicSlugs,
-                'format' => $formatValues,
-                'q' => $query,
-            ]),
+            'councilSessions' => $councilSessionRepository->findWithVideoCountForLanguage($language),
+            'selectedThematicSlugs' => $filters['selectedThematicSlugs'],
+            'selectedFormatValues' => $filters['selectedFormatValues'],
+            'selectedCouncilSessionSlugs' => $filters['selectedCouncilSessionSlugs'],
+            'query' => $filters['query'],
+            'selectedRole' => $filters['role'],
+            'people' => $speakerPeriodCriteria->people(),
+            'periodShortcuts' => $speakerPeriodCriteria->periodShortcuts(),
+            'speakerPeriod' => $filters['speakerPeriod'],
+            'routeParams' => $filters['routeParams'],
+            'activeFilters' => $filters['activeFilters'],
+            'resetUrl' => $filters['resetUrl'],
         ]);
     }
 }

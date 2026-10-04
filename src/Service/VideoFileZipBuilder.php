@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\VideoFile;
+use App\Util\FrenchDate;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 class VideoFileZipBuilder
@@ -28,7 +29,7 @@ class VideoFileZipBuilder
      * @param string|null $attributionSheet Contenu texte d'une fiche d'attribution
      *   ajoutée à la racine de l'archive (constructeur de lot de l'espace média).
      * @param (\Closure(VideoFile): ?string)|null $folderFor dossier de chaque
-     *   fichier dans l'archive (ex. « TV », « Radio », « Mobile » pour un kit)
+     *   fichier dans l'archive (ex. « Video TV », « Audio MP3 », « Video Mobile » pour un kit)
      */
     public function build(array $files, ?string $attributionSheet = null, ?\Closure $folderFor = null): string
     {
@@ -81,7 +82,7 @@ class VideoFileZipBuilder
         $lines = [
             'LE GOUVERNEMENT PLUS PRÈS DE NOUS — FICHE D’ATTRIBUTION',
             ...($title !== null ? [$title] : []),
-            'Lot généré le ' . (new \DateTimeImmutable())->format('d/m/Y à H:i'),
+            'Lot généré le ' . FrenchDate::dateTime(new \DateTimeImmutable()),
             '',
             'Contenu de ce lot :',
         ];
@@ -129,7 +130,7 @@ class VideoFileZipBuilder
 
         while (isset($usedEntryNames[$entryName])) {
             $extension = pathinfo($base, PATHINFO_EXTENSION);
-            // Dossier conservé (kits rangés en TV/, Radio/, Mobile/).
+            // Dossier conservé (kits rangés en Video TV/, Audio MP3/, Video Mobile/).
             $directory = str_contains($base, '/') ? substr($base, 0, strrpos($base, '/') + 1) : '';
             $baseName = $directory . pathinfo($base, PATHINFO_FILENAME);
             $entryName = $extension !== '' ? sprintf('%s-%d.%s', $baseName, $suffix, $extension) : sprintf('%s-%d', $baseName, $suffix);

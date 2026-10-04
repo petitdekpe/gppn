@@ -42,7 +42,7 @@
                                 </td>
                                 <td><a href="{{ path('admin_suggestion_show', {id: suggestion.id}) }}">{{ suggestion.subject }}</a></td>
                                 <td>{{ suggestion.fullName ?: 'Anonyme' }}</td>
-                                <td>{{ suggestion.createdAt|date('d/m/Y H:i') }}</td>
+                                <td>{{ suggestion.createdAt|datetime_fr }}</td>
                                 <td class="admin-table__actions">
                                     <a class="btn btn--outline btn--sm" href="{{ path('admin_suggestion_show', {id: suggestion.id}) }}">Voir</a>
                                 </td>

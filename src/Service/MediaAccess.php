@@ -13,12 +13,14 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Règles de téléchargement :
- * - public : fichier par fichier ; sur téléphone la version Mobile seule,
- *   sur ordinateur aussi les versions TV et radio (masquées sur petit écran
+ * - public : fichier par fichier ; sur téléphone la vidéo Mobile seule,
+ *   sur ordinateur aussi la vidéo TV et l'audio MP3 (masquées sur petit écran
  *   par la classe .download--desktop, voir app.css) ;
  * - presse et médias : téléchargements groupés (« Tout télécharger »,
- *   lots de l'espace média, kits des ministres), après connexion ou
- *   inscription dans l'espace presse, qui recueille e-mail et téléphone.
+ *   espace média et ses lots), après connexion ou inscription dans
+ *   l'espace presse, qui recueille e-mail et téléphone ;
+ * - les kits des ministres (pages intervenant, liens signés) restent en
+ *   libre téléchargement, sans compte (voir SpeakerKit).
  *
  * Un média est un compte « Média » (inscrit depuis le site) ou « Lecteur
  * presse » et au-delà, connecté et ayant validé son code de vérification :
@@ -46,13 +48,13 @@ class MediaAccess
             && $session?->get(LoginOtpSubscriber::PENDING_KEY) !== true;
     }
 
-    /** Téléchargements groupés (archives ZIP, lots, kits) : presse et médias connectés. */
+    /** Téléchargements groupés (archives ZIP, lots) : presse et médias connectés. */
     public function canDownloadBundles(): bool
     {
         return $this->isMedia();
     }
 
-    /** Fichier par fichier : ouvert à tous (le téléphone n'affiche que le Mobile). */
+    /** Fichier par fichier : ouvert à tous (le téléphone n'affiche que la vidéo Mobile). */
     public function canDownload(VideoFile|VideoFileType $file): bool
     {
         $type = $file instanceof VideoFile ? $file->getType() : $file;
@@ -60,7 +62,7 @@ class MediaAccess
         return $type->isPubliclyDownloadable();
     }
 
-    /** Version proposée sur téléphone : la vidéo verticale seule. */
+    /** Version proposée sur téléphone : la vidéo Mobile seule. */
     public static function isPhoneFormat(VideoFile|VideoFileType $file): bool
     {
         return ($file instanceof VideoFile ? $file->getType() : $file) === VideoFileType::MP4_VERTICAL;
@@ -89,7 +91,7 @@ class MediaAccess
     }
 
     /**
-     * Formats proposés aux filtres de recherche : sans « Audio » (radio) pour le public.
+     * Formats proposés aux filtres de recherche : sans « Audio MP3 » pour le public.
      *
      * @param CapsuleFormat[] $formats
      *

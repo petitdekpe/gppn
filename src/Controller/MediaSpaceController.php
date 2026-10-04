@@ -33,6 +33,11 @@ class MediaSpaceController extends AbstractController
         SpeakerPeriodCriteria $speakerPeriodCriteria,
         MediaAccess $mediaAccess,
     ): Response {
+        // Réservé à la presse et aux médias : connexion ou inscription, puis retour ici (choix conservés).
+        if (!$mediaAccess->isMedia()) {
+            return $this->redirectToRoute('app_press_login', ['retour' => $request->getRequestUri()]);
+        }
+
         $subjectRows = $subjectRepository->findAllWithVideoCount();
 
         $subjectIds = array_map('intval', $request->query->all('sujet'));
@@ -105,8 +110,6 @@ class MediaSpaceController extends AbstractController
             'people' => $speakerPeriodCriteria->people(),
             'periodShortcuts' => $speakerPeriodCriteria->periodShortcuts(),
             'lotSubjectCount' => count($lotSubjects),
-            // Le lot se compose librement ; son téléchargement demande un compte presse.
-            'canDownload' => $mediaAccess->canDownloadBundles(),
         ]);
     }
 
@@ -123,7 +126,7 @@ class MediaSpaceController extends AbstractController
         if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Jeton CSRF invalide.');
         }
-        // Lot complet : presse et médias, après connexion ou inscription.
+        // Session expirée depuis l'affichage de la page : connexion, puis retour à l'espace média.
         if (!$mediaAccess->canDownloadBundles()) {
             return $this->redirectToRoute('app_press_login', ['retour' => $this->generateUrl('app_media_space')]);
         }

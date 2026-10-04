@@ -6,10 +6,14 @@ use App\Repository\SpeakerRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\String\UnicodeString;
+use Vich\UploaderBundle\Mapping\Attribute\Uploadable;
+use Vich\UploaderBundle\Mapping\Attribute\UploadableField;
 
 #[ORM\Entity(repositoryClass: SpeakerRepository::class)]
 #[ORM\Table(name: 'speaker')]
+#[Uploadable]
 class Speaker
 {
     /** Préfixe des codes de fichiers des ministres conseillers (voir getFileCode). */
@@ -32,6 +36,28 @@ class Speaker
     /** Gouvernement dans lequel l'intervenant a exercé cette fonction (voir Government). */
     #[ORM\ManyToOne(targetEntity: Government::class, inversedBy: 'speakers')]
     private ?Government $government = null;
+
+    /**
+     * Portrait officiel (page « Les ministres »), déposé par l'admin ou
+     * importé de gouv.bj (app:speakers:import-gouv). Propre à chaque fiche :
+     * une reconduction ne le recopie pas, la page prend le plus récent.
+     */
+    #[UploadableField(mapping: 'speaker_photo', fileNameProperty: 'photoName')]
+    private ?File $photoFile = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $photoName = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $photoUpdatedAt = null;
+
+    /**
+     * Rang protocolaire dans son gouvernement (1 = premier), celui de
+     * gouv.bj/membres : ordre de la page « Les ministres ». Propre à chaque
+     * fiche, il n'est pas repris à la reconduction (le rang change souvent).
+     */
+    #[ORM\Column(type: 'smallint', nullable: true)]
+    private ?int $precedence = null;
 
     /** @var Collection<int, Video> */
     #[ORM\OneToMany(targetEntity: Video::class, mappedBy: 'speaker')]
@@ -91,6 +117,47 @@ class Speaker
     public function setGovernment(?Government $government): static
     {
         $this->government = $government;
+
+        return $this;
+    }
+
+    public function getPhotoFile(): ?File
+    {
+        return $this->photoFile;
+    }
+
+    /** Touche `photoUpdatedAt` : sans lui, Doctrine ne verrait pas le changement et Vich n'enregistrerait rien. */
+    public function setPhotoFile(?File $photoFile = null): static
+    {
+        $this->photoFile = $photoFile;
+
+        if ($photoFile instanceof File) {
+            $this->photoUpdatedAt = new \DateTimeImmutable();
+        }
+
+        return $this;
+    }
+
+    public function getPhotoName(): ?string
+    {
+        return $this->photoName;
+    }
+
+    public function setPhotoName(?string $photoName): static
+    {
+        $this->photoName = $photoName;
+
+        return $this;
+    }
+
+    public function getPrecedence(): ?int
+    {
+        return $this->precedence;
+    }
+
+    public function setPrecedence(?int $precedence): static
+    {
+        $this->precedence = $precedence;
 
         return $this;
     }

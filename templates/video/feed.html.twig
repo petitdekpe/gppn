@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Fil vertical — Le Gouvernement plus près de nous{% endblock %}
+{% block title %}Vidéos Mobile — Le Gouvernement plus près de nous{% endblock %}
 
 {% block body %}
     <div class="feed"
@@ -8,12 +8,12 @@
          data-feed-more-url-value="{{ path('app_video_feed_more') }}"
          data-feed-next-page-value="{{ nextPage }}"
          data-feed-has-more-value="{{ hasMore ? '1' : '0' }}">
-        <a href="{{ path('app_home') }}" class="feed__close" aria-label="Fermer le fil vertical">
+        <a href="{{ path('app_home') }}" class="feed__close" aria-label="Fermer le fil des vidéos Mobile">
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </a>
 
         {% if videos is empty %}
-            <p class="feed__empty">Aucun contenu au format vertical pour le moment.</p>
+            <p class="feed__empty">Aucune vidéo Mobile pour le moment.</p>
         {% else %}
             <div class="feed__scroller" data-feed-target="scroller">
                 {% include 'video/_feed_items.html.twig' with {videos: videos} only %}

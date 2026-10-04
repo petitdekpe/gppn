@@ -40,6 +40,11 @@ class SubjectType extends AbstractType
                 'required' => false,
                 'attr' => ['rows' => 4],
             ])
+            ->add('keywords', TextType::class, [
+                'label' => 'Mots-clés',
+                'help' => 'Séparés par des virgules (ex. : acte de naissance, état civil, mairie). Utilisés pour le référencement et la barre de recherche.',
+                'required' => false,
+            ])
         ;
     }
 

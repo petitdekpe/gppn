@@ -12,7 +12,7 @@
 
         <h2>{{ suggestion.subject }}</h2>
         <p class="muted">
-            Reçue le {{ suggestion.createdAt|date('d/m/Y à H:i') }}
+            Reçue le {{ suggestion.createdAt|datetime_fr }}
             {% if suggestion.fullName %} · {{ suggestion.fullName }}{% endif %}
             {% if suggestion.email %} · <a href="mailto:{{ suggestion.email }}">{{ suggestion.email }}</a>{% endif %}
         </p>

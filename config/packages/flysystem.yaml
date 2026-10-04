@@ -8,6 +8,10 @@ flysystem:
             local:
                 directory: '%app.covers_dir%'
             public_url: '/uploads/covers'
+        speaker_photo.storage:
+            local:
+                directory: '%app.speaker_photos_dir%'
+            public_url: '/uploads/speakers'
         # Versions WebM servies par le lecteur du site (voir
         # TranscodeToWebmHandler) ; les originaux restent dans download.storage.
         stream.storage:

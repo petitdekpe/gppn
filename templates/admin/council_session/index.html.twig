@@ -31,7 +31,7 @@
                     {% set subjectCount = group.subjects|length %}
                     <section class="admin-session" data-council-calendar-target="panel" data-session-id="{{ councilSession.id }}" aria-labelledby="council-{{ councilSession.id }}"{{ councilSession.id != selectedSessionId ? ' hidden' }}>
                         <header class="admin-session__summary">
-                            <h2 class="admin-session__title" id="council-{{ councilSession.id }}">{{ councilSession.label ?: 'Conseil des ministres du ' ~ councilSession.date|date('d/m/Y') }}</h2>
+                            <h2 class="admin-session__title" id="council-{{ councilSession.id }}">{{ councilSession.title }}</h2>
                             <span class="admin-table__count">{{ subjectCount }} sujet{{ subjectCount > 1 ? 's' }} · {{ group.videoCount }} contenu{{ group.videoCount > 1 ? 's' }}</span>
                         </header>
 

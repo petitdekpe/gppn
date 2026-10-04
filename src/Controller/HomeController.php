@@ -39,7 +39,10 @@ class HomeController extends AbstractController
         usort($activeThematics, $byVideoCount);
         $shownThematics = $activeThematics ?: $thematics;
 
-        $heroVideo = $videoRepository->findHeroVideo();
+        // Hero et « Derniers contenus publiés » : contenus du dernier conseil des ministres
+        // seulement ; le hero change à chaque chargement de la page.
+        $latestCouncilSession = $videoRepository->findLatestCouncilSession();
+        $heroVideo = $videoRepository->findHeroVideo($latestCouncilSession);
 
         // « À la une » : un autre contenu que le hero, les mis en avant d'abord.
         $spotlightVideo = null;
@@ -49,9 +52,6 @@ class HomeController extends AbstractController
                 break;
             }
         }
-
-        // « Derniers contenus publiés » : ceux du dernier conseil des ministres seulement.
-        $latestCouncilSession = $videoRepository->findLatestCouncilSession();
 
         return $this->render('home/index.html.twig', [
             'heroVideo' => $heroVideo,

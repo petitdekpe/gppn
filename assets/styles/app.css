@@ -755,6 +755,26 @@ button {
     color: var(--color-green);
 }
 
+/* Carte d'un bloc par sujet : l'intervenant et son sigle à la place du titre. */
+.video-card__speaker {
+    margin: 0 0 8px;
+    font-size: 0.98rem;
+    line-height: 1.3;
+}
+
+.video-card__speaker a:hover {
+    color: var(--color-green);
+}
+
+.video-card__sigle {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--thematic-color, var(--color-muted));
+}
+
 .video-card__meta {
     font-size: 0.82rem;
     color: var(--color-muted);
@@ -1357,7 +1377,8 @@ button {
     .filters-panel .filters-sidebar__option-count {
         color: inherit;
         opacity: 0.65;
-        margin-left: 4px;
+        /* L'équivalent de deux espaces : les pastilles (flex) ignorent celui du gabarit. */
+        margin-left: 0.55em;
     }
 
     .filters-panel .filters-sidebar__submit {
@@ -1447,7 +1468,8 @@ button {
     .filters-panel--top .filters-sidebar__option-count {
         color: inherit;
         opacity: 0.65;
-        margin-left: 4px;
+        /* L'équivalent de deux espaces : les pastilles (flex) ignorent celui du gabarit. */
+        margin-left: 0.55em;
     }
 }
 
@@ -1900,6 +1922,18 @@ button {
     border-radius: var(--radius-lg);
 }
 
+/* Téléphone : la version Mobile (9:16) est lue à la place de la version TV
+   (partials/_video_sources.html.twig) ; le cadre adopte son format une fois
+   la lecture lancée, sans dépasser la hauteur de l'écran. */
+@media (max-width: 767px) {
+    .video-detail__player.is-playing:has(source[data-phone-version]) {
+        aspect-ratio: 9 / 16;
+        width: auto;
+        height: min(80svh, 177.78vw);
+        margin-inline: auto;
+    }
+}
+
 .video-detail__audio {
     width: 85%;
     max-width: 420px;
@@ -1942,6 +1976,30 @@ button {
 
 .video-detail__summary {
     max-width: 70ch;
+}
+
+.video-detail__keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.video-detail__keywords a {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--color-cream);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.video-detail__keywords a:hover,
+.video-detail__keywords a:focus-visible {
+    text-decoration: underline;
 }
 
 .video-detail__speakers {
@@ -2226,6 +2284,13 @@ button {
 .site-footer h3,
 .site-footer h4 {
     color: #fff;
+}
+
+.site-footer__newsletter-text {
+    margin-top: 8px;
+    max-width: 320px;
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
 
 .newsletter-form {
@@ -4891,10 +4956,10 @@ select option.subject-create-option {
 }
 
 .person-card {
-    display: grid;
-    gap: 4px;
+    display: flex;
+    flex-direction: column;
     height: 100%;
-    padding: 16px;
+    overflow: hidden;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: #fff;
@@ -4905,6 +4970,92 @@ select option.subject-create-option {
 
 .person-card:hover {
     border-color: var(--color-navy);
+}
+
+.person-card__body {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: 14px 16px 16px;
+}
+
+/* Portrait (gouv.bj : 544 × 600, visage dans le haut) ou initiales à défaut. */
+.person-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--color-cream);
+}
+
+.person-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 20%;
+}
+
+.person-photo__initials {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--color-navy-soft);
+    opacity: 0.55;
+}
+
+.person-card__photo {
+    aspect-ratio: 1;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.person-card .person-photo img {
+    transition: transform 0.3s ease;
+}
+
+.person-card:hover .person-photo img {
+    transform: scale(1.03);
+}
+
+.person-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.person-header__photo {
+    flex: none;
+    width: 128px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: var(--shadow-card);
+}
+
+.person-header__photo .person-photo__initials {
+    font-size: 2.6rem;
+}
+
+@media (max-width: 559px) {
+    .person-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .person-header__photo {
+        width: 96px;
+    }
+}
+
+.admin-speaker-photo {
+    display: block;
+    width: 120px;
+    aspect-ratio: 1;
+    object-fit: cover;
+    object-position: 50% 20%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    margin: 6px 0;
 }
 
 .person-card__role {
@@ -4945,6 +5096,13 @@ select option.subject-create-option {
 .subject-group__thematic {
     font-weight: 700;
     color: var(--thematic-color, var(--color-navy));
+}
+
+.subject-group__summary {
+    margin: 8px 0 0;
+    max-width: 75ch;
+    font-size: 0.92rem;
+    color: var(--color-text);
 }
 
 .speaker-council {
@@ -5156,33 +5314,7 @@ select option.subject-create-option {
     }
 }
 
-/* ---- Espace presse : invitation, connexion, inscription ---- */
-.press-gate {
-    display: grid;
-    gap: 10px;
-    margin: 14px 0;
-    padding: 12px 14px;
-    border: 1px dashed var(--color-navy);
-    border-radius: var(--radius-sm);
-    background: var(--color-cream);
-    font-size: 0.88rem;
-}
-
-.press-gate p {
-    margin: 0;
-}
-
-.press-gate i {
-    margin-right: 4px;
-    color: var(--color-navy);
-}
-
-.press-gate__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
+/* ---- Espace presse : connexion, inscription ---- */
 .press-auth {
     display: grid;
     gap: 24px;
@@ -5201,12 +5333,76 @@ select option.subject-create-option {
     margin-bottom: 14px;
 }
 
+.press-auth input[type="text"],
 .press-auth input[type="email"],
-.press-auth input[type="password"] {
-    padding: 10px 12px;
+.press-auth input[type="tel"],
+.press-auth input[type="password"],
+.press-auth select {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     font: inherit;
+    background: #fff;
+}
+
+/* Inscription : champs groupés par thème, aides et erreurs sous le champ. */
+.press-register__group {
+    margin: 0 0 20px;
+    padding: 0;
+    border: 0;
+}
+
+.press-register__group legend {
+    margin-bottom: 12px;
+    padding: 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+}
+
+.press-register__group > div:not(.form-grid-2) {
+    margin-bottom: 16px;
+}
+
+.press-register .help-text {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--color-muted);
+}
+
+.press-register__group ul,
+.press-register__consent ul {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    color: #a12727;
+    font-size: 0.82rem;
+}
+
+.press-register__consent {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 10px;
+    align-items: start;
+    margin: 4px 0 20px;
+}
+
+.press-register__consent input {
+    margin-top: 3px;
+}
+
+.press-register__consent label {
+    margin: 0;
+    font-weight: 400;
+    font-size: 0.85rem;
+}
+
+.press-register__consent ul {
+    grid-column: 2;
 }
 
 .press-auth__aside {

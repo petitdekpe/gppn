@@ -2,6 +2,14 @@
 
 {% block title %}{{ video.title }} — Le Gouvernement plus près de nous{% endblock %}
 {% block meta_description %}{{ video.summary|striptags|slice(0, 150) }}{% endblock %}
+{% block meta_keywords %}
+    {% if video.keywordsList is not empty %}
+        <meta name="keywords" content="{{ video.keywordsList|join(', ') }}">
+        {% for keyword in video.keywordsList %}
+            <meta property="article:tag" content="{{ keyword }}">
+        {% endfor %}
+    {% endif %}
+{% endblock %}
 
 {% block body %}
     <section class="wrap video-detail">
@@ -15,7 +23,7 @@
 
         {% set playbackFile = video.primaryPlaybackFile %}
         {% set playbackUrl = playbackFile ? video_file_url(playbackFile) : null %}
-        {% set playbackCategory = playbackFile ? playbackFile.type.category.value : null %}
+        {% set playbackCategory = playbackFile ? playbackFile.type.medium : null %}
         {% set coverImageUrl = video_cover_url(video) %}
         {# Fichier par fichier pour tous, Mobile en tête (voir MediaAccess). #}
         {% set availableFiles = downloadable_files(video) %}
@@ -78,7 +86,7 @@
 
                         <h1>{{ video.title }}</h1>
                         <div class="video-detail__meta-row">
-                            <p class="video-card__meta">Publiée le {{ video.publishedAt|date('d F Y') }} · <strong>{{ video.viewsCount|number_format(0, ',', ' ') }} vues</strong></p>
+                            <p class="video-card__meta">Publiée le {{ video.publishedAt|date_fr }} · <strong>{{ video.viewsCount|number_format(0, ',', ' ') }} vue{{ video.viewsCount > 1 ? 's' }}</strong></p>
                             {{ include('partials/_share.html.twig', {video: video, variant: 'detail'}) }}
                         </div>
                         <p class="video-detail__summary">{{ video.summary }}</p>
@@ -95,6 +103,14 @@
                             </div>
                         {% endif %}
 
+                        {% if video.keywordsList is not empty %}
+                            <ul class="video-detail__keywords" aria-label="Mots-clés">
+                                {% for keyword in video.keywordsList %}
+                                    <li><a href="{{ path('app_video_index', {q: keyword}) }}">#{{ keyword }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
                         {% if video.speaker is not null %}
                             <div class="video-detail__speakers">
                                 <h2>Intervenant</h2>
@@ -108,28 +124,31 @@
                             </div>
                         {% endif %}
 
-                        <details class="info-box feedback-disclosure">
-                            <summary class="feedback-disclosure__summary">Signaler un problème de traduction ou de clarté</summary>
-                            <div class="feedback-disclosure__body">
-                                <p class="muted">Ce que vous nous signalez est reçu par l’équipe éditoriale, examiné, puis corrigé si nécessaire.</p>
+                        {# Activable depuis Administration › Paramètres (désactivée par défaut). #}
+                        {% if feedbackEnabled %}
+                            <details class="info-box feedback-disclosure">
+                                <summary class="feedback-disclosure__summary">Signaler un problème de traduction ou de clarté</summary>
+                                <div class="feedback-disclosure__body">
+                                    <p class="muted">Ce que vous nous signalez est reçu par l’équipe éditoriale, examiné, puis corrigé si nécessaire.</p>
 
-                                <form action="{{ path('app_video_feedback', {slug: video.slug}) }}" method="post" class="feedback-form" data-controller="feedback">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('video_feedback_' ~ video.id) }}">
-                                    <input type="hidden" name="rating" data-feedback-target="rating">
+                                    <form action="{{ path('app_video_feedback', {slug: video.slug}) }}" method="post" class="feedback-form" data-controller="feedback">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('video_feedback_' ~ video.id) }}">
+                                        <input type="hidden" name="rating" data-feedback-target="rating">
 
-                                    <div class="feedback-form__choices">
-                                        <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="clear">Oui, c’est clair</button>
-                                        <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="unclear">Pas très clair</button>
-                                        <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="not_clear">Non, pas clair</button>
-                                    </div>
+                                        <div class="feedback-form__choices">
+                                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="clear">Oui, c’est clair</button>
+                                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="unclear">Pas très clair</button>
+                                            <button type="button" class="btn btn--outline btn--sm" data-feedback-target="choice" data-action="feedback#choose" data-feedback-rating-param="not_clear">Non, pas clair</button>
+                                        </div>
 
-                                    <label class="sr-only" for="feedback-comment">Votre commentaire</label>
-                                    <textarea id="feedback-comment" name="comment" rows="3" placeholder="Dites-nous en plus (facultatif) : un mot mal traduit, un point à préciser…"></textarea>
+                                        <label class="sr-only" for="feedback-comment">Votre commentaire</label>
+                                        <textarea id="feedback-comment" name="comment" rows="3" placeholder="Dites-nous en plus (facultatif) : un mot mal traduit, un point à préciser…"></textarea>
 
-                                    <button type="submit" class="btn btn--dark">Envoyer</button>
-                                </form>
-                            </div>
-                        </details>
+                                        <button type="submit" class="btn btn--dark">Envoyer</button>
+                                    </form>
+                                </div>
+                            </details>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -142,7 +161,7 @@
                     {% endif %}
 
                     {% if availableFiles is not empty %}
-                        {# Mobile en tête ; TV et radio masquées sur téléphone (classe .download--desktop). #}
+                        {# Vidéo Mobile en tête ; vidéo TV et audio MP3 masqués sur téléphone (classe .download--desktop). #}
                         <ul class="download-list">
                             {% for file in availableFiles %}
                                 <li class="{{ download_class(file) }}">
@@ -157,7 +176,7 @@
                             {% endfor %}
                         </ul>
                         {% if availableFiles|filter(f => download_class(f) == 'download--desktop') is not empty %}
-                            <p class="download-panel__phone-hint muted">Versions TV et radio : à télécharger depuis un ordinateur.</p>
+                            <p class="download-panel__phone-hint muted">Vidéo TV et audio MP3 : à télécharger depuis un ordinateur.</p>
                         {% endif %}
                     {% else %}
                         <p class="muted">Aucun fichier disponible pour le moment.</p>

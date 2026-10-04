@@ -209,12 +209,30 @@ class VideoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Contenu du hero de l'accueil : le plus récent parmi ceux « à la une »,
-     * à défaut le plus récent tout court, mais toujours avec une cover (sans
-     * elle, le hero n'affiche qu'un aplat de couleur).
+     * Contenu du hero de l'accueil, tiré au hasard à chaque affichage parmi
+     * ceux du dernier conseil des ministres : de préférence une vidéo avec
+     * cover (sans elle, le hero n'affiche qu'un aplat de couleur), à défaut
+     * un contenu avec cover, à défaut n'importe lequel du conseil.
+     * Sans conseil, le plus récent « à la une », sinon le plus récent avec cover.
      */
-    public function findHeroVideo(): ?Video
+    public function findHeroVideo(?CouncilSession $councilSession): ?Video
     {
+        if ($councilSession !== null) {
+            $videos = $this->baseQueryBuilder()
+                ->addSelect('f')
+                ->leftJoin('v.files', 'f')
+                ->andWhere('s.councilSession = :councilSession')
+                ->setParameter('councilSession', $councilSession)
+                ->getQuery()
+                ->getResult();
+            $withCover = array_values(array_filter($videos, static fn (Video $v) => $v->getCoverImageName() !== null));
+            $playable = array_values(array_filter($withCover, static fn (Video $v) => $v->getPrimaryPlaybackFile()?->getType()->isVideo() === true));
+            $candidates = $playable ?: $withCover ?: $videos;
+            if ($candidates !== []) {
+                return $candidates[array_rand($candidates)];
+            }
+        }
+
         return $this->baseQueryBuilder()
             ->andWhere('v.coverImageName IS NOT NULL')
             ->orderBy('v.featured', 'DESC')
@@ -295,15 +313,15 @@ class VideoRepository extends ServiceEntityRepository
      * @return array{videos: Video[], total: int, hasMore: bool, page: int}
      */
     /**
-     * Suggestions de la barre de recherche : contenus dont le titre contient
-     * le texte tapé, les plus récents d'abord.
+     * Suggestions de la barre de recherche : contenus dont le titre ou les
+     * mots-clés contiennent le texte tapé, les plus récents d'abord.
      *
      * @return Video[]
      */
     public function suggest(string $text, int $limit = 5): array
     {
         return $this->baseQueryBuilder()
-            ->andWhere('s.title LIKE :text')
+            ->andWhere('s.title LIKE :text OR s.keywords LIKE :text')
             ->setParameter('text', '%' . addcslashes($text, '%_') . '%')
             ->orderBy('v.publishedAt', 'DESC')
             ->setMaxResults($limit)
@@ -366,7 +384,10 @@ class VideoRepository extends ServiceEntityRepository
 
         $groups = array_fill_keys($subjectIds, null);
         if ($subjectIds !== []) {
-            $videos = $qb->andWhere('s.id IN (:pageSubjects)')
+            // Intervenant chargé d'un coup : nom et sigle sur chaque carte.
+            $videos = $qb->addSelect('gsp')
+                ->leftJoin('v.speaker', 'gsp')
+                ->andWhere('s.id IN (:pageSubjects)')
                 ->setParameter('pageSubjects', $subjectIds)
                 ->orderBy('l.name', 'ASC')
                 ->addOrderBy('v.id', 'ASC')
@@ -423,9 +444,9 @@ class VideoRepository extends ServiceEntityRepository
         }
 
         if ($query !== null && $query !== '') {
-            // Titre, résumé, nom de l'intervenant ; et ses contenus s'il est reconnu dans le texte.
+            // Titre, résumé, mots-clés, nom de l'intervenant ; et ses contenus s'il est reconnu dans le texte.
             $qb->leftJoin('v.speaker', 'qsp')
-                ->andWhere('s.title LIKE :query OR s.summary LIKE :query OR qsp.fullName LIKE :query' . ($querySpeakerIds !== [] ? ' OR v.speaker IN (:querySpeakers)' : ''))
+                ->andWhere('s.title LIKE :query OR s.summary LIKE :query OR s.keywords LIKE :query OR qsp.fullName LIKE :query' . ($querySpeakerIds !== [] ? ' OR v.speaker IN (:querySpeakers)' : ''))
                 ->setParameter('query', '%' . addcslashes($query, '%_') . '%');
             if ($querySpeakerIds !== []) {
                 $qb->setParameter('querySpeakers', $querySpeakerIds);

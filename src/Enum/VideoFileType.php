@@ -19,10 +19,10 @@ enum VideoFileType: string
     public function getLabel(): string
     {
         return match ($this) {
-            self::MP4_1080P => 'Vidéo HD 1080p',
-            self::MP4_480P => 'Vidéo allégée 480p',
-            self::MP4_VERTICAL => 'Format vertical',
-            self::AUDIO => 'Version audio',
+            self::MP4_1080P => 'Vidéo TV HD 1080p',
+            self::MP4_480P => 'Vidéo TV allégée 480p',
+            self::MP4_VERTICAL => 'Vidéo Mobile',
+            self::AUDIO => 'Audio MP3',
             self::PDF => 'Fiche PDF',
             self::IMAGE => 'Image',
         };
@@ -33,7 +33,7 @@ enum VideoFileType: string
         return match ($this) {
             self::MP4_1080P => 'Pour la télévision et les écrans publics',
             self::MP4_480P => 'Pour un partage en zone à faible débit',
-            self::MP4_VERTICAL => 'Stories, statuts WhatsApp, Facebook…',
+            self::MP4_VERTICAL => 'Verticale 9:16 : stories, statuts WhatsApp, Facebook…',
             self::AUDIO => 'Prête à être diffusée dans les groupes et les radios communautaires',
             self::PDF => 'Imprimable, partageable via WhatsApp',
             self::IMAGE => 'Partageable via WhatsApp, Facebook',
@@ -45,7 +45,7 @@ enum VideoFileType: string
         return match ($this) {
             self::MP4_1080P, self::MP4_480P => 'MP4',
             self::MP4_VERTICAL => '9:16',
-            self::AUDIO => 'AUDIO',
+            self::AUDIO => 'MP3',
             self::PDF => 'PDF',
             self::IMAGE => 'IMAGE',
         };
@@ -62,16 +62,14 @@ enum VideoFileType: string
     public function getUsageLabel(): string
     {
         return match ($this) {
-            self::MP4_1080P, self::MP4_480P => 'Vidéo TV',
-            self::MP4_VERTICAL => 'Vidéo Mobile',
-            self::AUDIO => 'Audio',
+            self::MP4_1080P, self::MP4_480P, self::MP4_VERTICAL, self::AUDIO => $this->getCategory()->getLabel(),
             self::PDF, self::IMAGE => $this->getLabel(),
         };
     }
 
     /**
-     * Versions TV (1080p et 480p) et radio (audio) : téléchargement et
-     * recherche réservés aux médias (voir MediaAccess). La version Mobile
+     * Vidéo TV (1080p et 480p) et Audio MP3 : téléchargement et
+     * recherche réservés aux médias (voir MediaAccess). La Vidéo Mobile
      * reste ouverte à tous ; la lecture sur le site aussi.
      */
     public function isMediaOnly(): bool
@@ -118,13 +116,29 @@ enum VideoFileType: string
         return $this === self::IMAGE;
     }
 
+    /** Format public du fichier : Vidéo TV, Vidéo Mobile, Audio MP3, PDF ou image. */
     public function getCategory(): CapsuleFormat
     {
+        return match ($this) {
+            self::MP4_1080P, self::MP4_480P => CapsuleFormat::TV,
+            self::MP4_VERTICAL => CapsuleFormat::MOBILE,
+            self::AUDIO => CapsuleFormat::AUDIO,
+            self::PDF => CapsuleFormat::PDF,
+            self::IMAGE => CapsuleFormat::IMAGE,
+        };
+    }
+
+    /**
+     * Nature du fichier, qui décide du lecteur affiché : « video » (TV ou
+     * Mobile), « audio », « pdf » ou « image ».
+     */
+    public function getMedium(): string
+    {
         return match (true) {
-            $this->isVideo() => CapsuleFormat::VIDEO,
-            $this->isAudio() => CapsuleFormat::AUDIO,
-            $this->isPdf() => CapsuleFormat::PDF,
-            $this->isImage() => CapsuleFormat::IMAGE,
+            $this->isVideo() => 'video',
+            $this->isAudio() => 'audio',
+            $this->isPdf() => 'pdf',
+            $this->isImage() => 'image',
         };
     }
 }

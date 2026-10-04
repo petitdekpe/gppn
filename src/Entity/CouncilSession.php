@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\CouncilSessionRepository;
+use App\Util\FrenchDate;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -57,6 +58,14 @@ class CouncilSession
     public function getLabel(): ?string
     {
         return $this->label;
+    }
+
+    /**
+     * Libellé affiché partout sur le site : « Conseil des ministres du 17 juin 2026 ».
+     */
+    public function getTitle(): string
+    {
+        return 'Conseil des ministres du ' . FrenchDate::date($this->date);
     }
 
     public function setLabel(?string $label): static

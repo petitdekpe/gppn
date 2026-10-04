@@ -2,6 +2,7 @@
 
 namespace App\Search;
 
+use App\Util\FrenchDate;
 use Doctrine\ORM\QueryBuilder;
 
 /**
@@ -88,9 +89,9 @@ final class SpeakerPeriodFilter
     public function periodLabel(): ?string
     {
         return match (true) {
-            $this->from !== null && $this->to !== null => sprintf('du %s au %s', $this->from->format('d/m/Y'), $this->to->format('d/m/Y')),
-            $this->from !== null => sprintf('depuis le %s', $this->from->format('d/m/Y')),
-            $this->to !== null => sprintf('jusqu’au %s', $this->to->format('d/m/Y')),
+            $this->from !== null && $this->to !== null => sprintf('du %s au %s', FrenchDate::date($this->from), FrenchDate::date($this->to)),
+            $this->from !== null => sprintf('depuis le %s', FrenchDate::date($this->from)),
+            $this->to !== null => sprintf('jusqu’au %s', FrenchDate::date($this->to)),
             default => null,
         };
     }

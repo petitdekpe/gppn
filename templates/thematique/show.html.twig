@@ -4,13 +4,13 @@
 {% block meta_description %}Tous les contenus du Gouvernement sur la thématique {{ thematic.name }}, dans vos langues nationales.{% endblock %}
 
 {% block body %}
-    {% set councilLabel = selectedCouncil ? (selectedCouncil.label ?: 'Conseil des ministres du ' ~ selectedCouncil.date|date('d/m/Y')) : null %}
+    {% set councilLabel = selectedCouncil ? selectedCouncil.title : null %}
 
     <section class="page-header wrap page-header--tinted" style="--thematic-color: {{ thematic.colorHex }}">
         {{ include('partials/_back_link.html.twig', {fallback: path('app_thematique_index')}) }}
         <span class="eyebrow">Thématique</span>
         <h1>{{ thematic.name }}</h1>
-        <p data-live-region="results-count">{{ results.total }} capsule{{ results.total > 1 ? 's' : '' }} sur cette thématique{{ councilLabel ? ' · ' ~ councilLabel }}.</p>
+        <p data-live-region="results-count">{{ results.total }} contenu{{ results.total > 1 ? 's' }} sur cette thématique{{ councilLabel ? ' · ' ~ councilLabel }}.</p>
     </section>
 
     <section class="section wrap video-layout">
@@ -39,11 +39,11 @@
                     {% endfor %}
                     <label for="council-filter">Conseil des ministres</label>
                     <select id="council-filter" name="conseil">
-                        <option value="">Tous les conseils ({{ councilOptions|reduce((sum, row) => sum + row.videoCount, 0) }})</option>
+                        <option value="">Tous les conseils</option>
                         {% for row in councilOptions %}
                             {% set council = row.councilSession %}
                             <option value="{{ council.slug }}"{{ council == selectedCouncil ? ' selected' }}>
-                                {{ council.label ?: 'Conseil du ' ~ council.date|date('d/m/Y') }} ({{ row.videoCount }})
+                                {{ council.date|date_fr_short }}
                             </option>
                         {% endfor %}
                     </select>

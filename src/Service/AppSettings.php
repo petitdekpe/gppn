@@ -10,13 +10,15 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * Paramètres du site réglables depuis l'admin (page « Paramètres »). Un
  * paramètre jamais enregistré prend sa valeur par défaut : OTP désactivé,
- * tous les types de contenus activés, aucune couverture par défaut.
+ * tous les types de contenus activés, aucune couverture par défaut,
+ * signalement de problème désactivé.
  */
 class AppSettings
 {
     private const OTP_ENABLED = 'otp_enabled';
     private const ENABLED_FORMATS = 'enabled_formats';
     private const DEFAULT_COVER = 'default_cover';
+    private const FEEDBACK_ENABLED = 'feedback_enabled';
 
     /** @var array<string, mixed>|null chargé une seule fois par requête */
     private ?array $values = null;
@@ -41,6 +43,20 @@ class AppSettings
     }
 
     /**
+     * Section « Signaler un problème de traduction ou de clarté » des fiches
+     * contenus : affichage et enregistrement des avis.
+     */
+    public function isFeedbackEnabled(): bool
+    {
+        return (bool) $this->get(self::FEEDBACK_ENABLED, false);
+    }
+
+    public function setFeedbackEnabled(bool $enabled): void
+    {
+        $this->set(self::FEEDBACK_ENABLED, $enabled);
+    }
+
+    /**
      * Types de contenus proposés sur le site public, dans l'ordre de
      * CapsuleFormat::cases().
      *
@@ -51,6 +67,10 @@ class AppSettings
         $values = $this->get(self::ENABLED_FORMATS, null);
         if (!\is_array($values)) {
             return CapsuleFormat::cases();
+        }
+        // Réglage enregistré avant la distinction Vidéo TV / Vidéo Mobile.
+        if (\in_array(CapsuleFormat::LEGACY_VIDEO, $values, true)) {
+            array_push($values, CapsuleFormat::TV->value, CapsuleFormat::MOBILE->value);
         }
 
         return array_values(array_filter(

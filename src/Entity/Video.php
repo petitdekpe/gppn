@@ -245,6 +245,14 @@ class Video
         return $this->subject?->getLearningPointsList() ?? [];
     }
 
+    /**
+     * @return string[]
+     */
+    public function getKeywordsList(): array
+    {
+        return $this->subject?->getKeywordsList() ?? [];
+    }
+
     public function isFeatured(): bool
     {
         return $this->featured;
@@ -417,7 +425,7 @@ class Video
 
     /**
      * Formats de diffusion réellement déposés, pour la liste de l'admin :
-     * TV (1080p, à défaut la version allégée 480p), Mobile (vertical), Audio.
+     * Vidéo TV (1080p, à défaut la version allégée 480p), Vidéo Mobile (verticale), Audio MP3.
      * Un emplacement vide (sans fichier) compte comme absent.
      *
      * @return array{tv: ?VideoFile, mobile: ?VideoFile, audio: ?VideoFile}
@@ -450,6 +458,18 @@ class Video
     public function getVerticalFile(): ?VideoFile
     {
         return $this->getVideoFileByType(VideoFileType::MP4_VERTICAL);
+    }
+
+    /**
+     * Version lue sur téléphone à la place d'une version TV (voir
+     * partials/_video_sources.html.twig) : la Mobile (9:16), si elle est
+     * déposée et lisible.
+     */
+    public function getPhonePlaybackFile(): ?VideoFile
+    {
+        $file = $this->getVerticalFile();
+
+        return $file?->getFileName() !== null && !$file->isDefective() ? $file : null;
     }
 
     /**

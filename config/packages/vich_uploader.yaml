@@ -11,3 +11,7 @@ vich_uploader:
             upload_destination: video_cover.storage
             namer:
                 service: Vich\UploaderBundle\Naming\SmartUniqueNamer
+        speaker_photo:
+            upload_destination: speaker_photo.storage
+            namer:
+                service: Vich\UploaderBundle\Naming\SmartUniqueNamer
