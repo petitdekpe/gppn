@@ -5214,6 +5214,32 @@ select option.subject-create-option {
     color: var(--color-green-dark);
 }
 
+/* Téléphone : deux ministres par ligne, textes resserrés. */
+@media (max-width: 559px) {
+    .person-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .person-card__body {
+        padding: 10px 10px 12px;
+        overflow-wrap: anywhere;
+    }
+
+    .person-card__body strong {
+        font-size: 0.9rem;
+        line-height: 1.25;
+    }
+
+    .person-card__role {
+        font-size: 0.75rem;
+    }
+
+    .person-card__count {
+        font-size: 0.72rem;
+    }
+}
+
 /* ---- Page Contenus : un bloc par sujet ---------------------------------- */
 .subject-group {
     margin-bottom: 36px;
