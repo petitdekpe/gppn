@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ video.title }} — Le Gouvernement plus près de nous{% endblock %}
+{% block title %}{{ video.title }} | Le Gouvernement plus près de nous{% endblock %}
 {% block meta_description %}{{ video.summary|striptags|slice(0, 150) }}{% endblock %}
 {% block meta_keywords %}
     {% if video.keywordsList is not empty %}

@@ -3,7 +3,7 @@
 {% set councilSession = subject.councilSession %}
 {% set councilLabel = councilSession.title %}
 
-{% block title %}Import en masse — {{ subject.title }} — Administration GPPN{% endblock %}
+{% block title %}Import en masse | {{ subject.title }} | Administration GPPN{% endblock %}
 {% block page_title %}Import en masse{% endblock %}
 {% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_council_session_index', {conseil: councilSession.id}), label: 'Retour au conseil des ministres'}) }}{% endblock %}
 

@@ -3,7 +3,7 @@
 {% macro size(bytes) %}{% if bytes >= 1073741824 %}{{ (bytes / 1073741824)|number_format(1, ',', ' ') }} Go{% else %}{{ (bytes / 1048576)|number_format(0, ',', ' ') }} Mo{% endif %}{% endmacro %}
 {% macro bar(value, max, color) %}<span class="admin-bar"><span class="admin-bar__fill" style="width: {{ max > 0 ? (value * 100 / max)|round(1) : 0 }}%{% if color %}; background: {{ color }}{% endif %}"></span></span>{% endmacro %}
 
-{% block title %}Tableau de bord — Administration GPPN{% endblock %}
+{% block title %}Tableau de bord | Administration GPPN{% endblock %}
 {% block page_title %}Tableau de bord{% endblock %}
 
 {% block body %}

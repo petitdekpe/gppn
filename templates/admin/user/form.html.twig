@@ -1,6 +1,6 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}{{ user.id ? 'Modifier' : 'Nouvel' }} utilisateur — Administration GPPN{% endblock %}
+{% block title %}{{ user.id ? 'Modifier' : 'Nouvel' }} utilisateur | Administration GPPN{% endblock %}
 {% block page_title %}{{ user.id ? 'Modifier l’utilisateur' : 'Nouvel utilisateur' }}{% endblock %}
 {% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_user_index'), label: 'Retour aux utilisateurs'}) }}{% endblock %}
 

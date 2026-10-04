@@ -1,6 +1,6 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}{{ video.id ? 'Modifier' : 'Nouveau' }} contenu — Administration GPPN{% endblock %}
+{% block title %}{{ video.id ? 'Modifier' : 'Nouveau' }} contenu | Administration GPPN{% endblock %}
 {% block page_title %}{{ video.id ? 'Modifier le contenu' : 'Nouveau contenu' }}{% endblock %}
 {% block back_link %}{{ include('partials/_back_link.html.twig', {fallback: path('admin_video_index'), label: 'Retour aux contenus'}) }}{% endblock %}
 

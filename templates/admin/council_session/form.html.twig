@@ -1,6 +1,6 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}{{ councilSession.id ? 'Modifier' : 'Nouveau' }} conseil des ministres — Administration GPPN{% endblock %}
+{% block title %}{{ councilSession.id ? 'Modifier' : 'Nouveau' }} conseil des ministres | Administration GPPN{% endblock %}
 {% block page_title %}{{ councilSession.id ? 'Modifier le conseil des ministres' : 'Nouveau conseil des ministres' }}{% endblock %}
 {% block back_link %}
     {% if videoFlow|default(false) %}

@@ -504,6 +504,21 @@ button {
     max-width: 60ch;
 }
 
+/* Écart en-tête de page → contenu resserré : ni marge sous le dernier
+   paragraphe, ni pleine marge haute pour la section qui suit. */
+.page-header > :last-child {
+    margin-bottom: 0;
+}
+
+.page-header + .section {
+    padding-top: 12px;
+}
+
+/* Bandeau sombre : un peu d'air sous le fond coloré (moitié de .section). */
+.page-header--dark + .section {
+    padding-top: 22px;
+}
+
 .page-header--dark {
     background: var(--color-navy);
     color: #fff;
@@ -5076,10 +5091,17 @@ select option.subject-create-option {
     border-bottom: 1px solid var(--color-border);
 }
 
+/* Collé sous l'en-tête du site tant que son sujet défile, puis poussé par le
+   sujet suivant (le collage s'arrête à la fin de .subject-group). */
 .subject-group__header {
+    position: sticky;
+    top: var(--site-header-height, 0px);
+    z-index: 10;
     margin-bottom: 14px;
-    padding-left: 12px;
+    padding: 10px 0 10px 12px;
     border-left: 4px solid var(--thematic-color, var(--color-navy));
+    background: var(--color-bg);
+    box-shadow: 0 1px 0 var(--color-border);
 }
 
 .subject-group__header h2 {
@@ -5099,7 +5121,7 @@ select option.subject-create-option {
 }
 
 .subject-group__summary {
-    margin: 8px 0 0;
+    margin: 0 0 14px;
     max-width: 75ch;
     font-size: 0.92rem;
     color: var(--color-text);

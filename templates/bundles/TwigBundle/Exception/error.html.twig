@@ -3,7 +3,7 @@
 {% set statusCode = status_code|default(500) %}
 {% set isForbidden = statusCode == 403 %}
 
-{% block title %}{{ isForbidden ? 'Accès refusé' : 'Une erreur est survenue' }} — Le Gouvernement plus près de nous{% endblock %}
+{% block title %}{{ isForbidden ? 'Accès refusé' : 'Une erreur est survenue' }} | Le Gouvernement plus près de nous{% endblock %}
 {% block meta_description %}{{ isForbidden ? 'Vous n’avez pas les droits nécessaires pour accéder à cette page.' : 'Une erreur est survenue de notre côté.' }}{% endblock %}
 
 {% block body %}

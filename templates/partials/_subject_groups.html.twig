@@ -12,10 +12,11 @@
                     · {{ subject.councilSession.title }}
                     · {{ group.videos|length }} contenu{{ group.videos|length > 1 ? 's' }}
                 </p>
-                {# Résumé commun à tous les contenus du sujet : ici une fois plutôt que sur chaque carte. #}
-                {% set summary = subject.summary|striptags|trim %}
-                {% if summary %}<p class="subject-group__summary">{{ summary }}</p>{% endif %}
             </header>
+            {# Résumé commun à tous les contenus du sujet : ici une fois plutôt que sur chaque carte.
+               Hors de l'en-tête collant, pour qu'il ne masque pas l'écran en défilant. #}
+            {% set summary = subject.summary|striptags|trim %}
+            {% if summary %}<p class="subject-group__summary">{{ summary }}</p>{% endif %}
             <div class="video-grid">
                 {% for video in group.videos %}
                     {{ include('partials/_video_card.html.twig', {video: video, cardIconActions: true, inSubject: true}) }}

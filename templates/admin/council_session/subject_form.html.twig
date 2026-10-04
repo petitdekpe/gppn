@@ -1,6 +1,6 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}{{ subject.id ? 'Modifier' : 'Nouveau' }} sujet — Administration GPPN{% endblock %}
+{% block title %}{{ subject.id ? 'Modifier' : 'Nouveau' }} sujet | Administration GPPN{% endblock %}
 {% block page_title %}{{ subject.id ? 'Modifier le sujet' : 'Nouveau sujet' }}{% endblock %}
 {% block back_link %}
     {% if videoFlow|default(false) %}
