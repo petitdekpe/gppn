@@ -62,7 +62,7 @@
                 {% endif %}
 
                 {# Mêmes cartes que la page Contenus : couverture vers la fiche (lecture), Télécharger et Partager en icônes. #}
-                <div class="video-grid">
+                <div class="video-grid video-grid--phone-2">
                     {% for video in group.videos %}
                         {{ include('partials/_video_card.html.twig', {video: video, cardIconActions: true, eager: loop.parent.loop.first and loop.index <= 4}) }}
                     {% endfor %}

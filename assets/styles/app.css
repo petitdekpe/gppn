@@ -5366,6 +5366,53 @@ select option.subject-create-option {
     border-color: var(--color-navy);
 }
 
+/* Téléphone : deux cartes par ligne (pages des intervenants), carte resserrée en conséquence. */
+@media (max-width: 639px) {
+    .video-grid--phone-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .video-grid--phone-2 .video-card__body {
+        padding: 10px 10px 12px;
+    }
+
+    .video-grid--phone-2 .video-card__title {
+        margin: 4px 0 6px;
+        font-size: 0.88rem;
+        line-height: 1.3;
+    }
+
+    .video-grid--phone-2 .video-card__summary {
+        display: none;
+    }
+
+    .video-grid--phone-2 .video-card__meta {
+        font-size: 0.75rem;
+    }
+
+    .video-grid--phone-2 .video-card__format-tag,
+    .video-grid--phone-2 .video-card__duration {
+        font-size: 0.62rem;
+        padding: 2px 6px;
+    }
+
+    .video-grid--phone-2 .video-card__format-tag {
+        top: 6px;
+        left: 6px;
+    }
+
+    .video-grid--phone-2 .video-card__duration {
+        bottom: 6px;
+        right: 6px;
+    }
+
+    .video-grid--phone-2 .video-card__badge {
+        font-size: 0.66rem;
+        padding: 2px 7px;
+    }
+}
+
 .speaker-council__videos {
     display: grid;
     gap: 8px;
