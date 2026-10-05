@@ -414,7 +414,8 @@ class VideoRepository extends ServiceEntityRepository
     /**
      * Mêmes filtres que search(), résultats regroupés par sujet (page Contenus) :
      * la pagination compte les sujets, qui ne sont jamais coupés entre deux pages.
-     * Sujets du plus récemment publié au plus ancien, contenus d'un sujet par langue.
+     * Sujets du conseil des ministres le plus récent au plus ancien (puis, dans
+     * un même conseil, du plus récemment publié au plus ancien), contenus d'un sujet par langue.
      *
      * @return array{groups: list<array{subject: Subject, videos: Video[]}>, total: int, videoTotal: int, hasMore: bool, page: int, perPage: int}
      */
@@ -427,9 +428,11 @@ class VideoRepository extends ServiceEntityRepository
         $total = (int) $counts['subjects'];
 
         $subjectIds = array_column((clone $qb)
-            ->select('s.id AS id, MAX(v.publishedAt) AS HIDDEN latest')
+            ->select('s.id AS id, MAX(cs.date) AS HIDDEN councilDate, MAX(v.publishedAt) AS HIDDEN latest')
+            ->innerJoin('s.councilSession', 'cs')
             ->groupBy('s.id')
-            ->orderBy('latest', 'DESC')
+            ->orderBy('councilDate', 'DESC')
+            ->addOrderBy('latest', 'DESC')
             ->addOrderBy('s.id', 'DESC')
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage)
