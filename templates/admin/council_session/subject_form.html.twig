@@ -15,10 +15,9 @@
         {% if videoFlow|default(false) %}
             <p class="admin-flow-note">Une fois enregistré, ce sujet sera sélectionné dans votre nouveau contenu.</p>
         {% endif %}
-        <p class="form-help"><strong>{{ councilSession.title }}</strong></p>
-
         {{ form_start(form) }}
             {{ form_errors(form) }}
+            {{ form_row(form.councilSession) }}
             {{ form_row(form.thematic) }}
             {{ form_row(form.title) }}
             {{ form_row(form.summary) }}

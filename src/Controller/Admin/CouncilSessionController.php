@@ -87,15 +87,17 @@ class CouncilSessionController extends AbstractController
             'selectedSessionId' => $selectedId,
             'videoCounts' => $videoCounts,
             'thematics' => $thematicRepository->findBy([], ['name' => 'ASC']),
+            'councilSessions' => $councilSessions,
         ]);
     }
 
     /**
      * Actions groupées sur les sujets du conseil affiché : changement de
+     * conseil des ministres (les contenus suivent leur sujet) ou de
      * thématique, ou suppression des sujets qui n'ont plus de contenu.
      */
     #[Route('/sujets/actions-groupees', name: 'admin_council_session_subject_bulk', methods: ['POST'])]
-    public function bulkSubjects(Request $request, SubjectRepository $subjectRepository, ThematicRepository $thematicRepository, VideoRepository $videoRepository, EntityManagerInterface $entityManager): Response
+    public function bulkSubjects(Request $request, SubjectRepository $subjectRepository, ThematicRepository $thematicRepository, CouncilSessionRepository $councilSessionRepository, VideoRepository $videoRepository, EntityManagerInterface $entityManager): Response
     {
         $ids = $this->bulkIds($request, 'bulk-subject');
         if ($ids === null) {
@@ -105,6 +107,17 @@ class CouncilSessionController extends AbstractController
         $action = $request->request->getString('action');
         $subjects = $subjectRepository->findBy(['id' => $ids]);
         $skipped = [];
+
+        if ($action === 'council' && ($target = $councilSessionRepository->find($request->request->getInt('target'))) !== null) {
+            foreach ($subjects as $subject) {
+                $subject->setCouncilSession($target);
+            }
+            $entityManager->flush();
+            $this->bulkReport(sprintf('%s déplacé%s vers « %s », avec %s contenus.', self::plural(count($subjects), 'sujet'), count($subjects) > 1 ? 's' : '', $target->getTitle(), count($subjects) > 1 ? 'leurs' : 'ses'));
+
+            // Les sujets ont quitté le conseil affiché : on ouvre celui où ils se trouvent désormais.
+            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $target->getId()]);
+        }
 
         if ($action === 'thematic' && ($thematic = $thematicRepository->find($request->request->getInt('target'))) !== null) {
             foreach ($subjects as $subject) {
@@ -248,7 +261,7 @@ class CouncilSessionController extends AbstractController
 
             $this->addFlash('success', 'Sujet créé.');
 
-            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $councilSession->getId()]);
+            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $subject->getCouncilSession()->getId()]);
         }
 
         return $this->render('admin/council_session/subject_form.html.twig', [
@@ -268,9 +281,13 @@ class CouncilSessionController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
 
-            $this->addFlash('success', 'Sujet mis à jour.');
+            // Sujet déplacé vers un autre conseil : on ouvre celui-ci, où il se trouve désormais.
+            $target = $subject->getCouncilSession();
+            $this->addFlash('success', $target === $councilSession
+                ? 'Sujet mis à jour.'
+                : sprintf('Sujet et ses contenus déplacés vers « %s ».', $target->getTitle()));
 
-            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $councilSession->getId()]);
+            return $this->redirectToRoute('admin_council_session_index', ['conseil' => $target->getId()]);
         }
 
         return $this->render('admin/council_session/subject_form.html.twig', [

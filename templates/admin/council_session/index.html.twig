@@ -19,10 +19,14 @@
                     action: path('admin_council_session_subject_bulk'),
                     tokenId: 'bulk-subject',
                     actions: [
+                        {value: 'council', label: 'Changer de conseil des ministres', param: 'council', confirm: 'Déplacer les %count% sujets sélectionnés et tous leurs contenus vers ce conseil des ministres ?'},
                         {value: 'thematic', label: 'Changer de thématique', param: 'thematic'},
                         {value: 'delete', label: 'Supprimer (sujets sans contenu)', confirm: 'Supprimer les %count% sujets sélectionnés ? Ceux qui ont des contenus seront conservés.'},
                     ],
-                    params: [{key: 'thematic', label: 'Thématique', choices: thematics|map(t => {value: t.id, label: t.name})}],
+                    params: [
+                        {key: 'council', label: 'Conseil', choices: councilSessions|map(c => {value: c.id, label: c.title, selected: c.id == selectedSessionId})},
+                        {key: 'thematic', label: 'Thématique', choices: thematics|map(t => {value: t.id, label: t.name})},
+                    ],
                 }) }}
 
                 {# Sans JavaScript, seul le conseil sélectionné (par défaut le dernier) est affiché. #}

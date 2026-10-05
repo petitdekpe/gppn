@@ -2,8 +2,10 @@
 
 namespace App\Form\Admin;
 
+use App\Entity\CouncilSession;
 use App\Entity\Subject;
 use App\Entity\Thematic;
+use App\Repository\CouncilSessionRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -12,15 +14,23 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
- * Le conseil des ministres n'est pas un champ du formulaire : un sujet est
- * toujours créé/modifié depuis la fiche d'un conseil (CouncilSessionController),
- * qui le fixe directement sur l'entité avant d'ouvrir le formulaire.
+ * Un sujet est créé depuis la fiche d'un conseil (CouncilSessionController),
+ * qui le pré-sélectionne ; le champ permet de corriger un sujet rattaché au
+ * mauvais conseil. Les contenus n'ont pas de conseil propre (Video::getCouncilSession()
+ * passe par le sujet) : ils suivent le sujet.
  */
 class SubjectType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            ->add('councilSession', EntityType::class, [
+                'class' => CouncilSession::class,
+                'choice_label' => 'title',
+                'query_builder' => static fn (CouncilSessionRepository $repository) => $repository->createQueryBuilder('c')->orderBy('c.date', 'DESC'),
+                'label' => 'Conseil des ministres',
+                'help' => 'Tous les contenus de ce sujet (toutes langues) suivent ce conseil.',
+            ])
             ->add('thematic', EntityType::class, [
                 'class' => Thematic::class,
                 'choice_label' => 'name',
