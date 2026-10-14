@@ -48,7 +48,15 @@ class VideoController extends AbstractController
 
         // Conseil des ministres → sujet → contenus (déjà triés par langue).
         $sessions = [];
+        // Filtre par type d'intervenant : ministre ou ministre conseiller.
+        $type = $request->query->getString('type');
+        if (!in_array($type, ['ministre', 'conseiller'], true)) {
+            $type = '';
+        }
         foreach ($selectedId !== null ? $videoRepository->findForAdminIndex($selectedId) : [] as $video) {
+            if ($type !== '' && ($video->getSpeaker()?->isMinistreConseiller() ?? false) !== ($type === 'conseiller')) {
+                continue;
+            }
             $subject = $video->getSubject();
             $session = $subject->getCouncilSession();
             $sessions[$session->getId()] ??= ['session' => $session, 'count' => 0, 'subjects' => []];
@@ -61,6 +69,7 @@ class VideoController extends AbstractController
             'sessions' => $sessions,
             'calendar' => $calendar,
             'selectedSessionId' => $selectedId,
+            'type' => $type,
         ]);
     }
 

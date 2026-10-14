@@ -13,6 +13,11 @@
 
     <div class="admin-toolbar">
         <a class="btn btn--primary" href="{{ path('admin_video_new') }}">+ Nouveau contenu</a>
+        <nav class="admin-toolbar__filters" aria-label="Type d’intervenant">
+            {% for key, label in {'': 'Tous', ministre: 'Ministres', conseiller: 'Ministres conseillers'} %}
+                <a class="btn btn--sm {{ type == key ? 'btn--primary' : 'btn--outline' }}" href="{{ path('admin_video_index', {conseil: selectedSessionId, type: key ?: null}) }}"{{ type == key ? ' aria-current="true"' }}>{{ label }}</a>
+            {% endfor %}
+        </nav>
     </div>
 
     {% if sessions is empty %}

@@ -6234,3 +6234,10 @@ select option.subject-create-option {
 .site-page-editor__help .admin-table {
     margin-top: 10px;
 }
+
+.admin-toolbar__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-left: auto;
+}
