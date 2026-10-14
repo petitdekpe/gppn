@@ -3,6 +3,10 @@
 {% block title %}{{ person.name }} | Le Gouvernement plus près de nous{% endblock %}
 {% block meta_description %}Les prises de parole de {{ person.name }}, conseil des ministres par conseil des ministres : vidéos à télécharger et kits à partager.{% endblock %}
 
+{% block og_title %}{{ person.name }}{% endblock %}
+{% block og_image %}{{ person.photo ? absolute_url(person.photo) : parent() }}{% endblock %}
+{% block og_image_alt %}{{ person.name }}{% endblock %}
+
 {% block body %}
     <section class="page-header wrap">
         {{ include('partials/_back_link.html.twig', {fallback: path('app_intervenant_index')}) }}
