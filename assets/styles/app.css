@@ -780,12 +780,16 @@ aside[id],
     position: absolute;
     top: 10px;
     left: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     background: rgba(16, 25, 44, 0.75);
     color: #fff;
     font-size: 0.68rem;
     font-weight: 700;
-    padding: 3px 9px;
-    border-radius: 999px;
+    line-height: 1;
+    padding: 6px;
+    border-radius: 0;
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
@@ -1041,6 +1045,12 @@ aside[id],
 }
 
 .video-card__badge--format {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    line-height: 1;
+    padding: 6px;
+    border-radius: 0;
     background: var(--thematic-color, var(--color-navy));
     color: #fff;
 }
@@ -1920,30 +1930,19 @@ aside[id],
     object-fit: cover;
 }
 
-.video-detail__poster-lang,
-.video-detail__poster-format {
+.video-detail__poster-lang {
     position: absolute;
     top: 14px;
+    left: 14px;
     z-index: 1;
     font-size: 0.72rem;
     font-weight: 700;
     padding: 4px 11px;
     border-radius: 999px;
     letter-spacing: 0.03em;
-}
-
-.video-detail__poster-lang {
-    left: 14px;
     background: var(--color-gold);
     color: var(--color-navy);
     text-transform: capitalize;
-}
-
-.video-detail__poster-format {
-    right: 14px;
-    background: rgba(16, 25, 44, 0.75);
-    color: #fff;
-    text-transform: uppercase;
 }
 
 .video-detail__poster-play {
@@ -5400,6 +5399,7 @@ select option.subject-create-option {
     .video-grid--phone-2 .video-card__format-tag {
         top: 6px;
         left: 6px;
+        padding: 4px;
     }
 
     .video-grid--phone-2 .video-card__duration {
@@ -5410,6 +5410,10 @@ select option.subject-create-option {
     .video-grid--phone-2 .video-card__badge {
         font-size: 0.66rem;
         padding: 2px 7px;
+    }
+
+    .video-grid--phone-2 .video-card__badge--format {
+        padding: 5px;
     }
 }
 

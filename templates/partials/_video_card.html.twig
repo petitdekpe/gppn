@@ -5,7 +5,7 @@
 <article class="video-card" style="--thematic-color: {{ video.thematic.colorHex }}">
     <a href="{{ path('app_video_show', {slug: video.slug}) }}" class="video-card__thumb"{% if inSubject ?? false %} aria-label="Voir « {{ video.title }} » en {{ video.language.name }}{{ video.speaker ? ', par ' ~ video.speaker.fullName }}"{% endif %}>
         {% if previewFile %}
-            <span class="video-card__format-tag">{{ previewFile.type.category.label }}</span>
+            <span class="video-card__format-tag" title="{{ previewFile.type.category.label }}"><i class="fa-solid {{ previewFile.type.category.icon }}" aria-hidden="true"></i><span class="sr-only">{{ previewFile.type.category.label }}</span></span>
         {% endif %}
         {% if previewCategory in ['video', 'audio'] %}
             <span class="video-card__duration">{{ video.durationLabel }}</span>
@@ -48,7 +48,7 @@
                 <span class="video-card__badge">{{ video.language.name }}</span>
             {% endif %}
             {% for format in video.availableFormats %}
-                <span class="video-card__badge video-card__badge--format">{{ format.label }}</span>
+                <span class="video-card__badge video-card__badge--format" title="{{ format.label }}"><i class="fa-solid {{ format.icon }}" aria-hidden="true"></i><span class="sr-only">{{ format.label }}</span></span>
             {% endfor %}
             {# cardIconActions (page Contenus) : Télécharger et Partager en boutons ronds, icône seule. #}
             {% if cardIconActions ?? false %}

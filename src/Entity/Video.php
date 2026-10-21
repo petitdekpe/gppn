@@ -494,21 +494,24 @@ class Video
      * Formats (catégories) réellement disponibles parmi les fichiers déposés,
      * dédupliqués — un contenu ayant à la fois un MP4 1080p et 480p ne doit
      * apparaître qu'une fois dans la catégorie « Vidéo » (voir la carte du
-     * catalogue public, qui affiche ces catégories en badges).
+     * catalogue public, qui affiche ces catégories en badges). Toujours dans
+     * l'ordre de CapsuleFormat::cases() : TV, Mobile, Audio, PDF, Image.
      *
      * @return CapsuleFormat[]
      */
     public function getAvailableFormats(): array
     {
-        $formats = [];
+        $present = [];
         foreach ($this->files as $file) {
             if ($file->getFileName() === null) {
                 continue;
             }
-            $category = $file->getType()->getCategory();
-            $formats[$category->value] = $category;
+            $present[$file->getType()->getCategory()->value] = true;
         }
 
-        return array_values($formats);
+        return array_values(array_filter(
+            CapsuleFormat::cases(),
+            static fn (CapsuleFormat $format) => isset($present[$format->value]),
+        ));
     }
 }

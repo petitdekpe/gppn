@@ -33,6 +33,18 @@ enum CapsuleFormat: string
         };
     }
 
+    /** Classe Font Awesome du format (mêmes pictos que l'admin et les kits intervenant). */
+    public function getIcon(): string
+    {
+        return match ($this) {
+            self::TV => 'fa-tv',
+            self::MOBILE => 'fa-mobile-screen-button',
+            self::AUDIO => 'fa-headphones',
+            self::PDF => 'fa-file-pdf',
+            self::IMAGE => 'fa-image',
+        };
+    }
+
     public function isVideo(): bool
     {
         return $this === self::TV || $this === self::MOBILE;
