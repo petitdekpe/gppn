@@ -2045,7 +2045,8 @@ aside[id],
    (partials/_video_sources.html.twig) ; le cadre adopte son format une fois
    la lecture lancée, sans dépasser la hauteur de l'écran. */
 @media (max-width: 767px) {
-    .video-detail__player.is-playing:has(source[data-phone-version]) {
+    .video-detail__player.is-playing:has(source[data-phone-version]),
+    .video-detail__player.is-playing.is-vertical {
         aspect-ratio: 9 / 16;
         width: auto;
         height: min(80svh, 177.78vw);

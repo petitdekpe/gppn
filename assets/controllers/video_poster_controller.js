@@ -8,9 +8,20 @@ export default class extends Controller {
         const isPhone = window.matchMedia('(max-width: 767px)').matches;
 
         this.selectVersion(isPhone);
+        // Le cadre suit le format réel de la vidéo lue, même quand le contenu n'a
+        // que sa version Mobile (aucune source « téléphone » à repérer en CSS).
+        this.videoTarget.addEventListener('loadedmetadata', () => this.markOrientation());
+        this.markOrientation();
 
         if (this.autoplayMobileValue && isPhone) {
             this.autoplay();
+        }
+    }
+
+    markOrientation() {
+        const { videoWidth, videoHeight } = this.videoTarget;
+        if (videoWidth && videoHeight) {
+            this.element.classList.toggle('is-vertical', videoHeight > videoWidth);
         }
     }
 
