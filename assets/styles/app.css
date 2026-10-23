@@ -1920,6 +1920,7 @@ aside[id],
     border-radius: var(--radius-lg);
     overflow: hidden;
     color: #fff;
+    cursor: pointer;
 }
 
 .video-detail__poster-image {

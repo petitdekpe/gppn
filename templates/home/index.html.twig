@@ -26,12 +26,12 @@
                 <div class="home2-hero__media">
                     {% if previewCategory == 'video' %}
                         <div class="video-detail__player video-detail__player--poster home2-hero__thumb" style="--thematic-color: {{ heroVideo.thematic.colorHex }}" data-controller="video-poster">
-                            <div class="video-detail__poster" data-video-poster-target="poster">
+                            <div class="video-detail__poster" data-video-poster-target="poster" data-action="click->video-poster#play">
                                 {% if coverImageUrl %}
                                     <img class="video-detail__poster-image" src="{{ coverImageUrl }}" alt="">
                                 {% endif %}
                                 <span class="video-detail__poster-lang">{{ heroVideo.language.name }}</span>
-                                <button type="button" class="video-detail__poster-play" data-action="video-poster#play" aria-label="Lire la vidéo">▶</button>
+                                <button type="button" class="video-detail__poster-play" aria-label="Lire la vidéo">▶</button>
                                 <div class="video-detail__poster-footer">
                                     <div class="video-detail__poster-info">
                                         <strong>{{ heroVideo.title }}</strong>
