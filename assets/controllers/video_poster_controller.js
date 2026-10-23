@@ -5,9 +5,28 @@ export default class extends Controller {
     static values = { autoplayMobile: Boolean };
 
     connect() {
-        if (this.autoplayMobileValue && window.matchMedia('(max-width: 639px)').matches) {
+        const isPhone = window.matchMedia('(max-width: 767px)').matches;
+
+        this.selectVersion(isPhone);
+
+        if (this.autoplayMobileValue && isPhone) {
             this.autoplay();
         }
+    }
+
+    // L'attribut media des <source> d'une <video> n'est pas appliqué de façon
+    // fiable par les navigateurs (partials/_video_sources.html.twig) : on tranche
+    // ici. Téléphone → les sources Mobile (placées en tête) sont gardées, la
+    // vidéo TV reste en repli ; ordinateur → les sources Mobile sont retirées.
+    selectVersion(isPhone) {
+        const phoneSources = this.videoTarget.querySelectorAll('source[data-phone-version]');
+        if (phoneSources.length === 0) {
+            return;
+        }
+
+        phoneSources.forEach((source) => (isPhone ? source.removeAttribute('media') : source.remove()));
+        // Le navigateur a déjà choisi sa source au chargement de la page : on relance la sélection.
+        this.videoTarget.load();
     }
 
     // Arrivée depuis un contenu sur téléphone : lecture immédiate. Les navigateurs
